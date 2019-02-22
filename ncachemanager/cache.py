@@ -164,7 +164,7 @@ def get_connected_cachenode(node):
 
 def get_connected_dynamicnodes(cachenode):
     connected_dynamicnodes = []
-    for nodetype in ('nCloth', 'hairSystem'):
+    for nodetype in DYNAMIC_NODES:
         nodes = cmds.listConnections(
             cachenode, shapes=True, source=False, type=nodetype)
         if nodes:
@@ -269,6 +269,21 @@ def clear_cachenodes(nodes=None, cachenames=None, workspace=None):
             continue
         if cmds.getAttr(cachenode + '.cacheName') in cachenames:
             cmds.delete(cachenode)
+
+
+def list_node_attributes_values(node):
+    attributes = {}
+    for attribute in cmds.listAttr(node):
+        try:
+            value = cmds.getAttr(node + '.' + attribute)
+            attributes[node + '.' + attribute] = value
+        # RuntimeError is not a numerical attribute
+        # Value Error is a compount or subattribute
+        except RuntimeError: 
+            pass
+        except ValueError:
+            pass
+    return attributes
 
 
 if __name__ == "__main__":

@@ -87,6 +87,10 @@ class CacheVersion(object):
     def name(self):
         return self.infos['name']
 
+    @property
+    def files(self):
+        return self.xml_files + self.mcx_files 
+
     def __eq__(self, cacheversion):
         assert isinstance(cacheversion, CacheVersion)
         return cacheversion.directory == self.directory
@@ -169,13 +173,16 @@ def split_namespace_nodename(node):
     return None, names[0]
 
 
-def find_mcx_file_match(node, version):
+def find_file_match(node, cacheversion, extention='mcx'):
     _, nodename = split_namespace_nodename(node)
-    cached_namespace = version.infos["nodes"][nodename]["namespace"]
-    filename = cached_namespace + '_' + nodename + '.mcx'
-    for mcx_file in version.mcx_files:
-        if filename == os.path.basename(mcx_file):
-            return mcx_file
+    filename = nodename + '.' + extention
+    cached_namespace = cacheversion.infos["nodes"][nodename]["namespace"]
+    if cached_namespace:
+        filename = cached_namespace + '_' + filename
+    for cacheversion_filename in cacheversion.files:
+        if filename == os.path.basename(cacheversion_filename):
+            return cacheversion_filename
+
 
 
 def ensure_workspace_exists(workspace):

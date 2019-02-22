@@ -1,6 +1,7 @@
 
 import os
 import json
+import xml.etree.ElementTree
 from maya import cmds
 from .cache import DYNAMIC_NODES
 
@@ -56,3 +57,22 @@ def set_pervertex_maps(nodes=None, directory=''):
                 node + '.' + attribute, values, dataType='doubleArray')
 
 
+def to_maya_value(string):
+    if string.isdigit():
+        return int(string)
+    if '.' in string or ',' in string:
+        if string.replace(',', '').replace('.', '').isdigit():
+            return float(string)
+    return string
+
+
+def extract_xml_attributes(xml_file):
+    tree = xml.etree.ElementTree.parse(xml_file).getroot()
+    attributes = [element.text.split("=") for element in tree.findall('extra')]
+    return {a[0]: to_maya_value(a[1]) for a in attributes if len(a) == 2}
+
+
+def clean_namespaces_in_attributes_dict(attributes):
+    for key in attributes:
+        attributes[key.split(":")[-1]] = attributes.pop(key)
+    return attributes

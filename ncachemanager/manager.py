@@ -5,13 +5,16 @@ It combine both to work in a defined workspace
 
 from datetime import datetime
 from maya import cmds
-from .version import (
-    create_cacheversion, ensure_workspace_exists, find_mcx_file_match,
+from ncachemanager.version import (
+    create_cacheversion, ensure_workspace_exists, find_file_match,
     clear_cacheversion_content)
-from .cache import (
+from ncachemanager.cache import (
     import_ncache, record_ncache, DYNAMIC_NODES, import_ncache,
-    clear_cachenodes, list_connected_cachefiles, list_connected_cacheblends)
-from .maps import save_pervertex_maps
+    clear_cachenodes, list_connected_cachefiles, list_connected_cacheblends,
+    list_node_attributes_values)
+from ncachemanager.attributes import (
+    save_pervertex_maps, extract_xml_attributes,
+    clean_namespaces_in_attributes_dict)
 
 
 def create_and_record_cacheversion(
@@ -19,7 +22,6 @@ def create_and_record_cacheversion(
         behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     workspace = ensure_workspace_exists(workspace)
-
     cacheversion = create_cacheversion(
         workspace=workspace,
         name=name,
@@ -29,7 +31,6 @@ def create_and_record_cacheversion(
         end_frame=end_frame,
         timespent=None)
     save_pervertex_maps(nodes=nodes, directory=cacheversion.directory)
-
     start_time = datetime.now()
     record_ncache(
         nodes=nodes,
@@ -45,7 +46,7 @@ def create_and_record_cacheversion(
     return cacheversion
 
 
-def record_in_existing_cacheversion(
+def record_into_existing_cacheversion(
         cacheversion, start_frame, end_frame, nodes=None, behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     save_pervertex_maps(nodes=nodes, directory=cacheversion.directory)
@@ -66,7 +67,7 @@ def record_in_existing_cacheversion(
 def connect_cacheversion(cacheversion, nodes=None, behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     for node in nodes:
-        mcx_file = find_mcx_file_match(node, cacheversion)
+        mcx_file = find_file_match(node, cacheversion, extention='mcx')
         if not mcx_file:
             continue
         import_ncache(node, mcx_file, behavior=behavior)
@@ -87,6 +88,22 @@ def filter_connected_cacheversions(nodes=None, cacheversions=None):
         cacheversion for cacheversion in cacheversions
         if cacheversion.directory in directories]
 
+
+def compare_node_and_version(node, cacheversion):
+    filename = find_file_match(node, cacheversion, extention='xml')
+    xml_attributes = extract_xml_attributes(filename)
+    xml_attributes = clean_namespaces_in_attributes_dict(xml_attributes)
+    node_attributes = list_node_attributes_values(node)
+    node_attributes = clean_namespaces_in_attributes_dict(node_attributes)
+    differences = {}
+    for key, value in xml_attributes.items():
+        current_value = node_attributes.get(key)
+        # value in xml are slightly less precise than the current value
+        # in maya, it doesn't compare the exact result but the difference
+        if current_value is None or abs(current_value - value) < 0.000001:
+            continue
+        differences[key] = (current_value, value)
+    return differences
 
 
 if __name__ == "__main__":
