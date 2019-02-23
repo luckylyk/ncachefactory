@@ -7,7 +7,12 @@ import maya.api.OpenMaya as om2
 
 
 class DynamicNode(object):
+    ENABLE_ATTRIBUTE = None
+    TYPE = None
+
     def __init__(self, nodename):
+        if cmds.nodeType(nodename) != self.TYPE:
+            raise ValueError('wrong node type, {} excepted'.format(self.TYPE))
         self._dagnode = om2.MFnDagNode(
             om2.MSelectionList().add(nodename).getDependNode(0))
         self._color = None
@@ -18,7 +23,7 @@ class DynamicNode(object):
 
     @property
     def parent(self):
-        return cmds.listRelative(self.name, parent=True)
+        return cmds.listRelatives(self.name, parent=True)
 
     @property
     def is_cached(self):
@@ -28,43 +33,45 @@ class DynamicNode(object):
     def cache_nodetype(self):
         if not self.is_cached:
             return None
-        connected = cmds.listConnections(self.name + '.playFromCache')[0]
-        return cmds.nodeType(connected)
+        connections = cmds.listConnections(self.name + '.playFromCache')
+        if not connections:
+            return None
+        return cmds.nodeType(connections[0])
+
+    @property
+    def enable(self):
+        return cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE)
 
 
 class HairNode(DynamicNode):
+    ENABLE_ATTRIBUTE = 'simulationMethod'
+    TYPE = "hairSystem"
+
     def __init__(self, nodename):
-        if cmds.nodeType(nodename) != "hairSystem":
-            raise ValueError('wrong node type, nCloth excepted')
         super(HairNode, self).__init__(nodename)
 
     @property
-    def enable(self):
-        return cmds.getAttr(self.name + '.simulationMethod')
-
-    @property
     def color(self):
-        r, g, b = cmds.getAttr(self.name + '.displayColor')[0]
-        return [int(c) * 255 for c in (r, g, b)]
-
+        return cmds.getAttr(self.name + '.displayColor')[0]
 
 
 class ClothNode(DynamicNode):
+    ENABLE_ATTRIBUTE = 'isDynamic'
+    TYPE = "nCloth"
+
     def __init__(self, nodename):
-        if cmds.nodeType(nodename) != "nCloth":
-            raise ValueError('wrong node type, nCloth excepted')
         super(ClothNode, self).__init__(nodename)
         self._color = None
-
-    @property
-    def enable(self):
-        return cmds.getAttr(self.name + '.isDynamic')
 
     @property
     def color(self):
         if self._color is None:
             self._color = get_clothnode_color(self.name)
         return self._color
+
+    def set_color(self, red, green, blue):
+        set_clothnode_color(self.name, red, green, blue)
+        self._color = red, green, blue
 
 
 def get_clothnode_color(clothnode_name):
@@ -82,8 +89,7 @@ def get_clothnode_color(clothnode_name):
     if not shaders:
         return None
 
-    r, g, b = cmds.getAttr(shaders[0] + '.color')[0]
-    return [int(c * 255) for c in (r, g ,b)]
+    return cmds.getAttr(shaders[0] + '.color')[0]
 
 
 def set_clothnode_color(clothnode_name, red, green, blue):

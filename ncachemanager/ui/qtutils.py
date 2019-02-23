@@ -15,7 +15,7 @@ def get_maya_windows():
         return shiboken2.wrapInstance(long(main_window), QtWidgets.QWidget)
 
 
-ICONPATH = os.path.join(os.path.dirname(os.realpath(__file__)), 'icons')
+ICONPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
 
 def get_icon(filename):
     return QtGui.QIcon(os.path.join(ICONPATH, filename))

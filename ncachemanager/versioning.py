@@ -184,7 +184,6 @@ def find_file_match(node, cacheversion, extention='mcx'):
             return cacheversion_filename
 
 
-
 def ensure_workspace_exists(workspace):
     if is_workspace_folder(workspace):
         return workspace

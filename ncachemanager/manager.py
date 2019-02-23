@@ -4,8 +4,9 @@ It combine both to work in a defined workspace
 """
 
 from datetime import datetime
+import os
 from maya import cmds
-from ncachemanager.version import (
+from ncachemanager.versioning import (
     create_cacheversion, ensure_workspace_exists, find_file_match,
     clear_cacheversion_content)
 from ncachemanager.cache import (
@@ -81,12 +82,15 @@ def delete_cacheversion(cacheversion):
 
 def filter_connected_cacheversions(nodes=None, cacheversions=None):
     assert cacheversions is not None
-    nodes.extend(list_connected_cacheblends(nodes) or [])
-    cachenodes = list_connected_cachefiles(nodes)
-    directories = list({cmds.getAttr(n + '.filePath') for n in cachenodes})
+    nodes = nodes or []
+    cachenodes = (
+        (list_connected_cacheblends(nodes) or []) +
+        (list_connected_cachefiles(nodes) or []))
+    directories = list({cmds.getAttr(n + '.cachePath') for n in cachenodes})
+    directories = [os.path.normpath(directory) for directory in directories]
     return [
         cacheversion for cacheversion in cacheversions
-        if cacheversion.directory in directories]
+        if os.path.normpath(cacheversion.directory) in directories]
 
 
 def compare_node_and_version(node, cacheversion):
@@ -100,7 +104,7 @@ def compare_node_and_version(node, cacheversion):
         current_value = node_attributes.get(key)
         # value in xml are slightly less precise than the current value
         # in maya, it doesn't compare the exact result but the difference
-        if current_value is None or abs(current_value - value) < 0.000001:
+        if current_value is None or abs(current_value - value) < 1e-6:
             continue
         differences[key] = (current_value, value)
     return differences

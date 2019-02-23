@@ -1,4 +1,5 @@
 from PySide2 import QtWidgets, QtGui, QtCore
+from maya import cmds
 from qtutils import get_icon
 from ncachemanager.manager import filter_connected_cacheversions
 
@@ -46,19 +47,18 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
         return len(self.nodes)
 
     def set_nodes(self, nodes):
-        self.layoutAboutToBeChanged()
+        self.layoutAboutToBeChanged.emit()
         self.nodes = nodes
-        self.layoutChanged()
+        self.layoutChanged.emit()
 
     def set_cacheversions(self, cacheversions):
-        self.layoutAboutToBeChanged()
+        self.layoutAboutToBeChanged.emit()
         self.cacheversions = cacheversions
-        self.layoutChanged()
+        self.layoutChanged.emit()
 
     def headerData(self, section, orientation, role):
-        if role != QtCore.Qt.Display:
+        if role != QtCore.Qt.DisplayRole:
             return
-
         if orientation == QtCore.Qt.Horizontal:
             return self.HEADERS[section]
 
@@ -71,8 +71,11 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
             if column == 1:
                 return node.parent
             elif column == 2:
-                cvs = filter_connected_cacheversions(node, self.cacheversions)
+                cvs = filter_connected_cacheversions(
+                    node.name, self.cacheversions)
                 return ", ".join([cv.name for cv in cvs])
+        elif role == QtCore.Qt.UserRole:
+            return node
 
 
 class DynamicNodeTableView(QtWidgets.QTableView):
@@ -95,7 +98,16 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self.verticalHeader().hide()
         self.verticalHeader().setSectionResizeMode(mode)
         self.horizontalHeader().setSectionResizeMode(mode)
+        self.horizontalHeader().setStretchLastSection(True)
         self.setEditTriggers(QtWidgets.QAbstractItemView.AllEditTriggers)
+
+    def mouseReleaseEvent(self, event):
+        # this is a workaround because for a reason that I don't understand
+        # the function createEditor doesn't triggered properly ...
+        # so i force it here (but it's an horrible Fix)
+        index = self.indexAt(event.pos())
+        if index.column() == 0:
+            self.item_delegate.createEditor(None, None, index)
 
     @property
     def selected_nodes(self):
@@ -111,3 +123,43 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self.setModel(model)
         self._model = model
         self._selection_model = self.selectionModel()
+
+    def set_item_delegate(self, item_delegate):
+        self.item_delegate = item_delegate
+        self.setItemDelegateForColumn(0, item_delegate)
+
+
+class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
+
+    def __init__(self, table):
+        super(ColorSquareDelegate, self).__init__(table)
+        self._model = table.model()
+        self._table = table
+
+    def paint(self, painter, option, index):
+        dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
+        rect = QtCore.QRect(
+            option.rect.center().x() - 7,
+            option.rect.center().y() - 7,
+            14, 14)
+        pen = QtGui.QPen(QtGui.QColor("black"))
+        pen.setWidth(2)
+        color = QtGui.QColor(*[c * 255 for c in dynamic_node.color])
+        brush = QtGui.QBrush(color)
+        painter.setPen(pen)
+        painter.setBrush(brush)
+        painter.drawRect(rect)
+
+    def createEditor(self, _, __, index):
+        dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
+        red, green, blue = map(float, cmds.colorEditor().split()[:3])
+        if cmds.colorEditor(query=True, result=True) is False:
+            return
+        dynamic_node.set_color(red, green, blue)
+        return
+
+    def updateEditorGeometry(self, editor, option, index):
+        editor.setGeometry(option.rect)
+
+    def sizeHint(self, _, __):
+        return QtCore.QSize(22, 22)
