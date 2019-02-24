@@ -6,6 +6,7 @@ from ncachemanager.ui.qtutils import get_icon
 from ncachemanager.manager import filter_connected_cacheversions
 from ncachemanager.nodes import list_dynamic_nodes, create_dynamic_node
 from ncachemanager.versioning import list_available_cacheversions
+from ncachemanager.cache import DYNAMIC_NODES
 
 
 FULL_UPDATE_REQUIRED_EVENTS = (
@@ -24,20 +25,32 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self._callbacks = []
         self.script_jobs = []
         self.versions = []
-        self.table_model = table.DynamicNodeTableModel()
-        self.table_view = table.DynamicNodeTableView()
+        self.table_model = DynamicNodeTableModel()
+        self.table_view = DynamicNodeTableView()
         self.table_view.set_model(self.table_model)
-        self.table_color_square = table.ColorSquareDelegate(self.table_view)
+        self.table_color_square = ColorSquareDelegate(self.table_view)
         self.table_view.setItemDelegateForColumn(0, self.table_color_square)
         self.table_model.set_nodes(list_dynamic_nodes())
+
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.addWidget(self.table_view)
+
+    @property
+    def selected_nodes(self):
+        if self.table_model is None:
+            return
+        indexes = self.table_view.selectionModel().selectedIndexes()
+        if not indexes:
+            return None
+        indexes = [i for i in indexes if i.column() == 0]
+        return [self._model.data(i, QtCore.Qt.UserRole) for i in indexes]
 
     def set_workspace(self, workspace):
         cache_versions = list_available_cacheversions(workspace)
         self.table_model.set_cacheversions(cache_versions)
 
     def register_callbacks(self):
-        nodetypes = ["nCloth", "hairSystem"]
-        for nodetype in nodetypes:
+        for nodetype in DYNAMIC_NODES:
             self._callbacks.append(
                 om.MDGMessage.addNodeRemovedCallback(
                     self._remove_node_callback, nodetype))
@@ -51,7 +64,8 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         for callback in self._callbacks:
             om.MMessage.removeCallback(callback)
 
-    def _remove_node_callback(self, mobject):
+    def _remove_node_callback(self, mobject, what=51):
+        print what
         if mobject.apiType() not in OM_DYNAMIC_NODES:
             return
         node = om.MFnDagNode(mobject).name()
@@ -61,13 +75,14 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         for dynamic_node in dynamic_nodes:
             self.table_model.remove_node(dynamic_node)
 
-    def _created_node_callback(self, mobject):
+    def _created_node_callback(self, mobject, what=51):
+        print what
         if mobject.apiType() not in OM_DYNAMIC_NODES:
             return
         dynamic_node = create_dynamic_node(om.MFnDagNode(mobject).name())
         self.table_model.insert_node(dynamic_node)
 
-    def _full_update_callback(self):
+    def _full_update_callback(self, what=51):
         self.table_model.set_nodes(list_dynamic_nodes())
 
     def show(self):
@@ -124,6 +139,12 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
     def set_nodes(self, nodes):
         self.layoutAboutToBeChanged.emit()
         self.nodes = nodes
+        self.layoutChanged.emit()
+
+    def insert_node(self, node):
+        self.layoutAboutToBeChanged.emit()
+        self.nodes.append(node)
+        self.nodes = sorted(self.nodes, key=lambda x: x.name)
         self.layoutChanged.emit()
 
     def set_cacheversions(self, cacheversions):
@@ -189,16 +210,6 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         index = self.indexAt(event.pos())
         if index.column() == 0:
             self.item_delegate.createEditor(None, None, index)
-
-    @property
-    def selected_nodes(self):
-        if self._model is None:
-            return
-        indexes = self._selection_model.selectedIndexes()
-        if not indexes:
-            return None
-        indexes = [i for i in indexes if i.column() == 0]
-        return [self._model.data(i, QtCore.Qt.UserRole) for i in indexes]
 
     def set_model(self, model):
         self.setModel(model)
