@@ -74,6 +74,19 @@ class ClothNode(DynamicNode):
         self._color = red, green, blue
 
 
+def list_dynamic_nodes():
+    return [
+        create_dynamic_node(n) for n in cmds.ls(type=('hairSystem', 'nCloth'))]
+
+
+def create_dynamic_node(nodename):
+    if cmds.nodeType(nodename) == 'hairSystem':
+        return HairNode(nodename)
+    if cmds.nodeType(nodename) == 'nCloth':
+        return ClothNode(nodename)
+    cmds.warning(nodename + ' is not a dynamic node')
+
+
 def get_clothnode_color(clothnode_name):
     outmeshes = cmds.listConnections(
         clothnode_name + '.outputMesh', type='mesh', shapes=True)

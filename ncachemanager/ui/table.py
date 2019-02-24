@@ -1,7 +1,82 @@
 from PySide2 import QtWidgets, QtGui, QtCore
 from maya import cmds
-from qtutils import get_icon
+import maya.OpenMaya as om
+
+from ncachemanager.ui.qtutils import get_icon
 from ncachemanager.manager import filter_connected_cacheversions
+from ncachemanager.nodes import list_dynamic_nodes, create_dynamic_node
+from ncachemanager.versioning import list_available_cacheversions
+
+
+FULL_UPDATE_REQUIRED_EVENTS = (
+    om.MSceneMessage.kAfterNew,
+    om.MSceneMessage.kAfterImport,
+    om.MSceneMessage.kAfterOpen,
+    om.MSceneMessage.kAfterRemoveReference,
+    om.MSceneMessage.kAfterUnloadReference,
+    om.MSceneMessage.kAfterCreateReference)
+OM_DYNAMIC_NODES = om.MFn.kNCloth, om.MFn.kHairSystem
+
+
+class DynamicNodesTableWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super(DynamicNodesTableWidget, self).__init__(parent, QtCore.Qt.Window)
+        self._callbacks = []
+        self.script_jobs = []
+        self.versions = []
+        self.table_model = table.DynamicNodeTableModel()
+        self.table_view = table.DynamicNodeTableView()
+        self.table_view.set_model(self.table_model)
+        self.table_color_square = table.ColorSquareDelegate(self.table_view)
+        self.table_view.setItemDelegateForColumn(0, self.table_color_square)
+        self.table_model.set_nodes(list_dynamic_nodes())
+
+    def set_workspace(self, workspace):
+        cache_versions = list_available_cacheversions(workspace)
+        self.table_model.set_cacheversions(cache_versions)
+
+    def register_callbacks(self):
+        nodetypes = ["nCloth", "hairSystem"]
+        for nodetype in nodetypes:
+            self._callbacks.append(
+                om.MDGMessage.addNodeRemovedCallback(
+                    self._remove_node_callback, nodetype))
+            self._callbacks.append(
+                om.MDGMessage.addNodeAddedCallback(
+                    self._created_node_callback, nodetype))
+            for event in FULL_UPDATE_REQUIRED_EVENTS:
+                om.MSceneMessage.addCallback(event, self._full_update_callback)
+
+    def unregister_callbacks(self):
+        for callback in self._callbacks:
+            om.MMessage.removeCallback(callback)
+
+    def _remove_node_callback(self, mobject):
+        if mobject.apiType() not in OM_DYNAMIC_NODES:
+            return
+        node = om.MFnDagNode(mobject).name()
+        dynamic_nodes = [n for n in self.table_model.nodes if n.name == node]
+        if not dynamic_nodes:
+            return
+        for dynamic_node in dynamic_nodes:
+            self.table_model.remove_node(dynamic_node)
+
+    def _created_node_callback(self, mobject):
+        if mobject.apiType() not in OM_DYNAMIC_NODES:
+            return
+        dynamic_node = create_dynamic_node(om.MFnDagNode(mobject).name())
+        self.table_model.insert_node(dynamic_node)
+
+    def _full_update_callback(self):
+        self.table_model.set_nodes(list_dynamic_nodes())
+
+    def show(self):
+        super(DynamicNodesTableWidget, self).show()
+        self.register_callbacks()
+
+    def closeEvent(self, event):
+        self.unregister_callbacks()
+        return super(DynamicNodesTableWidget, self).closeEvent(event)
 
 
 class OnOffLabel(QtWidgets.QWidget):
@@ -56,6 +131,11 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
         self.cacheversions = cacheversions
         self.layoutChanged.emit()
 
+    def remove_node(self, node):
+        self.layoutAboutToBeChanged.emit()
+        self.nodes.remove(node)
+        self.layoutChanged.emit()
+
     def headerData(self, section, orientation, role):
         if role != QtCore.Qt.DisplayRole:
             return
@@ -85,6 +165,7 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self.configure()
         self._selection_model = None
         self._model = None
+        self.item_delegate = None
 
     def configure(self):
         self.setMinimumWidth(500)
@@ -134,7 +215,6 @@ class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
     def __init__(self, table):
         super(ColorSquareDelegate, self).__init__(table)
         self._model = table.model()
-        self._table = table
 
     def paint(self, painter, option, index):
         dynamic_node = self._model.data(index, QtCore.Qt.UserRole)

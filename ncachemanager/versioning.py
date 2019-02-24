@@ -32,30 +32,18 @@ WORKSPACE_FOLDERNAME = 'caches'
 class CacheVersion(object):
     def __init__(self, directory):
         self.directory = directory.replace("\\", "/")
-        if not os.path.exists(os.path.join(self.directory, INFOS_FILENAME)):
+        self.infos_path = os.path.join(self.directory, INFOS_FILENAME)
+        if not os.path.exists(self.infos_path):
             raise ValueError('Invalid version directory')
-
-        self.xml_files = self._get_xml_files()
-        self.mcx_files = self._get_mcx_files()
-        self.infos = self._load_infos()
-
-    def _load_infos(self):
-        with open(os.path.join(self.directory, INFOS_FILENAME), 'r') as f:
-            return json.load(f)
+        self.infos = load_json(self.infos_path)
 
     def save_infos(self):
-        with open(os.path.join(self.directory, INFOS_FILENAME), 'w') as f:
-            return json.dump(self.infos, f, indent=2)
+        save_json(self.infos_path, self.infos)
 
-    def _get_mcx_files(self):
+    def get_files(self, extention_filter=None):
         return [
             os.path.join(self.directory, f) for f in os.listdir(self.directory)
-            if f.endswith('.mcx')]
-
-    def _get_xml_files(self):
-        return [
-            os.path.join(self.directory, f) for f in os.listdir(self.directory)
-            if f.endswith('.xml')]
+            if extention_filter is None or f.endswith('.' + extention_filter)]
 
     def set_range(self, nodes=None, start_frame=None, end_frame=None):
         assert start_frame or end_frame
@@ -87,14 +75,19 @@ class CacheVersion(object):
     def name(self):
         return self.infos['name']
 
-    @property
-    def files(self):
-        return self.xml_files + self.mcx_files 
-
     def __eq__(self, cacheversion):
         assert isinstance(cacheversion, CacheVersion)
         return cacheversion.directory == self.directory
 
+
+def load_json(filename):
+    with open(filename, 'r') as f:
+        return json.load(f)
+
+
+def save_json(filename, data):
+    with open(filename, 'w') as f:
+        return json.dump(data, f, indent=2)
 
 
 def list_available_cacheversion_directories(workspace):
@@ -179,7 +172,7 @@ def find_file_match(node, cacheversion, extention='mcx'):
     cached_namespace = cacheversion.infos["nodes"][nodename]["namespace"]
     if cached_namespace:
         filename = cached_namespace + '_' + filename
-    for cacheversion_filename in cacheversion.files:
+    for cacheversion_filename in cacheversion.get_files():
         if filename == os.path.basename(cacheversion_filename):
             return cacheversion_filename
 

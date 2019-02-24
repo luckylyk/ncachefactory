@@ -75,7 +75,7 @@ def connect_cacheversion(cacheversion, nodes=None, behavior=0):
 
 
 def delete_cacheversion(cacheversion):
-    cachenames = [f[:-4] for f in cacheversion.mcx_file]
+    cachenames = [f[:-4] for f in cacheversion.get_files('mcx')]
     clear_cachenodes(cachenames=cachenames, workspace=cacheversion.workspace)
     clear_cacheversion_content(cacheversion)
 
