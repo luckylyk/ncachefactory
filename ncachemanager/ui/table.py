@@ -157,6 +157,14 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
         self.nodes.remove(node)
         self.layoutChanged.emit()
 
+    def sort(self, column, order):
+        if column != 1:
+            return
+        reverse_ = order != QtCore.Qt.AscendingOrder
+        self.layoutAboutToBeChanged.emit()
+        self.nodes = sorted(self.nodes, key=lambda x: x.name, reverse=reverse_)
+        self.layoutChanged.emit()
+        
     def headerData(self, section, orientation, role):
         if role != QtCore.Qt.DisplayRole:
             return
@@ -191,6 +199,8 @@ class DynamicNodeTableView(QtWidgets.QTableView):
     def configure(self):
         self.setMinimumWidth(500)
         self.setShowGrid(False)
+        self.setWordWrap(False)
+        self.setSortingEnabled(True)
         self.setAlternatingRowColors(True)
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
