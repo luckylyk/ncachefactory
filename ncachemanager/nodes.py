@@ -9,6 +9,7 @@ import maya.api.OpenMaya as om2
 class DynamicNode(object):
     ENABLE_ATTRIBUTE = None
     TYPE = None
+    ICONS = {'on': None, 'off': None}
 
     def __init__(self, nodename):
         if cmds.nodeType(nodename) != self.TYPE:
@@ -42,10 +43,15 @@ class DynamicNode(object):
     def enable(self):
         return cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE)
 
+    def switch(self):
+        value = not self.enable
+        cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
+
 
 class HairNode(DynamicNode):
     ENABLE_ATTRIBUTE = 'simulationMethod'
     TYPE = "hairSystem"
+    ICONS = {'on': 'hairsystem.png', 'off': 'hairsystem_off.png'}
 
     def __init__(self, nodename):
         super(HairNode, self).__init__(nodename)
@@ -54,10 +60,14 @@ class HairNode(DynamicNode):
     def color(self):
         return cmds.getAttr(self.name + '.displayColor')[0]
 
+    def set_color(self, red, green, blue):
+        cmds.setAttr(self.name + '.displayColor', red, green, blue)
+
 
 class ClothNode(DynamicNode):
     ENABLE_ATTRIBUTE = 'isDynamic'
     TYPE = "nCloth"
+    ICONS = {'on': 'ncloth.png', 'off': 'ncloth_off.png'}
 
     def __init__(self, nodename):
         super(ClothNode, self).__init__(nodename)
@@ -130,4 +140,3 @@ def set_clothnode_color(clothnode_name, red, green, blue):
         cmds.delete(shading_engine)
         cmds.delete(blinns)
     cmds.select(selection)
-

@@ -29,10 +29,13 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_view = DynamicNodeTableView()
         self.table_view.set_model(self.table_model)
         self.table_color_square = ColorSquareDelegate(self.table_view)
-        self.table_view.setItemDelegateForColumn(0, self.table_color_square)
+        self.table_switcher = OnOffLabel(self.table_view)
+        self.table_view.set_color_delegate(self.table_color_square)
+        self.table_view.set_switcher_delegate(self.table_switcher)
         self.table_model.set_nodes(list_dynamic_nodes())
 
         self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.table_view)
 
     @property
@@ -50,22 +53,24 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model.set_cacheversions(cache_versions)
 
     def register_callbacks(self):
-        for nodetype in DYNAMIC_NODES:
+        for nodetype in OM_DYNAMIC_NODES:
             self._callbacks.append(
                 om.MDGMessage.addNodeRemovedCallback(
                     self._remove_node_callback, nodetype))
             self._callbacks.append(
                 om.MDGMessage.addNodeAddedCallback(
                     self._created_node_callback, nodetype))
-            for event in FULL_UPDATE_REQUIRED_EVENTS:
-                om.MSceneMessage.addCallback(event, self._full_update_callback)
+            self._callbacks.append(
+                om.MNodeMessage.addNameChangedCallback(
+                    self._renamed_callback, nodetype))
+        for event in FULL_UPDATE_REQUIRED_EVENTS:
+            om.MSceneMessage.addCallback(event, self._full_update_callback)
 
     def unregister_callbacks(self):
         for callback in self._callbacks:
             om.MMessage.removeCallback(callback)
 
-    def _remove_node_callback(self, mobject, what=51):
-        print what
+    def _remove_node_callback(self, mobject, _):
         if mobject.apiType() not in OM_DYNAMIC_NODES:
             return
         node = om.MFnDagNode(mobject).name()
@@ -75,15 +80,17 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         for dynamic_node in dynamic_nodes:
             self.table_model.remove_node(dynamic_node)
 
-    def _created_node_callback(self, mobject, what=51):
-        print what
+    def _created_node_callback(self, mobject, _):
         if mobject.apiType() not in OM_DYNAMIC_NODES:
             return
         dynamic_node = create_dynamic_node(om.MFnDagNode(mobject).name())
         self.table_model.insert_node(dynamic_node)
 
-    def _full_update_callback(self, what=51):
+    def _full_update_callback(self, _):
         self.table_model.set_nodes(list_dynamic_nodes())
+
+    def _renamed_callback(self, _, __):
+        self.table_model.layoutChanged.emit()
 
     def show(self):
         super(DynamicNodesTableWidget, self).show()
@@ -94,36 +101,46 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         return super(DynamicNodesTableWidget, self).closeEvent(event)
 
 
-class OnOffLabel(QtWidgets.QWidget):
+class OnOffLabel(QtWidgets.QStyledItemDelegate):
     """ on/off switch icon for delegate
     / | \
     \___/
     """
-    ICONSIZE = 22, 22
+    ICONSIZE = 24, 24
 
-    def __init__(self, dynamic_node, parent=None):
-        super(OnOffLabel, self).__init__(parent)
+    def __init__(self, table):
+        super(OnOffLabel, self).__init__(table)
+        self._model = table.model()
+        self.icons = None
 
-        self.icons = get_icon(dynamic_node.on), get_icon(dynamic_node.off)
-        self.dynamic_node = dynamic_node
-        self.setFixedSize(24, 24)
-        self.repaint()
+    def createEditor(self, _, __, index):
+        dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
+        dynamic_node.switch()
+        return
 
-    def mousePressEvent(self, _):
-        self.dynamic_node.switch()
-        self.repaint()
+    def paint(self, painter, option, index):
+        dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
+        if self.icons is None:
+            self.icons = (
+                get_icon(dynamic_node.ICONS['off']),
+                get_icon(dynamic_node.ICONS['on']))
 
-    def paintEvent(self, _):
-        painter = QtGui.QPainter()
-        icon = self.icons[bool(self.dynamic_node.enable)]
-        pixmap = icon.pixmap(32, 32).scaled(
+        icon = self.icons[bool(dynamic_node.enable)]
+        pixmap = icon.pixmap(24, 24).scaled(
             QtCore.QSize(*self.ICONSIZE),
             transformMode=QtCore.Qt.SmoothTransformation)
-        painter.drawPixmap(self.rect(), pixmap)
+        rect = QtCore.QRect(
+            option.rect.center().x() - 8,
+            option.rect.center().y() - 8,
+            16, 16)
+        painter.drawPixmap(rect, pixmap)
+
+    def sizeHint(self, *args):
+        return QtCore.QSize(24, 24)
 
 
 class DynamicNodeTableModel(QtCore.QAbstractTableModel):
-    HEADERS = "", "Node", "Cache"
+    HEADERS = "", "", "Node", "Cache"
 
     def __init__(self, parent=None):
         super(DynamicNodeTableModel, self).__init__(parent)
@@ -158,13 +175,13 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
         self.layoutChanged.emit()
 
     def sort(self, column, order):
-        if column != 1:
+        if column != 2:
             return
-        reverse_ = order != QtCore.Qt.AscendingOrder
+        reverse_ = order == QtCore.Qt.AscendingOrder
         self.layoutAboutToBeChanged.emit()
         self.nodes = sorted(self.nodes, key=lambda x: x.name, reverse=reverse_)
         self.layoutChanged.emit()
-        
+
     def headerData(self, section, orientation, role):
         if role != QtCore.Qt.DisplayRole:
             return
@@ -177,9 +194,9 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
         row, column = index.row(), index.column()
         node = self.nodes[row]
         if role == QtCore.Qt.DisplayRole:
-            if column == 1:
+            if column == 2:
                 return node.parent
-            elif column == 2:
+            elif column == 3:
                 cvs = filter_connected_cacheversions(
                     node.name, self.cacheversions)
                 return ", ".join([cv.name for cv in cvs])
@@ -194,7 +211,8 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self.configure()
         self._selection_model = None
         self._model = None
-        self.item_delegate = None
+        self.color_delegate = None
+        self.switcher_delegate = None
 
     def configure(self):
         self.setMinimumWidth(500)
@@ -219,16 +237,23 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         # so i force it here (but it's an horrible Fix)
         index = self.indexAt(event.pos())
         if index.column() == 0:
-            self.item_delegate.createEditor(None, None, index)
+            self.color_delegate.createEditor(None, None, index)
+        if index.column() == 1:
+            self.switcher_delegate.createEditor(None, None, index)
+        self._model.layoutChanged.emit()
 
     def set_model(self, model):
         self.setModel(model)
         self._model = model
         self._selection_model = self.selectionModel()
 
-    def set_item_delegate(self, item_delegate):
-        self.item_delegate = item_delegate
+    def set_color_delegate(self, item_delegate):
+        self.color_delegate = item_delegate
         self.setItemDelegateForColumn(0, item_delegate)
+
+    def set_switcher_delegate(self, item_delegate):
+        self.switcher_delegate = item_delegate
+        self.setItemDelegateForColumn(1, item_delegate)
 
 
 class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
