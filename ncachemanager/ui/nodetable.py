@@ -1,10 +1,10 @@
 from PySide2 import QtWidgets, QtGui, QtCore
 from maya import cmds
 import maya.OpenMaya as om
+import maya.api.OpenMaya as om2 # match api2
 
 from ncachemanager.ui.qtutils import get_icon
 from ncachemanager.manager import filter_connected_cacheversions
-from ncachemanager.nodes import list_dynamic_nodes, create_dynamic_node
 from ncachemanager.versioning import list_available_cacheversions
 from ncachemanager.cache import DYNAMIC_NODES
 
@@ -19,7 +19,83 @@ FULL_UPDATE_REQUIRED_EVENTS = (
     om.MSceneMessage.kAfterRemoveReference,
     om.MSceneMessage.kAfterUnloadReference,
     om.MSceneMessage.kAfterCreateReference)
+UPDATE_LAYOUT_EVENTS = "playbackRangeChanged", "timeChanged"
 OM_DYNAMIC_NODES = om.MFn.kNCloth, om.MFn.kHairSystem
+
+
+class DynamicNode(object):
+    ENABLE_ATTRIBUTE = None
+    TYPE = None
+    ICONS = {'on': None, 'off': None}
+
+    def __init__(self, nodename):
+        if cmds.nodeType(nodename) != self.TYPE:
+            raise ValueError('wrong node type, {} excepted'.format(self.TYPE))
+        self._dagnode = om2.MFnDagNode(
+            om2.MSelectionList().add(nodename).getDependNode(0))
+        self._color = None
+
+    @property
+    def name(self):
+        return self._dagnode.name()
+
+    @property
+    def parent(self):
+        return cmds.listRelatives(self.name, parent=True)
+
+    @property
+    def is_cached(self):
+        return bool(cmds.listConnections(self.name + '.playFromCache'))
+
+    @property
+    def cache_nodetype(self):
+        if not self.is_cached:
+            return None
+        connections = cmds.listConnections(self.name + '.playFromCache')
+        if not connections:
+            return None
+        return cmds.nodeType(connections[0])
+
+    @property
+    def enable(self):
+        return cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE)
+
+    def switch(self):
+        value = not self.enable
+        cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
+
+
+class HairNode(DynamicNode):
+    ENABLE_ATTRIBUTE = 'simulationMethod'
+    TYPE = "hairSystem"
+    ICONS = {'on': 'hairsystem.png', 'off': 'hairsystem_off.png'}
+
+    @property
+    def color(self):
+        return cmds.getAttr(self.name + '.displayColor')[0]
+
+    def set_color(self, red, green, blue):
+        cmds.setAttr(self.name + '.displayColor', red, green, blue)
+
+
+class ClothNode(DynamicNode):
+    ENABLE_ATTRIBUTE = 'isDynamic'
+    TYPE = "nCloth"
+    ICONS = {'on': 'ncloth.png', 'off': 'ncloth_off.png'}
+
+    def __init__(self, nodename):
+        super(ClothNode, self).__init__(nodename)
+        self._color = None
+
+    @property
+    def color(self):
+        if self._color is None:
+            self._color = get_clothnode_color(self.name)
+        return self._color
+
+    def set_color(self, red, green, blue):
+        set_clothnode_color(self.name, red, green, blue)
+        self._color = red, green, blue
 
 
 class DynamicNodesTableWidget(QtWidgets.QWidget):
@@ -68,17 +144,17 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
             cb = om.MDGMessage.addNodeAddedCallback(function, nodetype)
             self._callbacks.append(cb)
 
-        function = self.table_model.layoutChanged.emit
+        function = self._full_update_callback
+        for event in FULL_UPDATE_REQUIRED_EVENTS:
+            cb = om.MSceneMessage.addCallback(event, function)
+            self._callbacks.append(cb)
+
+        function = self._update_layout
         cb = om.MNodeMessage.addNameChangedCallback(om.MObject(), function)
         self._callbacks.append(cb)
-
-        for event in FULL_UPDATE_REQUIRED_EVENTS:
-            om.MSceneMessage.addCallback(event, self._full_update_callback)
-
-        function = self.table_model.layoutChanged.emit
-        job = cmds.scriptJob(event=['playbackRangeChanged', function])
-        self._jobs.append(job)
-        self._jobs.append(cmds.scriptJob(event=['timeChanged', function]))
+        for event in UPDATE_LAYOUT_EVENTS:
+            job = cmds.scriptJob(event=[event, function])
+            self._jobs.append(job)
 
     def unregister_callbacks(self):
         for callback in self._callbacks:
@@ -105,6 +181,9 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
     def _full_update_callback(self, *unused_callbacks_args):
         self.table_model.set_nodes(list_dynamic_nodes())
+
+    def _update_layout(self, *unused_callbacks_args):
+        self.table.model.layoutChanged.emit()
 
     def show(self):
         super(DynamicNodesTableWidget, self).show()
@@ -371,3 +450,61 @@ def from_percent(value, rangein=0, rangeout=100):
     rangeout -= rangein
     value = (value / 100) * rangeout
     return value + rangein
+
+
+def list_dynamic_nodes():
+    return [
+        create_dynamic_node(n) for n in cmds.ls(type=('hairSystem', 'nCloth'))]
+
+
+def create_dynamic_node(nodename):
+    if cmds.nodeType(nodename) == 'hairSystem':
+        return HairNode(nodename)
+    if cmds.nodeType(nodename) == 'nCloth':
+        return ClothNode(nodename)
+    cmds.warning(nodename + ' is not a dynamic node')
+
+
+def get_clothnode_color(clothnode_name):
+    outmeshes = cmds.listConnections(
+        clothnode_name + '.outputMesh', type='mesh', shapes=True)
+    if not outmeshes:
+        return None
+
+    shading_engines = cmds.listConnections(
+        outmeshes[0] + '.instObjGroups', type='shadingEngine')
+    if not shading_engines:
+        return None
+
+    shaders = cmds.listConnections(shading_engines[0] + '.surfaceShader')
+    if not shaders:
+        return None
+
+    return cmds.getAttr(shaders[0] + '.color')[0]
+
+
+def set_clothnode_color(clothnode_name, red, green, blue):
+    outmeshes = cmds.listConnections(
+        clothnode_name + '.outputMesh', type='mesh', shapes=True)
+    if not outmeshes:
+        return None
+    old_shading_engines = cmds.listConnections(
+        outmeshes[0] + '.instObjGroups', type='shadingEngine')
+    if not old_shading_engines:
+        return None
+
+    blinn = cmds.shadingNode('blinn', asShader=True)
+    cmds.setAttr(blinn + ".color", red, green, blue, type='double3')
+
+    selection = cmds.ls(sl=True)
+    cmds.select(outmeshes)
+    cmds.hyperShade(assign=blinn)
+    # old_shading_engines should contain only one shading engine
+    for shading_engine in old_shading_engines:
+        connected = cmds.listConnections(shading_engine + ".dagSetMembers")
+        if connected:
+            return
+        blinns = cmds.listConnections(shading_engine, type='blinn')
+        cmds.delete(shading_engine)
+        cmds.delete(blinns)
+    cmds.select(selection)

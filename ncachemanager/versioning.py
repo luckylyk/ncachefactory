@@ -48,12 +48,14 @@ class CacheVersion(object):
     def set_range(self, nodes=None, start_frame=None, end_frame=None):
         assert start_frame or end_frame
         nodes = nodes or self.infos['nodes']
-        if nodes:
-            for node in nodes:
-                # if only one value is modified, the other one is kept
-                start = start_frame or self.infos['nodes'][node]['range'][0]
-                end = end_frame or self.infos['nodes'][node]['range'][1]
-                self.infos['nodes'][node]['range'] = start, end
+        if not nodes:
+            self.save_infos()
+            return
+        for node in nodes:
+            # if only one value is modified, the other one is kept
+            start = start_frame or self.infos['nodes'][node]['range'][0]
+            end = end_frame or self.infos['nodes'][node]['range'][1]
+            self.infos['nodes'][node]['range'] = start, end
         self.save_infos()
 
     def set_timespent(self, nodes=None, seconds=0):
