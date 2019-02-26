@@ -60,27 +60,25 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
     def register_callbacks(self):
         for nodetype in DYNAMIC_NODES:
-            self._callbacks.append(
-                om.MDGMessage.addNodeRemovedCallback(
-                    self._remove_node_callback, nodetype))
-            self._callbacks.append(
-                om.MDGMessage.addNodeAddedCallback(
-                    self._created_node_callback, nodetype))
-        self._callbacks.append(
-            om.MNodeMessage.addNameChangedCallback(
-                om.MObject(), self._layout_changed_callback))
+            function = self._remove_node_callback
+            cb = om.MDGMessage.addNodeRemovedCallback(function, nodetype)
+            self._callbacks.append(cb)
+
+            function = self._created_node_callback
+            cb = om.MDGMessage.addNodeAddedCallback(function, nodetype)
+            self._callbacks.append(cb)
+
+        function = self.table_model.layoutChanged.emit
+        cb = om.MNodeMessage.addNameChangedCallback(om.MObject(), function)
+        self._callbacks.append(cb)
+
         for event in FULL_UPDATE_REQUIRED_EVENTS:
             om.MSceneMessage.addCallback(event, self._full_update_callback)
-        self._jobs.append(
-            cmds.scriptJob(
-                event=[
-                    'playbackRangeChanged',
-                    self._layout_changed_callback]))
-        self._jobs.append(
-            cmds.scriptJob(
-                event=[
-                    'timeChanged',
-                    self._layout_changed_callback]))
+
+        function = self.table_model.layoutChanged.emit
+        job = cmds.scriptJob(event=['playbackRangeChanged', function])
+        self._jobs.append(job)
+        self._jobs.append(cmds.scriptJob(event=['timeChanged', function]))
 
     def unregister_callbacks(self):
         for callback in self._callbacks:
@@ -107,9 +105,6 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
     def _full_update_callback(self, *unused_callbacks_args):
         self.table_model.set_nodes(list_dynamic_nodes())
-
-    def _layout_changed_callback(self, *unused_callbacks_args):
-        self.table_model.layoutChanged.emit()
 
     def show(self):
         super(DynamicNodesTableWidget, self).show()
@@ -194,6 +189,7 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self._model = None
         self.color_delegate = None
         self.switcher_delegate = None
+        self.cacherange_delegate = None
 
     def configure(self):
         self.setMinimumWidth(500)
@@ -222,6 +218,7 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         if index.column() == 1:
             self.switcher_delegate.createEditor(None, None, index)
         self._model.layoutChanged.emit()
+        return super(DynamicNodeTableView, self).mouseReleaseEvent(event)
 
     def set_model(self, model):
         self.setModel(model)
@@ -249,10 +246,9 @@ class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
 
     def paint(self, painter, option, index):
         dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
-        rect = QtCore.QRect(
-            option.rect.center().x() - 7,
-            option.rect.center().y() - 7,
-            14, 14)
+        left = option.rect.center().x() - 7
+        top = option.rect.center().y() - 7
+        rect = QtCore.QRect(left, top, 14, 14)
         pen = QtGui.QPen(QtGui.QColor("black"))
         pen.setWidth(2)
         color = QtGui.QColor(*[c * 255 for c in dynamic_node.color])
@@ -300,10 +296,9 @@ class SwitcherDelegate(QtWidgets.QStyledItemDelegate):
         pixmap = icon.pixmap(24, 24).scaled(
             QtCore.QSize(*self.ICONSIZE),
             transformMode=QtCore.Qt.SmoothTransformation)
-        rect = QtCore.QRect(
-            option.rect.center().x() - 8,
-            option.rect.center().y() - 8,
-            16, 16)
+        left = option.rect.center().x() - 8
+        top = option.rect.center().y() - 8
+        rect = QtCore.QRect(left, top, 16, 16)
         painter.drawPixmap(rect, pixmap)
 
     def sizeHint(self, *args):
@@ -342,7 +337,9 @@ class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
             return
         left = from_percent(invalue, bg_rect.left(), bg_rect.right())
         right = from_percent(outvalue, bg_rect.left(), bg_rect.right())
-        cached_rect = QtCore.QRect(left, bg_rect.top(), right, bg_rect.height())
+        top = bg_rect.top()
+        height = bg_rect.height()
+        cached_rect = QtCore.QRect(left, top, right, height)
         cached_rect.setRight(right)
         brush = QtGui.QBrush(QtGui.QColor(RANGE_CACHED_COLOR))
         painter.setBrush(brush)
@@ -355,7 +352,6 @@ class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
         pen.setWidth(2)
         painter.setPen(pen)
         painter.drawLine(left, bg_rect.top(), left, bg_rect.bottom())
-
 
     def sizeHint(self, _, __):
         return QtCore.QSize(60, 22)

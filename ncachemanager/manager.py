@@ -10,8 +10,8 @@ from ncachemanager.versioning import (
     create_cacheversion, ensure_workspace_exists, find_file_match,
     clear_cacheversion_content)
 from ncachemanager.cache import (
-    import_ncache, record_ncache, DYNAMIC_NODES, import_ncache,
-    clear_cachenodes, list_connected_cachefiles, list_connected_cacheblends,
+    import_ncache, record_ncache, DYNAMIC_NODES, clear_cachenodes,
+    list_connected_cachefiles, list_connected_cacheblends,
     list_node_attributes_values)
 from ncachemanager.attributes import (
     save_pervertex_maps, extract_xml_attributes,

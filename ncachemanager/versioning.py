@@ -123,7 +123,7 @@ def create_cacheversion(
 
     directory = get_new_cacheversion_directory(workspace)
     os.makedirs(directory)
-
+    name = name or directory[-3:]
     nodes_infos = {}
     for node in nodes:
         namespace, nodename = split_namespace_nodename(node)

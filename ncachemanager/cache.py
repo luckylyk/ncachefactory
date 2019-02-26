@@ -279,7 +279,7 @@ def list_node_attributes_values(node):
             attributes[node + '.' + attribute] = value
         # RuntimeError is not a numerical attribute
         # Value Error is a compount or subattribute
-        except RuntimeError: 
+        except RuntimeError:
             pass
         except ValueError:
             pass
@@ -292,4 +292,3 @@ if __name__ == "__main__":
     record_ncache(
         nodes=None, start_frame=0, end_frame=100,
         output="C:/test/chrfx", behavior=2)
-

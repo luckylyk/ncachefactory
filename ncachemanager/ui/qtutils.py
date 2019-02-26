@@ -17,5 +17,6 @@ def get_maya_windows():
 
 ICONPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
 
+
 def get_icon(filename):
     return QtGui.QIcon(os.path.join(ICONPATH, filename))
