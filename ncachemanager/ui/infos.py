@@ -2,9 +2,9 @@
 from PySide2 import QtWidgets, QtCore
 
 
-class CacheInfosDialog(QtWidgets.QWidget):
-    def __init__(self, parent):
-        super(CacheInfosDialog, self).__init__(parent, QtCore.Qt.Window)
+class CacheInfosWidget(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super(CacheInfosWidget, self).__init__(parent)
         self.name = QtWidgets.QLineEdit()
         self.comment = QtWidgets.QTextEdit()
         self.nodelist = QtWidgets.QListWidgets()

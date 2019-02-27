@@ -1,7 +1,7 @@
 from PySide2 import QtWidgets, QtGui, QtCore
 from maya import cmds
 import maya.OpenMaya as om
-import maya.api.OpenMaya as om2 # match api2
+import maya.api.OpenMaya as om2  # match api2
 
 from ncachemanager.ui.qtutils import get_icon
 from ncachemanager.manager import filter_connected_cacheversions
@@ -21,81 +21,6 @@ FULL_UPDATE_REQUIRED_EVENTS = (
     om.MSceneMessage.kAfterCreateReference)
 UPDATE_LAYOUT_EVENTS = "playbackRangeChanged", "timeChanged"
 OM_DYNAMIC_NODES = om.MFn.kNCloth, om.MFn.kHairSystem
-
-
-class DynamicNode(object):
-    ENABLE_ATTRIBUTE = None
-    TYPE = None
-    ICONS = {'on': None, 'off': None}
-
-    def __init__(self, nodename):
-        if cmds.nodeType(nodename) != self.TYPE:
-            raise ValueError('wrong node type, {} excepted'.format(self.TYPE))
-        self._dagnode = om2.MFnDagNode(
-            om2.MSelectionList().add(nodename).getDependNode(0))
-        self._color = None
-
-    @property
-    def name(self):
-        return self._dagnode.name()
-
-    @property
-    def parent(self):
-        return cmds.listRelatives(self.name, parent=True)
-
-    @property
-    def is_cached(self):
-        return bool(cmds.listConnections(self.name + '.playFromCache'))
-
-    @property
-    def cache_nodetype(self):
-        if not self.is_cached:
-            return None
-        connections = cmds.listConnections(self.name + '.playFromCache')
-        if not connections:
-            return None
-        return cmds.nodeType(connections[0])
-
-    @property
-    def enable(self):
-        return cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE)
-
-    def switch(self):
-        value = not self.enable
-        cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
-
-
-class HairNode(DynamicNode):
-    ENABLE_ATTRIBUTE = 'simulationMethod'
-    TYPE = "hairSystem"
-    ICONS = {'on': 'hairsystem.png', 'off': 'hairsystem_off.png'}
-
-    @property
-    def color(self):
-        return cmds.getAttr(self.name + '.displayColor')[0]
-
-    def set_color(self, red, green, blue):
-        cmds.setAttr(self.name + '.displayColor', red, green, blue)
-
-
-class ClothNode(DynamicNode):
-    ENABLE_ATTRIBUTE = 'isDynamic'
-    TYPE = "nCloth"
-    ICONS = {'on': 'ncloth.png', 'off': 'ncloth_off.png'}
-
-    def __init__(self, nodename):
-        super(ClothNode, self).__init__(nodename)
-        self._color = None
-
-    @property
-    def color(self):
-        if self._color is None:
-            self._color = get_clothnode_color(self.name)
-        return self._color
-
-    def set_color(self, red, green, blue):
-        set_clothnode_color(self.name, red, green, blue)
-        self._color = red, green, blue
 
 
 class DynamicNodesTableWidget(QtWidgets.QWidget):
@@ -183,7 +108,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model.set_nodes(list_dynamic_nodes())
 
     def _update_layout(self, *unused_callbacks_args):
-        self.table.model.layoutChanged.emit()
+        self.table_model.layoutChanged.emit()
 
     def show(self):
         super(DynamicNodesTableWidget, self).show()
@@ -192,6 +117,84 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
     def closeEvent(self, event):
         self.unregister_callbacks()
         return super(DynamicNodesTableWidget, self).closeEvent(event)
+
+
+class DynamicNode(object):
+    """this object is a model for the DynamicNodeTableView and his delegate.
+    It's linked to a maya node and contain method and properties needed for
+    the table view"""
+    ENABLE_ATTRIBUTE = None
+    TYPE = None
+    ICONS = {'on': None, 'off': None}
+
+    def __init__(self, nodename):
+        if cmds.nodeType(nodename) != self.TYPE:
+            raise ValueError('wrong node type, {} excepted'.format(self.TYPE))
+        self._dagnode = om2.MFnDagNode(
+            om2.MSelectionList().add(nodename).getDependNode(0))
+        self._color = None
+
+    @property
+    def name(self):
+        return self._dagnode.name()
+
+    @property
+    def parent(self):
+        return cmds.listRelatives(self.name, parent=True)
+
+    @property
+    def is_cached(self):
+        return bool(cmds.listConnections(self.name + '.playFromCache'))
+
+    @property
+    def cache_nodetype(self):
+        if not self.is_cached:
+            return None
+        connections = cmds.listConnections(self.name + '.playFromCache')
+        if not connections:
+            return None
+        return cmds.nodeType(connections[0])
+
+    @property
+    def enable(self):
+        return cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE)
+
+    def switch(self):
+        value = not self.enable
+        cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
+
+
+class HairNode(DynamicNode):
+    ENABLE_ATTRIBUTE = 'simulationMethod'
+    TYPE = "hairSystem"
+    ICONS = {'on': 'hairsystem.png', 'off': 'hairsystem_off.png'}
+
+    @property
+    def color(self):
+        return cmds.getAttr(self.name + '.displayColor')[0]
+
+    def set_color(self, red, green, blue):
+        cmds.setAttr(self.name + '.displayColor', red, green, blue)
+
+
+class ClothNode(DynamicNode):
+    ENABLE_ATTRIBUTE = 'isDynamic'
+    TYPE = "nCloth"
+    ICONS = {'on': 'ncloth.png', 'off': 'ncloth_off.png'}
+
+    def __init__(self, nodename):
+        super(ClothNode, self).__init__(nodename)
+        self._color = None
+
+    @property
+    def color(self):
+        if self._color is None:
+            self._color = get_clothnode_color(self.name)
+        return self._color
+
+    def set_color(self, red, green, blue):
+        set_clothnode_color(self.name, red, green, blue)
+        self._color = red, green, blue
 
 
 class DynamicNodeTableModel(QtCore.QAbstractTableModel):
@@ -318,6 +321,8 @@ class DynamicNodeTableView(QtWidgets.QTableView):
 
 
 class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
+    """ this delegate is a color square. It read the color from a DynamicNode
+    and is able to change it."""
 
     def __init__(self, table):
         super(ColorSquareDelegate, self).__init__(table)
@@ -352,6 +357,9 @@ class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class SwitcherDelegate(QtWidgets.QStyledItemDelegate):
+    """ this delegate is an icon 'on' or 'off' defined by the dynamic node
+    given by the table model. It switch the dynamic node state en clic
+    """
     ICONSIZE = 24, 24
 
     def __init__(self, table):
@@ -385,6 +393,11 @@ class SwitcherDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
+    """ this is an informative delegate (not interaction possible).
+    It draws a bar who represents the current maya timeline. The green part
+    represent the cached frames. The red line is the current time.
+    """
+
     def __init__(self, table):
         super(CachedRangeDelegate, self).__init__(table)
         self._model = table.model()
@@ -412,17 +425,16 @@ class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
         painter.setBrush(brush)
         painter.drawRect(bg_rect)
 
-        if outvalue == invalue:
-            return
-        left = from_percent(invalue, bg_rect.left(), bg_rect.right())
-        right = from_percent(outvalue, bg_rect.left(), bg_rect.right())
-        top = bg_rect.top()
-        height = bg_rect.height()
-        cached_rect = QtCore.QRect(left, top, right, height)
-        cached_rect.setRight(right)
-        brush = QtGui.QBrush(QtGui.QColor(RANGE_CACHED_COLOR))
-        painter.setBrush(brush)
-        painter.drawRect(cached_rect)
+        if outvalue != invalue:
+            left = from_percent(invalue, bg_rect.left(), bg_rect.right())
+            right = from_percent(outvalue, bg_rect.left(), bg_rect.right())
+            top = bg_rect.top()
+            height = bg_rect.height()
+            cached_rect = QtCore.QRect(left, top, right, height)
+            cached_rect.setRight(right)
+            brush = QtGui.QBrush(QtGui.QColor(RANGE_CACHED_COLOR))
+            painter.setBrush(brush)
+            painter.drawRect(cached_rect)
 
         time = cmds.currentTime(query=True)
         left = percent(time, scenestart, sceneend)
