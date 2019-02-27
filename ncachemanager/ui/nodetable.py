@@ -25,7 +25,7 @@ OM_DYNAMIC_NODES = om.MFn.kNCloth, om.MFn.kHairSystem
 
 class DynamicNodesTableWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        super(DynamicNodesTableWidget, self).__init__(parent, QtCore.Qt.Window)
+        super(DynamicNodesTableWidget, self).__init__(parent)
         self._callbacks = []
         self._jobs = []
         self.script_jobs = []
@@ -274,7 +274,6 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self.cacherange_delegate = None
 
     def configure(self):
-        self.setMinimumWidth(500)
         self.setShowGrid(False)
         self.setWordWrap(False)
         self.setSortingEnabled(True)
