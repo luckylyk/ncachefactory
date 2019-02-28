@@ -4,10 +4,13 @@ from maya import cmds
 from PySide2 import QtWidgets, QtCore
 from ncachemanager.manager import compare_node_and_version
 
+
 WINDOW_TITLE = "Comparator"
 
 
 class ComparisonWidget(QtWidgets.QWidget):
+    closed = QtCore.Signal(object)
+
     def __init__(self, node, cacheversion, parent=None):
         super(ComparisonWidget, self).__init__(parent, QtCore.Qt.Tool)
         self.setWindowTitle(WINDOW_TITLE)
@@ -93,6 +96,7 @@ class ComparisonWidget(QtWidgets.QWidget):
 
     def closeEvent(self, event):
         self.unregister_callbacks()
+        self.closed.emit(self)
         return super(ComparisonWidget, self).closeEvent(event)
 
 

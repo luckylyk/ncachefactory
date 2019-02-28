@@ -3,10 +3,12 @@ from maya import cmds
 import maya.OpenMaya as om
 import maya.api.OpenMaya as om2  # match api2
 
-from ncachemanager.ui.qtutils import get_icon
+from ncachemanager.qtutils import get_icon
+from ncachemanager.comparator import ComparisonWidget
+from ncachemanager.nodes import list_dynamic_nodes, create_dynamic_node
 from ncachemanager.manager import filter_connected_cacheversions
 from ncachemanager.versioning import list_available_cacheversions
-from ncachemanager.cache import DYNAMIC_NODES
+from ncachemanager.cache import DYNAMIC_NODES, clear_cachenodes
 
 
 RANGE_CACHED_COLOR = "#44aa22"
@@ -26,6 +28,7 @@ OM_DYNAMIC_NODES = om.MFn.kNCloth, om.MFn.kHairSystem
 class DynamicNodesTableWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(DynamicNodesTableWidget, self).__init__(parent)
+        self.comparators = []
         self._callbacks = []
         self._jobs = []
         self.script_jobs = []
@@ -40,23 +43,22 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_view.set_switcher_delegate(self.table_switcher)
         self.table_view.set_cacherange_delegate(self.table_cached_range)
         self.table_model.set_nodes(list_dynamic_nodes())
-        self.table_toolbar = TableToolBar()
-
+        self.table_toolbar = TableToolBar(self.table_view)
+        self.table_toolbar.updateRequested.connect(self.update_layout)
+        self.table_toolbar.comparatorRequested.connect(self.open_comparators)
+        self.table_toolbar_layout = QtWidgets.QHBoxLayout()
+        self.table_toolbar_layout.setContentsMargins(0, 0, 0, 0)
+        self.table_toolbar_layout.addStretch(1)
+        self.table_toolbar_layout.addWidget(self.table_toolbar)
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
         self.layout.addWidget(self.table_view)
-        self.layout.addWidget(self.table_toolbar)
+        self.layout.addLayout(self.table_toolbar_layout)
 
     @property
     def selected_nodes(self):
-        if self.table_model is None:
-            return
-        indexes = self.table_view.selectionModel().selectedIndexes()
-        if not indexes:
-            return None
-        indexes = [i for i in indexes if i.column() == 0]
-        return [self._model.data(i, QtCore.Qt.UserRole) for i in indexes]
+        return self.table_view.selected_nodes
 
     def set_workspace(self, workspace):
         cacheversions = list_available_cacheversions(workspace)
@@ -77,7 +79,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
             cb = om.MSceneMessage.addCallback(event, function)
             self._callbacks.append(cb)
 
-        function = self._update_layout
+        function = self.update_layout
         cb = om.MNodeMessage.addNameChangedCallback(om.MObject(), function)
         self._callbacks.append(cb)
         for event in UPDATE_LAYOUT_EVENTS:
@@ -110,7 +112,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
     def _full_update_callback(self, *unused_callbacks_args):
         self.table_model.set_nodes(list_dynamic_nodes())
 
-    def _update_layout(self, *unused_callbacks_args):
+    def update_layout(self, *unused_callbacks_args):
         self.table_model.layoutChanged.emit()
 
     def show(self):
@@ -118,86 +120,95 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.register_callbacks()
 
     def closeEvent(self, event):
+        for comparator in self.comparators:
+            comparator.close()
         self.unregister_callbacks()
         return super(DynamicNodesTableWidget, self).closeEvent(event)
 
+    def open_comparators(self):
+        for comparator in self.comparators:
+            comparator.close()
+        nodes = [node.name for node in self.table_view.selected_nodes]
+        for node in nodes:
+            cacheversions = self.table_model.cacheversions
+            cacheversions = filter_connected_cacheversions(node, cacheversions)
+            if not cacheversions:
+                continue
+            comparator = ComparisonWidget(
+                node, cacheversion=cacheversions[0], parent=self)
+            comparator.closed.connect(self.remove_comparator)
+            self.comparators.append(comparator)
+            comparator.show()
 
-class DynamicNode(object):
-    """this object is a model for the DynamicNodeTableView and his delegate.
-    It's linked to a maya node and contain method and properties needed for
-    the table view"""
-    ENABLE_ATTRIBUTE = None
-    TYPE = None
-    ICONS = {'on': None, 'off': None}
+    def remove_comparator(self, comparator):
+        self.comparators.remove(comparator)
 
-    def __init__(self, nodename):
-        if cmds.nodeType(nodename) != self.TYPE:
-            raise ValueError('wrong node type, {} excepted'.format(self.TYPE))
-        self._dagnode = om2.MFnDagNode(
-            om2.MSelectionList().add(nodename).getDependNode(0))
-        self._color = None
+
+class DynamicNodeTableView(QtWidgets.QTableView):
+
+    def __init__(self, parent=None):
+        super(DynamicNodeTableView, self).__init__(parent)
+        self.configure()
+        self._selection_model = None
+        self._model = None
+        self.color_delegate = None
+        self.switcher_delegate = None
+        self.cacherange_delegate = None
+
+    def configure(self):
+        self.setShowGrid(False)
+        self.setWordWrap(False)
+        self.setSortingEnabled(True)
+        self.setAlternatingRowColors(True)
+        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.setSortingEnabled(True)
+        mode = QtWidgets.QHeaderView.ResizeToContents
+        self.verticalHeader().hide()
+        self.verticalHeader().setSectionResizeMode(mode)
+        self.horizontalHeader().setSectionResizeMode(mode)
+        self.horizontalHeader().setStretchLastSection(True)
+        self.setEditTriggers(QtWidgets.QAbstractItemView.AllEditTriggers)
+
+    def mouseReleaseEvent(self, event):
+        # this is a workaround because for a reason that I don't understand
+        # the function createEditor doesn't triggered properly ...
+        # so i force it here (but it's an horrible Fix)
+        index = self.indexAt(event.pos())
+        if index.column() == 0:
+            self.color_delegate.createEditor(None, None, index)
+        if index.column() == 1:
+            self.switcher_delegate.createEditor(None, None, index)
+        self._model.layoutChanged.emit()
+        return super(DynamicNodeTableView, self).mouseReleaseEvent(event)
 
     @property
-    def name(self):
-        return self._dagnode.name()
-
-    @property
-    def parent(self):
-        return cmds.listRelatives(self.name, parent=True)
-
-    @property
-    def is_cached(self):
-        return bool(cmds.listConnections(self.name + '.playFromCache'))
-
-    @property
-    def cache_nodetype(self):
-        if not self.is_cached:
+    def selected_nodes(self):
+        if self._model is None:
+            return
+        indexes = self._selection_model.selectedIndexes()
+        if not indexes:
             return None
-        connections = cmds.listConnections(self.name + '.playFromCache')
-        if not connections:
-            return None
-        return cmds.nodeType(connections[0])
+        indexes = [i for i in indexes if i.column() == 0]
+        return [self._model.data(i, QtCore.Qt.UserRole) for i in indexes]
 
-    @property
-    def enable(self):
-        return cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE)
+    def set_model(self, model):
+        self.setModel(model)
+        self._model = model
+        self._selection_model = self.selectionModel()
 
-    def switch(self):
-        value = not self.enable
-        cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
+    def set_color_delegate(self, item_delegate):
+        self.color_delegate = item_delegate
+        self.setItemDelegateForColumn(0, item_delegate)
 
+    def set_switcher_delegate(self, item_delegate):
+        self.switcher_delegate = item_delegate
+        self.setItemDelegateForColumn(1, item_delegate)
 
-class HairNode(DynamicNode):
-    ENABLE_ATTRIBUTE = 'simulationMethod'
-    TYPE = "hairSystem"
-    ICONS = {'on': 'hairsystem.png', 'off': 'hairsystem_off.png'}
-
-    @property
-    def color(self):
-        return cmds.getAttr(self.name + '.displayColor')[0]
-
-    def set_color(self, red, green, blue):
-        cmds.setAttr(self.name + '.displayColor', red, green, blue)
-
-
-class ClothNode(DynamicNode):
-    ENABLE_ATTRIBUTE = 'isDynamic'
-    TYPE = "nCloth"
-    ICONS = {'on': 'ncloth.png', 'off': 'ncloth_off.png'}
-
-    def __init__(self, nodename):
-        super(ClothNode, self).__init__(nodename)
-        self._color = None
-
-    @property
-    def color(self):
-        if self._color is None:
-            self._color = get_clothnode_color(self.name)
-        return self._color
-
-    def set_color(self, red, green, blue):
-        set_clothnode_color(self.name, red, green, blue)
-        self._color = red, green, blue
+    def set_cacherange_delegate(self, item_delegate):
+        self.cacherange_delegate = item_delegate
+        self.setItemDelegateForColumn(4, item_delegate)
 
 
 class DynamicNodeTableModel(QtCore.QAbstractTableModel):
@@ -263,63 +274,6 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
                 return ", ".join([cv.name for cv in cvs])
         elif role == QtCore.Qt.UserRole:
             return node
-
-
-class DynamicNodeTableView(QtWidgets.QTableView):
-
-    def __init__(self, parent=None):
-        super(DynamicNodeTableView, self).__init__(parent)
-        self.configure()
-        self._selection_model = None
-        self._model = None
-        self.color_delegate = None
-        self.switcher_delegate = None
-        self.cacherange_delegate = None
-
-    def configure(self):
-        self.setShowGrid(False)
-        self.setWordWrap(False)
-        self.setSortingEnabled(True)
-        self.setAlternatingRowColors(True)
-        self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
-        self.setFocusPolicy(QtCore.Qt.NoFocus)
-        self.setSortingEnabled(True)
-        mode = QtWidgets.QHeaderView.ResizeToContents
-        self.verticalHeader().hide()
-        self.verticalHeader().setSectionResizeMode(mode)
-        self.horizontalHeader().setSectionResizeMode(mode)
-        self.horizontalHeader().setStretchLastSection(True)
-        self.setEditTriggers(QtWidgets.QAbstractItemView.AllEditTriggers)
-
-    def mouseReleaseEvent(self, event):
-        # this is a workaround because for a reason that I don't understand
-        # the function createEditor doesn't triggered properly ...
-        # so i force it here (but it's an horrible Fix)
-        index = self.indexAt(event.pos())
-        if index.column() == 0:
-            self.color_delegate.createEditor(None, None, index)
-        if index.column() == 1:
-            self.switcher_delegate.createEditor(None, None, index)
-        self._model.layoutChanged.emit()
-        return super(DynamicNodeTableView, self).mouseReleaseEvent(event)
-
-    def set_model(self, model):
-        self.setModel(model)
-        self._model = model
-        self._selection_model = self.selectionModel()
-
-    def set_color_delegate(self, item_delegate):
-        self.color_delegate = item_delegate
-        self.setItemDelegateForColumn(0, item_delegate)
-
-    def set_switcher_delegate(self, item_delegate):
-        self.switcher_delegate = item_delegate
-        self.setItemDelegateForColumn(1, item_delegate)
-
-    def set_cacherange_delegate(self, item_delegate):
-        self.cacherange_delegate = item_delegate
-        self.setItemDelegateForColumn(4, item_delegate)
 
 
 class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
@@ -466,81 +420,54 @@ def from_percent(value, rangein=0, rangeout=100):
     return value + rangein
 
 
-def list_dynamic_nodes():
-    return [
-        create_dynamic_node(n) for n in cmds.ls(type=('hairSystem', 'nCloth'))]
-
-
-def create_dynamic_node(nodename):
-    if cmds.nodeType(nodename) == 'hairSystem':
-        return HairNode(nodename)
-    if cmds.nodeType(nodename) == 'nCloth':
-        return ClothNode(nodename)
-    cmds.warning(nodename + ' is not a dynamic node')
-
-
-def get_clothnode_color(clothnode_name):
-    outmeshes = cmds.listConnections(
-        clothnode_name + '.outputMesh', type='mesh', shapes=True)
-    if not outmeshes:
-        return None
-
-    shading_engines = cmds.listConnections(
-        outmeshes[0] + '.instObjGroups', type='shadingEngine')
-    if not shading_engines:
-        return None
-
-    shaders = cmds.listConnections(shading_engines[0] + '.surfaceShader')
-    if not shaders:
-        return None
-
-    return cmds.getAttr(shaders[0] + '.color')[0]
-
-
-def set_clothnode_color(clothnode_name, red, green, blue):
-    outmeshes = cmds.listConnections(
-        clothnode_name + '.outputMesh', type='mesh', shapes=True)
-    if not outmeshes:
-        return None
-    old_shading_engines = cmds.listConnections(
-        outmeshes[0] + '.instObjGroups', type='shadingEngine')
-    if not old_shading_engines:
-        return None
-
-    blinn = cmds.shadingNode('blinn', asShader=True)
-    cmds.setAttr(blinn + ".color", red, green, blue, type='double3')
-
-    selection = cmds.ls(sl=True)
-    cmds.select(outmeshes)
-    cmds.hyperShade(assign=blinn)
-    # old_shading_engines should contain only one shading engine
-    for shading_engine in old_shading_engines:
-        connected = cmds.listConnections(shading_engine + ".dagSetMembers")
-        if connected:
-            return
-        blinns = cmds.listConnections(shading_engine, type='blinn')
-        cmds.delete(shading_engine)
-        cmds.delete(blinns)
-    cmds.select(selection)
-
-
 class TableToolBar(QtWidgets.QToolBar):
-    def __init__(self, parent=None):
+    updateRequested = QtCore.Signal()
+    comparatorRequested = QtCore.Signal()
+
+    def __init__(self, table, parent=None):
         super(TableToolBar, self).__init__(parent)
+        self.table = table
         self.setIconSize(QtCore.QSize(15, 15))
         self.selection = QtWidgets.QAction(get_icon('select.png'), '', self)
         self.selection.setToolTip('select maya dynamic shapes')
-        self.addAction(self.selection)
+        self.selection.triggered.connect(self.select_nodes)
         self.interactive = QtWidgets.QAction(get_icon('link.png'), '', self)
         self.interactive.setCheckable(True)
         self.interactive.setToolTip('interactive selection')
-        self.addAction(self.interactive)
         self.compare = QtWidgets.QAction(get_icon('compare.png'), '', self)
         self.compare.setToolTip('compare current attributes with cache ones')
-        self.addAction(self.compare)
+        self.compare.triggered.connect(self.comparatorRequested.emit)
         self.switch = QtWidgets.QAction(get_icon('on_off.png'), '', self)
         self.switch.setToolTip('on/off selected dynamic shapes')
-        self.addAction(self.switch)
+        self.switch.triggered.connect(self.switch_nodes)
         self.delete = QtWidgets.QAction(get_icon('trash.png'), '', self)
         self.delete.setToolTip('remove cache connected')
+        self.delete.triggered.connect(self.clear_connected_caches)
+    
+        self.addAction(self.selection)
+        self.addAction(self.interactive)
+        self.addSeparator()
+        self.addAction(self.compare)
+        self.addSeparator()
+        self.addAction(self.switch)
         self.addAction(self.delete)
+
+    def clear_connected_caches(self):
+        nodes = self.table.selected_nodes or self.table.model().nodes
+        nodes = [node.name for node in nodes]
+        clear_cachenodes(nodes=nodes)
+        self.updateRequested.emit()
+
+    def switch_nodes(self):
+        nodes = self.table.selected_nodes or self.table.model().nodes
+        state = not nodes[0].enable
+        for node in nodes:
+            if node.enable != state:
+                node.switch()
+        self.updateRequested.emit()
+
+    def select_nodes(self):
+        nodes = [node.name for node in self.table.selected_nodes]
+        if not nodes:
+            return
+        cmds.select(nodes)

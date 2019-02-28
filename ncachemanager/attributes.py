@@ -3,7 +3,7 @@ import os
 import json
 import xml.etree.ElementTree
 from maya import cmds
-from .cache import DYNAMIC_NODES
+from ncachemanager.cache import DYNAMIC_NODES
 
 
 PERVERTEX_FILE = 'pervertexmaps.json'
@@ -29,6 +29,28 @@ PERVERTEX_ATTRIBUTE = [
     u'dragPerVertex',
     u'tangentialDragPerVertex',
     u'wrinklePerVertex']
+SUPPORTED_TYPES = (
+    'Int32Array',
+    'None',
+    'TdataCompound',
+    'bool',
+    'byte',
+    'double',
+    'double3',
+    'doubleArray',
+    'doubleLinear',
+    'enum',
+    'float',
+    'float3',
+    'floatAngle',
+    'long',
+    'long3',
+    'matrix',
+    'message',
+    'short',
+    'string',
+    'time',
+    'vectorArray')
 
 
 def save_pervertex_maps(nodes=None, directory=''):
@@ -75,4 +97,23 @@ def extract_xml_attributes(xml_file):
 def clean_namespaces_in_attributes_dict(attributes):
     for key in attributes:
         attributes[key.split(":")[-1]] = attributes.pop(key)
+    return attributes
+
+
+def list_node_attributes_values(node):
+    attributes = {}
+    for attribute in cmds.listAttr(node):
+        try:
+            plug = node + '.' + attribute
+            attribute_type = cmds.getAttr(plug, type=True)
+            if attribute_type is None or attribute_type not in SUPPORTED_TYPES:
+                continue
+            value = cmds.getAttr(plug)
+            attributes[plug] = value
+        # RuntimeError is not a numerical attribute
+        # Value Error is a compount or subattribute
+        except RuntimeError:
+            pass
+        except ValueError:
+            pass
     return attributes

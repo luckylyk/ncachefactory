@@ -11,10 +11,9 @@ from ncachemanager.versioning import (
     clear_cacheversion_content)
 from ncachemanager.cache import (
     import_ncache, record_ncache, DYNAMIC_NODES, clear_cachenodes,
-    list_connected_cachefiles, list_connected_cacheblends,
-    list_node_attributes_values)
+    list_connected_cachefiles, list_connected_cacheblends)
 from ncachemanager.attributes import (
-    save_pervertex_maps, extract_xml_attributes,
+    save_pervertex_maps, extract_xml_attributes, list_node_attributes_values,
     clean_namespaces_in_attributes_dict)
 
 

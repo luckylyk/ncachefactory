@@ -146,10 +146,10 @@ def list_connected_cacheblends(nodes=None):
 
 def get_connected_cachenode(node):
     '''
-    :node: dynamic node  ('nCloth', 'hairSystem') as string
+    :node: dynamic node DYNAMIC_NODES as string
     :return: the connected cacheFile or cacheBlend as string or None
     '''
-    assert cmds.nodeType(node) in ('nCloth', 'hairSystem')
+    assert cmds.nodeType(node) in DYNAMIC_NODES
     cachenodes = (
         (list_connected_cachefiles(node) or []) +
         (list_connected_cacheblends(node) or []))
@@ -269,21 +269,6 @@ def clear_cachenodes(nodes=None, cachenames=None, workspace=None):
             continue
         if cmds.getAttr(cachenode + '.cacheName') in cachenames:
             cmds.delete(cachenode)
-
-
-def list_node_attributes_values(node):
-    attributes = {}
-    for attribute in cmds.listAttr(node):
-        try:
-            value = cmds.getAttr(node + '.' + attribute)
-            attributes[node + '.' + attribute] = value
-        # RuntimeError is not a numerical attribute
-        # Value Error is a compount or subattribute
-        except RuntimeError:
-            pass
-        except ValueError:
-            pass
-    return attributes
 
 
 if __name__ == "__main__":

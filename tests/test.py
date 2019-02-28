@@ -23,12 +23,12 @@ def create_ncloth_test_scene():
     mel.eval('createNCloth 0')
 
     cmds.select([sphere_1 + ".vtx[381]", sphere_2 + ".vtx[381]"])
-    dc = mel.eval('createNConstraint("transform", "")')
+    mel.eval('createNConstraint("transform", "")')
 
     cmds.select([sphere_1 + ".vtx[53:70]", sphere_2 + ".vtx[0]"])
-    dc = mel.eval('createNConstraint("pointToPoint", "")')
+    mel.eval('createNConstraint("pointToPoint", "")')
     cmds.select([sphere_1, sphere_2 + ".vtx[35:50]"])
-    dc = mel.eval('createNConstraint("pointToSurface", "")')
+    mel.eval('createNConstraint("pointToSurface", "")')
 
     sphere_1 = cmds.polySphere()[0]
     cmds.setAttr(sphere_1 + '.t', 4, 0, 1)
@@ -40,10 +40,10 @@ def create_ncloth_test_scene():
     mel.eval('createNCloth 0')
 
     cmds.select([sphere_1])
-    dc = mel.eval('createNConstraint("transform", "")')
+    mel.eval('createNConstraint("transform", "")')
 
     cmds.select([sphere_1, sphere_2 + ".vtx[381]"])
-    dc = mel.eval('createNConstraint("pointToSurface", "")')
+    mel.eval('createNConstraint("pointToSurface", "")')
 
 
 workspace = home + "/ncachemanager_tests"
