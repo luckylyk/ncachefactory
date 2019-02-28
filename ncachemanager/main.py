@@ -28,20 +28,24 @@ class NCacheManager(QtWidgets.QWidget):
         self.comparison = QtWidgets.QWidget()
         self.comparison_expander = Expander("Comparisons", self.comparison)
         self.versions = QtWidgets.QWidget()
-        self.versions_expander = Expander("Comparisons", self.versions)
+        text = "Available Versions"
+        self.versions_expander = Expander(text, self.versions)
 
         self.workspace.workspaceSet.connect(self.set_workspace)
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setSpacing(0)
         self.layout.addWidget(self.workspace)
+        self.layout.setSpacing(4)
         self.layout.addWidget(self.nodetable)
         self.layout.addWidget(self.senders)
-        self.layout.setSpacing(8)
+        self.layout.addSpacing(8)
         self.layout.addWidget(self.cacheoptions_expander)
         self.layout.addWidget(self.cacheoptions)
+        self.layout.addSpacing(2)
         self.layout.addWidget(self.comparison_expander)
         self.layout.addWidget(self.comparison)
+        self.layout.addSpacing(2)
         self.layout.addWidget(self.versions_expander)
         self.layout.addWidget(self.versions)
 
@@ -66,10 +70,11 @@ class Expander(QtWidgets.QPushButton):
     def __init__(self, text, child, parent=None):
         super(Expander, self).__init__(parent)
         self.setStyleSheet('text-align: left; font: bold')
+        self.setFixedHeight(20)
         self.icons = get_icon('arrow_close.png'), get_icon('arrow_open.png')
         self.setText(text)
         self.child = child
-        self.state = child.isVisible()
+        self.state = True
         self.setIcon(self.icons[int(self.state)])
         self.clicked.connect(self._call_clicked)
 
