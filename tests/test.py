@@ -6,7 +6,7 @@ sys.path.append(os.path.realpath('{}/DEV/ncachemanager'.format(home)))
 
 from maya import cmds, mel
 from PySide2 import QtCore
-from ncachemanager.ui import nodetable, qtutils, comparator
+from ncachemanager.ui import nodetable, qtutils, comparator, main
 from ncachemanager.versioning import list_available_cacheversions
 from ncachemanager.manager import create_and_record_cacheversion
 
@@ -52,10 +52,15 @@ if not os.path.exists(workspace):
 
 create_ncloth_test_scene()
 version = create_and_record_cacheversion(workspace, 1, 50)
+workspace = version.workspace
 
-view = nodetable.DynamicNodesTableWidget(qtutils.get_maya_windows())
+# view = nodetable.DynamicNodesTableWidget(qtutils.get_maya_windows())
+# view.set_workspace(workspace)
+# view.show()
+
+# view2 = comparator.ComparisonWidget('nClothShape2', version)
+# view2.show()
+
+view = main.NCacheManager()
 view.set_workspace(workspace)
 view.show()
-
-view2 = comparator.ComparisonWidget('nClothShape2', version)
-view2.show()

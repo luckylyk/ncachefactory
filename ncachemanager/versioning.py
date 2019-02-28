@@ -77,6 +77,10 @@ class CacheVersion(object):
     def name(self):
         return self.infos['name']
 
+    @property
+    def workspace(self):
+        return os.path.dirname(self.directory)
+
     def __eq__(self, cacheversion):
         assert isinstance(cacheversion, CacheVersion)
         return cacheversion.directory == self.directory

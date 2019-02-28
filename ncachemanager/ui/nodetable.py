@@ -40,10 +40,13 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_view.set_switcher_delegate(self.table_switcher)
         self.table_view.set_cacherange_delegate(self.table_cached_range)
         self.table_model.set_nodes(list_dynamic_nodes())
+        self.table_toolbar = TableToolBar()
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
         self.layout.addWidget(self.table_view)
+        self.layout.addWidget(self.table_toolbar)
 
     @property
     def selected_nodes(self):
@@ -519,3 +522,25 @@ def set_clothnode_color(clothnode_name, red, green, blue):
         cmds.delete(shading_engine)
         cmds.delete(blinns)
     cmds.select(selection)
+
+
+class TableToolBar(QtWidgets.QToolBar):
+    def __init__(self, parent=None):
+        super(TableToolBar, self).__init__(parent)
+        self.setIconSize(QtCore.QSize(15, 15))
+        self.selection = QtWidgets.QAction(get_icon('select.png'), '', self)
+        self.selection.setToolTip('select maya dynamic shapes')
+        self.addAction(self.selection)
+        self.interactive = QtWidgets.QAction(get_icon('link.png'), '', self)
+        self.interactive.setCheckable(True)
+        self.interactive.setToolTip('interactive selection')
+        self.addAction(self.interactive)
+        self.compare = QtWidgets.QAction(get_icon('compare.png'), '', self)
+        self.compare.setToolTip('compare current attributes with cache ones')
+        self.addAction(self.compare)
+        self.switch = QtWidgets.QAction(get_icon('on_off.png'), '', self)
+        self.switch.setToolTip('on/off selected dynamic shapes')
+        self.addAction(self.switch)
+        self.delete = QtWidgets.QAction(get_icon('trash.png'), '', self)
+        self.delete.setToolTip('remove cache connected')
+        self.addAction(self.delete)
