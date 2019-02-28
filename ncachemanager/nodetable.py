@@ -1,10 +1,8 @@
 from PySide2 import QtWidgets, QtGui, QtCore
 from maya import cmds
 import maya.OpenMaya as om
-import maya.api.OpenMaya as om2  # match api2
 
 from ncachemanager.qtutils import get_icon
-from ncachemanager.comparator import ComparisonWidget
 from ncachemanager.nodes import list_dynamic_nodes, create_dynamic_node
 from ncachemanager.manager import filter_connected_cacheversions
 from ncachemanager.versioning import list_available_cacheversions
@@ -26,9 +24,10 @@ OM_DYNAMIC_NODES = om.MFn.kNCloth, om.MFn.kHairSystem
 
 
 class DynamicNodesTableWidget(QtWidgets.QWidget):
+    selectionIsChanged = QtCore.Signal()
+
     def __init__(self, parent=None):
         super(DynamicNodesTableWidget, self).__init__(parent)
-        self.comparators = []
         self._callbacks = []
         self._jobs = []
         self.script_jobs = []
@@ -36,6 +35,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model = DynamicNodeTableModel()
         self.table_view = DynamicNodeTableView()
         self.table_view.set_model(self.table_model)
+        self.table_view.selectionIsChanged.connect(self.selectionIsChanged.emit)
         self.table_color_square = ColorSquareDelegate(self.table_view)
         self.table_switcher = SwitcherDelegate(self.table_view)
         self.table_cached_range = CachedRangeDelegate(self.table_view)
@@ -45,7 +45,6 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model.set_nodes(list_dynamic_nodes())
         self.table_toolbar = TableToolBar(self.table_view)
         self.table_toolbar.updateRequested.connect(self.update_layout)
-        self.table_toolbar.comparatorRequested.connect(self.open_comparators)
         self.table_toolbar_layout = QtWidgets.QHBoxLayout()
         self.table_toolbar_layout.setContentsMargins(0, 0, 0, 0)
         self.table_toolbar_layout.addStretch(1)
@@ -120,31 +119,12 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.register_callbacks()
 
     def closeEvent(self, event):
-        for comparator in self.comparators:
-            comparator.close()
         self.unregister_callbacks()
         return super(DynamicNodesTableWidget, self).closeEvent(event)
 
-    def open_comparators(self):
-        for comparator in self.comparators:
-            comparator.close()
-        nodes = [node.name for node in self.table_view.selected_nodes]
-        for node in nodes:
-            cacheversions = self.table_model.cacheversions
-            cacheversions = filter_connected_cacheversions(node, cacheversions)
-            if not cacheversions:
-                continue
-            comparator = ComparisonWidget(
-                node, cacheversion=cacheversions[0], parent=self)
-            comparator.closed.connect(self.remove_comparator)
-            self.comparators.append(comparator)
-            comparator.show()
-
-    def remove_comparator(self, comparator):
-        self.comparators.remove(comparator)
-
 
 class DynamicNodeTableView(QtWidgets.QTableView):
+    selectionIsChanged = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(DynamicNodeTableView, self).__init__(parent)
@@ -197,6 +177,10 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self.setModel(model)
         self._model = model
         self._selection_model = self.selectionModel()
+        self._selection_model.selectionChanged.connect(self.selection_changed)
+
+    def selection_changed(self, *unused_signals_args):
+        self.selectionIsChanged.emit()
 
     def set_color_delegate(self, item_delegate):
         self.color_delegate = item_delegate
@@ -422,7 +406,6 @@ def from_percent(value, rangein=0, rangeout=100):
 
 class TableToolBar(QtWidgets.QToolBar):
     updateRequested = QtCore.Signal()
-    comparatorRequested = QtCore.Signal()
 
     def __init__(self, table, parent=None):
         super(TableToolBar, self).__init__(parent)
@@ -434,9 +417,6 @@ class TableToolBar(QtWidgets.QToolBar):
         self.interactive = QtWidgets.QAction(get_icon('link.png'), '', self)
         self.interactive.setCheckable(True)
         self.interactive.setToolTip('interactive selection')
-        self.compare = QtWidgets.QAction(get_icon('compare.png'), '', self)
-        self.compare.setToolTip('compare current attributes with cache ones')
-        self.compare.triggered.connect(self.comparatorRequested.emit)
         self.switch = QtWidgets.QAction(get_icon('on_off.png'), '', self)
         self.switch.setToolTip('on/off selected dynamic shapes')
         self.switch.triggered.connect(self.switch_nodes)
@@ -446,8 +426,6 @@ class TableToolBar(QtWidgets.QToolBar):
     
         self.addAction(self.selection)
         self.addAction(self.interactive)
-        self.addSeparator()
-        self.addAction(self.compare)
         self.addSeparator()
         self.addAction(self.switch)
         self.addAction(self.delete)

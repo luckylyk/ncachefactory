@@ -7,10 +7,12 @@ import maya.OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from ncachemanager.nodetable import DynamicNodesTableWidget
+from ncachemanager.comparator import ComparisonWidget
 from ncachemanager.options import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
-from ncachemanager.versioning import ensure_workspace_exists
-
+from ncachemanager.manager import filter_connected_cacheversions
+from ncachemanager.versioning import (
+    ensure_workspace_exists, list_available_cacheversions)
 
 WINDOW_TITLE = "NCache Manager"
 
@@ -20,22 +22,24 @@ class NCacheManager(QtWidgets.QWidget):
         parent = get_maya_windows()
         super(NCacheManager, self).__init__(parent, QtCore.Qt.Window)
         self.setWindowTitle(WINDOW_TITLE)
-        self.workspace = WorkspaceWidget()
+        self.workspace_widget = WorkspaceWidget()
         self.nodetable = DynamicNodesTableWidget()
         self.senders = CacheSendersWidget()
         self.cacheoptions = CacheOptions()
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
-        self.comparison = QtWidgets.QWidget()
+        self.comparison = ComparisonWidget()
+        self.comparison.setFixedHeight(250)
         self.comparison_expander = Expander("Comparisons", self.comparison)
         self.versions = QtWidgets.QWidget()
         text = "Available Versions"
         self.versions_expander = Expander(text, self.versions)
 
-        self.workspace.workspaceSet.connect(self.set_workspace)
+        self.workspace_widget.workspaceSet.connect(self.set_workspace)
+        self.nodetable.selectionIsChanged.connect(self.selection_changed)
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setSpacing(0)
-        self.layout.addWidget(self.workspace)
+        self.layout.addWidget(self.workspace_widget)
         self.layout.setSpacing(4)
         self.layout.addWidget(self.nodetable)
         self.layout.addWidget(self.senders)
@@ -56,14 +60,23 @@ class NCacheManager(QtWidgets.QWidget):
     def closeEvent(self, e):
         super(NCacheManager, self).closeEvent(e)
         self.nodetable.closeEvent(e)
+        self.comparison.closeEvent(e)
 
     def set_workspace(self, workspace):
         self.nodetable.set_workspace(workspace)
-        self.workspace.set_workspace(workspace)
+        self.workspace_widget.set_workspace(workspace)
 
-
-TOGGLER_STYLESHEET = (
-    'background: rgb(0, 0, 0, 75); text-align: left; font: bold')
+    def selection_changed(self):
+        # update comparisons table
+        if not self.nodetable.selected_nodes:
+            return self.comparison.set_node_and_cacheversion(None, None)
+        node = self.nodetable.selected_nodes[0].name
+        workspace = self.workspace_widget.workspace
+        cacheversions = list_available_cacheversions(workspace)
+        cacheversions = filter_connected_cacheversions(node, cacheversions)
+        if not cacheversions:
+            return self.comparison.set_node_and_cacheversion(None, None)
+        self.comparison.set_node_and_cacheversion(node, cacheversions[0])
 
 
 class Expander(QtWidgets.QPushButton):
@@ -103,6 +116,10 @@ class WorkspaceWidget(QtWidgets.QWidget):
         self.layout.addSpacing(8)
         self.layout.addWidget(self.edit)
         self.layout.addWidget(self.browse)
+
+    @property
+    def directory(self):
+        return self.workspace
 
     def set_wrong(self):
         self.edit.setStyleSheet('background-color: #DD5555')

@@ -6,35 +6,34 @@ from ncachemanager.manager import compare_node_and_version
 
 
 WINDOW_TITLE = "Comparator"
+NODENAME_LABEL = "Node: {}"
+CACHEVERSION_LABEL = "Cache version: {}"
 
 
 class ComparisonWidget(QtWidgets.QWidget):
     closed = QtCore.Signal(object)
 
-    def __init__(self, node, cacheversion, parent=None):
-        super(ComparisonWidget, self).__init__(parent, QtCore.Qt.Tool)
+    def __init__(self, parent=None):
+        super(ComparisonWidget, self).__init__(parent)
         self.setWindowTitle(WINDOW_TITLE)
 
         self._callbacks = []
-        self.node = node
-        self.cacheversion = cacheversion
+        self.node = None
+        self.cacheversion = None
 
-        self.node_label = QtWidgets.QLabel("node: " + self.node)
-        name = self.cacheversion.name
-        self.version_label = QtWidgets.QLabel("cache version: " + name)
+        self.node_label = QtWidgets.QLabel(NODENAME_LABEL.format('None'))
+        self.version_label = QtWidgets.QLabel(CACHEVERSION_LABEL.format('None'))
 
         self.table_model = ComparisonTableModel()
-        result = compare_node_and_version(self.node, self.cacheversion)
-        self.table_model.set_comparison_result(result)
         self.table_view = ComparisonTableView()
         self.table_view.set_model(self.table_model)
 
         self.revert_selected = QtWidgets.QPushButton("Revert selected")
-        self.revert_selected.setFixedWidth(120)
+        self.revert_selected.setFixedWidth(110)
         self.revert_selected.released.connect(self._call_revert_selected)
         self.revert_all = QtWidgets.QPushButton("Revert all")
         self.revert_all.released.connect(self._call_revert_all)
-        self.revert_all.setFixedWidth(120)
+        self.revert_all.setFixedWidth(110)
         self.button_layout = QtWidgets.QHBoxLayout()
         self.button_layout.setContentsMargins(0, 0, 0, 0)
         self.button_layout.addStretch(1)
@@ -46,6 +45,23 @@ class ComparisonWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.version_label)
         self.layout.addWidget(self.table_view)
         self.layout.addLayout(self.button_layout)
+
+    def set_node_and_cacheversion(self, node, cacheversion):
+        self.unregister_callbacks()
+        self.node = node
+        self.cacheversion = cacheversion
+        if self.node and self.cacheversion:
+            result = compare_node_and_version(self.node, self.cacheversion)
+            self.node_label.setText(NODENAME_LABEL.format(self.node))
+            name = self.cacheversion.name
+            self.version_label.setText(CACHEVERSION_LABEL.format(name))
+        else:
+            result = {}
+            self.node_label.setText(NODENAME_LABEL.format('None'))
+            self.version_label.setText(CACHEVERSION_LABEL.format('None'))
+
+        self.table_model.set_comparison_result(result)
+        self.register_callbacks()
 
     def register_callbacks(self):
         node = om2.MSelectionList().add(self.node).getDependNode(0)
