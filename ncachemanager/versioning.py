@@ -62,7 +62,7 @@ class CacheVersion(object):
         nodes = nodes or self.infos['nodes']
         if nodes:
             for node in nodes:
-                self.infos['nodes'][node]['time spent'] = seconds
+                self.infos['nodes'][node]['timespent'] = seconds
         self.save_infos()
 
     def set_comment(self, comment):
@@ -138,7 +138,7 @@ def create_cacheversion(
         nodes_infos[nodename] = {
             'range': (start_frame, end_frame),
             'namespace': namespace,
-            'time spent': timespent}
+            'timespent': timespent}
 
     infos = dict(
         name=name, comment=comment, nodes=nodes_infos,

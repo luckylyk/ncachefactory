@@ -1,12 +1,18 @@
 
+
 import sys
 import os
 home = os.path.expanduser("~")
 sys.path.append(os.path.realpath('{}/DEV/ncachemanager'.format(home)))
 
+for key in sys.modules.keys():
+    if 'ncachemanager' in key:
+        print key
+        del sys.modules[key]
+
 from maya import cmds, mel
 from PySide2 import QtCore
-from ncachemanager.ui import nodetable, qtutils, comparator, main
+from ncachemanager import nodetable, qtutils, comparator, main
 from ncachemanager.versioning import list_available_cacheversions
 from ncachemanager.manager import create_and_record_cacheversion
 

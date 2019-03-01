@@ -11,6 +11,7 @@ from ncachemanager.comparator import ComparisonWidget
 from ncachemanager.options import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
 from ncachemanager.manager import filter_connected_cacheversions
+from ncachemanager.infos import CacheversionInfosWidget
 from ncachemanager.versioning import (
     ensure_workspace_exists, list_available_cacheversions)
 
@@ -30,7 +31,7 @@ class NCacheManager(QtWidgets.QWidget):
         self.comparison = ComparisonWidget()
         self.comparison.setFixedHeight(250)
         self.comparison_expander = Expander("Comparisons", self.comparison)
-        self.versions = QtWidgets.QWidget()
+        self.versions = CacheversionInfosWidget()
         text = "Available Versions"
         self.versions_expander = Expander(text, self.versions)
 
@@ -46,10 +47,10 @@ class NCacheManager(QtWidgets.QWidget):
         self.layout.addSpacing(8)
         self.layout.addWidget(self.cacheoptions_expander)
         self.layout.addWidget(self.cacheoptions)
-        self.layout.addSpacing(2)
+        self.layout.addSpacing(0)
         self.layout.addWidget(self.comparison_expander)
         self.layout.addWidget(self.comparison)
-        self.layout.addSpacing(2)
+        self.layout.addSpacing(0)
         self.layout.addWidget(self.versions_expander)
         self.layout.addWidget(self.versions)
 
@@ -75,8 +76,11 @@ class NCacheManager(QtWidgets.QWidget):
         cacheversions = list_available_cacheversions(workspace)
         cacheversions = filter_connected_cacheversions(node, cacheversions)
         if not cacheversions:
-            return self.comparison.set_node_and_cacheversion(None, None)
+            self.comparison.set_node_and_cacheversion(None, None)
+            self.comparison.versions.set_cacheversion(None)
+            return
         self.comparison.set_node_and_cacheversion(node, cacheversions[0])
+        self.versions.set_cacheversion(cacheversions[0])
 
 
 class Expander(QtWidgets.QPushButton):

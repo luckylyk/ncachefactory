@@ -35,7 +35,8 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model = DynamicNodeTableModel()
         self.table_view = DynamicNodeTableView()
         self.table_view.set_model(self.table_model)
-        self.table_view.selectionIsChanged.connect(self.selectionIsChanged.emit)
+        self.table_view.selectionIsChanged.connect(
+            self.selectionIsChanged.emit)
         self.table_color_square = ColorSquareDelegate(self.table_view)
         self.table_switcher = SwitcherDelegate(self.table_view)
         self.table_cached_range = CachedRangeDelegate(self.table_view)
@@ -143,6 +144,9 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.setFocusPolicy(QtCore.Qt.NoFocus)
+        scrollmode = QtWidgets.QAbstractItemView.ScrollPerPixel
+        self.setVerticalScrollMode(scrollmode)
+        self.setHorizontalScrollMode(scrollmode)
         self.setSortingEnabled(True)
         mode = QtWidgets.QHeaderView.ResizeToContents
         self.verticalHeader().hide()
@@ -258,6 +262,9 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
                 return ", ".join([cv.name for cv in cvs])
         elif role == QtCore.Qt.UserRole:
             return node
+
+        if role == QtCore.Qt.TextAlignmentRole:
+            return QtCore.Qt.AlignCenter
 
 
 class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
@@ -423,7 +430,7 @@ class TableToolBar(QtWidgets.QToolBar):
         self.delete = QtWidgets.QAction(get_icon('trash.png'), '', self)
         self.delete.setToolTip('remove cache connected')
         self.delete.triggered.connect(self.clear_connected_caches)
-    
+
         self.addAction(self.selection)
         self.addAction(self.interactive)
         self.addSeparator()

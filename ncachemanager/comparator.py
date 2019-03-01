@@ -22,7 +22,8 @@ class ComparisonWidget(QtWidgets.QWidget):
         self.cacheversion = None
 
         self.node_label = QtWidgets.QLabel(NODENAME_LABEL.format('None'))
-        self.version_label = QtWidgets.QLabel(CACHEVERSION_LABEL.format('None'))
+        text = CACHEVERSION_LABEL.format('None')
+        self.version_label = QtWidgets.QLabel(text)
 
         self.table_model = ComparisonTableModel()
         self.table_view = ComparisonTableView()
@@ -61,6 +62,7 @@ class ComparisonWidget(QtWidgets.QWidget):
             self.version_label.setText(CACHEVERSION_LABEL.format('None'))
 
         self.table_model.set_comparison_result(result)
+        self.table_view.update_header()
         self.register_callbacks()
 
     def register_callbacks(self):
@@ -131,6 +133,9 @@ class ComparisonTableView(QtWidgets.QTableView):
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         self.setFocusPolicy(QtCore.Qt.NoFocus)
+        scrollmode = QtWidgets.QAbstractItemView.ScrollPerPixel
+        self.setVerticalScrollMode(scrollmode)
+        self.setHorizontalScrollMode(scrollmode)
         mode = QtWidgets.QHeaderView.ResizeToContents
         self.verticalHeader().hide()
         self.verticalHeader().setSectionResizeMode(mode)
@@ -195,7 +200,7 @@ class ComparisonTableModel(QtCore.QAbstractTableModel):
             return str(self.nodes[row][col])
 
         if role == QtCore.Qt.TextAlignmentRole:
-            return QtCore.Qt.AlignCenter if col > 0 else QtCore.Qt.AlignLeft
+            return QtCore.Qt.AlignCenter
 
         if role == QtCore.Qt.UserRole:
             return self.nodes[row]
