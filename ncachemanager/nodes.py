@@ -1,5 +1,9 @@
 from maya import cmds
 import maya.api.OpenMaya as om2
+from ncachemanager.ncloth import (
+    get_clothnode_color, set_clothnode_color, switch_visibility,
+    find_input_mesh_dagpath, find_output_mesh_dagpath, is_mesh_visible)
+
 
 class DynamicNode(object):
     """this object is a model for the DynamicNodeTableView and his delegate.
@@ -7,7 +11,7 @@ class DynamicNode(object):
     the table view"""
     ENABLE_ATTRIBUTE = None
     TYPE = None
-    ICONS = {'on': None, 'off': None}
+    ICONS = {'on': None, 'off': None, 'visible': None, 'hidden': None}
 
     def __init__(self, nodename):
         if cmds.nodeType(nodename) != self.TYPE:
@@ -49,7 +53,11 @@ class DynamicNode(object):
 class HairNode(DynamicNode):
     ENABLE_ATTRIBUTE = 'simulationMethod'
     TYPE = "hairSystem"
-    ICONS = {'on': 'hairsystem.png', 'off': 'hairsystem_off.png'}
+    ICONS = {
+        'on': 'hairsystem.png',
+        'off': 'hairsystem_off.png',
+        'visible': 'visibility.png',
+        'hidden': 'visibility_off.png'}
 
     @property
     def color(self):
@@ -58,15 +66,28 @@ class HairNode(DynamicNode):
     def set_color(self, red, green, blue):
         cmds.setAttr(self.name + '.displayColor', red, green, blue)
 
+    @property
+    def visible(self):
+        return cmds.getAttr(self.name, '.solverDisplay')
+
+    def set_visible(self, state):
+        return cmds.setAttr(self.name, '.solverDisplay', state)
+
 
 class ClothNode(DynamicNode):
     ENABLE_ATTRIBUTE = 'isDynamic'
     TYPE = "nCloth"
-    ICONS = {'on': 'ncloth.png', 'off': 'ncloth_off.png'}
+    ICONS = {
+        'on': 'ncloth.png',
+        'off': 'ncloth_off.png',
+        'visible': 'current.png',
+        'hidden': 'input.png'}
 
     def __init__(self, nodename):
         super(ClothNode, self).__init__(nodename)
         self._color = None
+        self._in_mesh = find_input_mesh_dagpath(nodename)
+        self._out_mesh = find_output_mesh_dagpath(nodename)
 
     @property
     def color(self):
@@ -77,6 +98,15 @@ class ClothNode(DynamicNode):
     def set_color(self, red, green, blue):
         set_clothnode_color(self.name, red, green, blue)
         self._color = red, green, blue
+
+    @property
+    def visible(self):
+        return is_mesh_visible(self._out_mesh.name())
+
+    def set_visible(self, state):
+        mesh_to_show = self._out_mesh if state else self._in_mesh
+        mesh_to_hide = self._in_mesh if state else self._out_mesh
+        switch_visibility(mesh_to_show.name(), mesh_to_hide.name())
 
 
 def list_dynamic_nodes():
@@ -90,49 +120,3 @@ def create_dynamic_node(nodename):
     if cmds.nodeType(nodename) == 'nCloth':
         return ClothNode(nodename)
     cmds.warning(nodename + ' is not a dynamic node')
-
-
-def get_clothnode_color(clothnode_name):
-    outmeshes = cmds.listConnections(
-        clothnode_name + '.outputMesh', type='mesh', shapes=True)
-    if not outmeshes:
-        return None
-
-    shading_engines = cmds.listConnections(
-        outmeshes[0] + '.instObjGroups', type='shadingEngine')
-    if not shading_engines:
-        return None
-
-    shaders = cmds.listConnections(shading_engines[0] + '.surfaceShader')
-    if not shaders:
-        return None
-
-    return cmds.getAttr(shaders[0] + '.color')[0]
-
-
-def set_clothnode_color(clothnode_name, red, green, blue):
-    outmeshes = cmds.listConnections(
-        clothnode_name + '.outputMesh', type='mesh', shapes=True)
-    if not outmeshes:
-        return None
-    old_shading_engines = cmds.listConnections(
-        outmeshes[0] + '.instObjGroups', type='shadingEngine')
-    if not old_shading_engines:
-        return None
-
-    blinn = cmds.shadingNode('blinn', asShader=True)
-    cmds.setAttr(blinn + ".color", red, green, blue, type='double3')
-
-    selection = cmds.ls(sl=True)
-    cmds.select(outmeshes)
-    cmds.hyperShade(assign=blinn)
-    # old_shading_engines should contain only one shading engine
-    for shading_engine in old_shading_engines:
-        connected = cmds.listConnections(shading_engine + ".dagSetMembers")
-        if connected:
-            return
-        blinns = cmds.listConnections(shading_engine, type='blinn')
-        cmds.delete(shading_engine)
-        cmds.delete(blinns)
-    cmds.select(selection)
-

@@ -56,14 +56,13 @@ class ComparisonWidget(QtWidgets.QWidget):
             self.node_label.setText(NODENAME_LABEL.format(self.node))
             name = self.cacheversion.name
             self.version_label.setText(CACHEVERSION_LABEL.format(name))
+            self.register_callbacks()
         else:
             result = {}
             self.node_label.setText(NODENAME_LABEL.format('None'))
             self.version_label.setText(CACHEVERSION_LABEL.format('None'))
-
         self.table_model.set_comparison_result(result)
         self.table_view.update_header()
-        self.register_callbacks()
 
     def register_callbacks(self):
         node = om2.MSelectionList().add(self.node).getDependNode(0)

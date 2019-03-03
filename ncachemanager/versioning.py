@@ -151,24 +151,23 @@ def create_cacheversion(
     return CacheVersion(directory)
 
 
-def list_nodes_in_cacheversions(versions):
-    return list(set([version.infos['nodes'].keys() for version in versions]))
+def list_nodes_in_cacheversions(cachversions):
+    return list(set([v.infos['nodes'].keys() for v in cachversions]))
 
 
-def version_contains_node(version, node, same_namespace=False):
+def cacheversion_contains_node(node, cacheversion, same_namespace=False):
     namespace, nodename = split_namespace_nodename(node)
-    if not same_namespace:
-        return nodename in version.infos['nodes']
-
-    if nodename not in version.infos['nodes']:
+    if same_namespace is False:
+        return nodename in cacheversion.infos['nodes']
+    if nodename not in cacheversion.infos['nodes']:
         return False
-    return version.infos['nodes'][nodename]['namespace'] == namespace
+    return cacheversion.infos['nodes'][nodename]['namespace'] == namespace
 
 
 def split_namespace_nodename(node):
     names = node.split(":")
     if len(names) > 1:
-        return names[0], names[1]
+        return names[0], names[-1]
     return None, names[0]
 
 
@@ -181,6 +180,17 @@ def find_file_match(node, cacheversion, extention='mcx'):
     for cacheversion_filename in cacheversion.get_files():
         if filename == os.path.basename(cacheversion_filename):
             return cacheversion_filename
+
+
+def filter_cachversions_containing_nodes(nodes, cacheversions):
+    nodes = [split_namespace_nodename(node)[1] for node in nodes]
+    filtered = []
+    for node in nodes:
+        for cacheversion in cacheversions:
+            if cacheversion_contains_node(node, cacheversion):
+                filtered.append(cacheversion)
+                cacheversions.remove(cacheversion)
+    return filtered
 
 
 def ensure_workspace_exists(workspace):

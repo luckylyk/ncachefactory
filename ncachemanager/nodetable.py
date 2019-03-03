@@ -6,8 +6,9 @@ from ncachemanager.qtutils import get_icon
 from ncachemanager.nodes import list_dynamic_nodes, create_dynamic_node
 from ncachemanager.manager import filter_connected_cacheversions
 from ncachemanager.versioning import list_available_cacheversions
-from ncachemanager.cache import DYNAMIC_NODES, clear_cachenodes
-
+from ncachemanager.cache import (
+    DYNAMIC_NODES, clear_cachenodes, list_connected_cachefiles,
+    list_connected_cacheblends)
 
 RANGE_CACHED_COLOR = "#44aa22"
 RANGE_NOT_CACHED_COLOR = "#333333"
@@ -38,10 +39,12 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_view.selectionIsChanged.connect(
             self.selectionIsChanged.emit)
         self.table_color_square = ColorSquareDelegate(self.table_view)
-        self.table_switcher = SwitcherDelegate(self.table_view)
+        self.table_enable = EnableDelegate(self.table_view)
+        self.table_visibility = VisibilityDelegate(self.table_view)
         self.table_cached_range = CachedRangeDelegate(self.table_view)
         self.table_view.set_color_delegate(self.table_color_square)
-        self.table_view.set_switcher_delegate(self.table_switcher)
+        self.table_view.set_enable_delegate(self.table_enable)
+        self.table_view.set_visibility_delegate(self.table_visibility)
         self.table_view.set_cacherange_delegate(self.table_cached_range)
         self.table_model.set_nodes(list_dynamic_nodes())
         self.table_toolbar = TableToolBar(self.table_view)
@@ -133,7 +136,8 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self._selection_model = None
         self._model = None
         self.color_delegate = None
-        self.switcher_delegate = None
+        self.enable_delegate = None
+        self.visibility_delegate = None
         self.cacherange_delegate = None
 
     def configure(self):
@@ -163,7 +167,9 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         if index.column() == 0:
             self.color_delegate.createEditor(None, None, index)
         if index.column() == 1:
-            self.switcher_delegate.createEditor(None, None, index)
+            self.enable_delegate.createEditor(None, None, index)
+        if index.column() == 2:
+            self.visibility_delegate.createEditor(None, None, index)
         self._model.layoutChanged.emit()
         return super(DynamicNodeTableView, self).mouseReleaseEvent(event)
 
@@ -190,17 +196,21 @@ class DynamicNodeTableView(QtWidgets.QTableView):
         self.color_delegate = item_delegate
         self.setItemDelegateForColumn(0, item_delegate)
 
-    def set_switcher_delegate(self, item_delegate):
-        self.switcher_delegate = item_delegate
+    def set_enable_delegate(self, item_delegate):
+        self.enable_delegate = item_delegate
         self.setItemDelegateForColumn(1, item_delegate)
+
+    def set_visibility_delegate(self, item_delegate):
+        self.visibility_delegate = item_delegate
+        self.setItemDelegateForColumn(2, item_delegate)
 
     def set_cacherange_delegate(self, item_delegate):
         self.cacherange_delegate = item_delegate
-        self.setItemDelegateForColumn(4, item_delegate)
+        self.setItemDelegateForColumn(5, item_delegate)
 
 
 class DynamicNodeTableModel(QtCore.QAbstractTableModel):
-    HEADERS = "", "", "Node", "Cache", "Range Cached", ""
+    HEADERS = "", "", "", "Node", "Cache(s)", "Range Cached", ""
 
     def __init__(self, parent=None):
         super(DynamicNodeTableModel, self).__init__(parent)
@@ -235,7 +245,7 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
         self.layoutChanged.emit()
 
     def sort(self, column, order):
-        if column != 2:
+        if column != 3:
             return
         reverse_ = order == QtCore.Qt.AscendingOrder
         self.layoutAboutToBeChanged.emit()
@@ -254,12 +264,10 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
         row, column = index.row(), index.column()
         node = self.nodes[row]
         if role == QtCore.Qt.DisplayRole:
-            if column == 2:
+            if column == 3:
                 return node.parent
-            elif column == 3:
-                cvs = filter_connected_cacheversions(
-                    node.name, self.cacheversions)
-                return ", ".join([cv.name for cv in cvs])
+            elif column == 4:
+                return get_connected_cache_names(node.name, self.cacheversions)
         elif role == QtCore.Qt.UserRole:
             return node
 
@@ -314,19 +322,12 @@ class SwitcherDelegate(QtWidgets.QStyledItemDelegate):
         self._model = table.model()
         self.icons = None
 
-    def createEditor(self, _, __, index):
-        dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
-        dynamic_node.switch()
-        return
+    def get_icon(self, dynamic_node):
+        raise NotImplementedError
 
     def paint(self, painter, option, index):
         dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
-        if self.icons is None:
-            self.icons = (
-                get_icon(dynamic_node.ICONS['off']),
-                get_icon(dynamic_node.ICONS['on']))
-
-        icon = self.icons[bool(dynamic_node.enable)]
+        icon = self.get_icon(dynamic_node)
         pixmap = icon.pixmap(24, 24).scaled(
             QtCore.QSize(*self.ICONSIZE),
             transformMode=QtCore.Qt.SmoothTransformation)
@@ -337,6 +338,37 @@ class SwitcherDelegate(QtWidgets.QStyledItemDelegate):
 
     def sizeHint(self, *args):
         return QtCore.QSize(24, 24)
+
+
+class VisibilityDelegate(SwitcherDelegate):
+
+    def createEditor(self, _, __, index):
+        dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
+        state = not dynamic_node.visible
+        dynamic_node.set_visible(state)
+        return
+
+    def get_icon(self, dynamic_node):
+        if self.icons is None:
+            self.icons = (
+                get_icon(dynamic_node.ICONS['hidden']),
+                get_icon(dynamic_node.ICONS['visible']))
+        return self.icons[bool(dynamic_node.visible)]
+
+
+class EnableDelegate(SwitcherDelegate):
+
+    def createEditor(self, _, __, index):
+        dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
+        dynamic_node.switch()
+        return
+
+    def get_icon(self, dynamic_node):
+        if self.icons is None:
+            self.icons = (
+                get_icon(dynamic_node.ICONS['off']),
+                get_icon(dynamic_node.ICONS['on']))
+        return self.icons[bool(dynamic_node.enable)]
 
 
 class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
@@ -427,6 +459,10 @@ class TableToolBar(QtWidgets.QToolBar):
         self.switch = QtWidgets.QAction(get_icon('on_off.png'), '', self)
         self.switch.setToolTip('on/off selected dynamic shapes')
         self.switch.triggered.connect(self.switch_nodes)
+        icon = get_icon('visibility.png')
+        self.visibility = QtWidgets.QAction(icon, '', self)
+        self.visibility.setToolTip('swith visibility state')
+        self.visibility.triggered.connect(self.switch_nodes_visibility)
         self.delete = QtWidgets.QAction(get_icon('trash.png'), '', self)
         self.delete.setToolTip('remove cache connected')
         self.delete.triggered.connect(self.clear_connected_caches)
@@ -435,12 +471,20 @@ class TableToolBar(QtWidgets.QToolBar):
         self.addAction(self.interactive)
         self.addSeparator()
         self.addAction(self.switch)
+        self.addAction(self.visibility)
         self.addAction(self.delete)
 
     def clear_connected_caches(self):
         nodes = self.table.selected_nodes or self.table.model().nodes
         nodes = [node.name for node in nodes]
         clear_cachenodes(nodes=nodes)
+        self.updateRequested.emit()
+
+    def switch_nodes_visibility(self):
+        nodes = self.table.selected_nodes or self.table.model().nodes
+        state = not nodes[0].visible
+        for node in nodes:
+            node.set_visible(state)
         self.updateRequested.emit()
 
     def switch_nodes(self):
@@ -456,3 +500,15 @@ class TableToolBar(QtWidgets.QToolBar):
         if not nodes:
             return
         cmds.select(nodes)
+
+
+def get_connected_cache_names(node, cacheversions):
+    cacheversions = filter_connected_cacheversions(node, cacheversions)
+    if cacheversions:
+        return ", ".join([cacheversion.name for cacheversion in cacheversions])
+    cachenodes = (
+        (list_connected_cachefiles(node) or []) +
+        (list_connected_cacheblends(node) or []))
+    if not cachenodes:
+        return 'no cache'
+    return 'out of workspace'
