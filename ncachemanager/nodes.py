@@ -1,8 +1,11 @@
 from maya import cmds
 import maya.api.OpenMaya as om2
+
 from ncachemanager.ncloth import (
     get_clothnode_color, set_clothnode_color, switch_visibility,
     find_input_mesh_dagpath, find_output_mesh_dagpath, is_mesh_visible)
+from ncachemanager.attributes import (
+    ensure_node_has_tag, FILTERED_FOR_NCACHEMANAGER)
 
 
 class DynamicNode(object):
@@ -16,6 +19,7 @@ class DynamicNode(object):
     def __init__(self, nodename):
         if cmds.nodeType(nodename) != self.TYPE:
             raise ValueError('wrong node type, {} excepted'.format(self.TYPE))
+        ensure_node_has_tag(nodename)
         dependnode = om2.MSelectionList().add(nodename).getDependNode(0)
         self._dagnode = om2.MFnDagNode(dependnode)
         self._color = None
@@ -26,7 +30,7 @@ class DynamicNode(object):
 
     @property
     def parent(self):
-        return cmds.listRelatives(self.name, parent=True)
+        return cmds.listRelatives(self.name, parent=True)[0].split(':')[-1]
 
     @property
     def is_cached(self):
@@ -48,6 +52,13 @@ class DynamicNode(object):
     def switch(self):
         value = not self.enable
         cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
+
+    @property
+    def filtered(self):
+        return cmds.getAttr(self.name + '.' + FILTERED_FOR_NCACHEMANAGER)
+
+    def set_filtered(self, state):
+        cmds.setAttr(self.name + '.' + FILTERED_FOR_NCACHEMANAGER, state)
 
 
 class HairNode(DynamicNode):
@@ -112,6 +123,10 @@ class ClothNode(DynamicNode):
 def list_dynamic_nodes():
     return [
         create_dynamic_node(n) for n in cmds.ls(type=('hairSystem', 'nCloth'))]
+
+
+def filtered_dynamic_nodes():
+    return [n for n in list_dynamic_nodes() if not n.filtered]
 
 
 def create_dynamic_node(nodename):

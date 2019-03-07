@@ -1,14 +1,9 @@
 from maya import cmds
 from PySide2 import QtWidgets, QtGui
+from ncachemanager.optionvars import (
+    VIEWPORT_ACTIVE_OPTIONVAR, RANGETYPE_OPTIONVAR, CACHE_BEHAVIOR_OPTIONVAR,
+    ensure_optionvars_exists)
 
-
-VIEWPORT_ACTIVE_OPTIONVAR = 'ncachemanager_viewportactive'
-RANGETYPE_OPTIONVAR = 'ncachemanager_rangetype'
-CACHE_BEHAVIOR_OPTIONVAR = 'ncachemanager_behavior'
-OPTIONVARS = {
-    VIEWPORT_ACTIVE_OPTIONVAR: 1,
-    RANGETYPE_OPTIONVAR: 0,
-    CACHE_BEHAVIOR_OPTIONVAR: 0}
 BLENDMODE_LABELS = (
     "Clear all existing cache nodes and blend \n"
     "nodes before the new cache. (default)",
@@ -95,8 +90,8 @@ class CacheOptions(QtWidgets.QWidget):
     @property
     def range(self):
         if self._rangetype.checkedId() == 0:
-            startframe = cmds.playblastOptions(minTime=True, query=True)
-            endframe = cmds.playblastOptions(maxTime=True, query=True)
+            startframe = cmds.playbackOptions(minTime=True, query=True)
+            endframe = cmds.playblackOptions(maxTime=True, query=True)
         else:
             startframe = int(self._rangein.text())
             endframe = int(self._rangeout.text())
@@ -110,8 +105,3 @@ class CacheOptions(QtWidgets.QWidget):
     def viewport(self):
         return self._viewport.isCHecked()
 
-
-def ensure_optionvars_exists():
-    for optionvar, default_value in OPTIONVARS.items():
-        if not cmds.optionVar(exists=optionvar):
-            cmds.optionVar(intValue=[optionvar, default_value])

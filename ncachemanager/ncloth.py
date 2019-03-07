@@ -1,6 +1,7 @@
 from maya import cmds
 import maya.api.OpenMaya as om2
 
+
 def get_clothnode_color(clothnode_name):
     outmeshes = cmds.listConnections(
         clothnode_name + '.outputMesh', type='mesh', shapes=True)

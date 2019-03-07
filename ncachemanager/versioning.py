@@ -129,7 +129,7 @@ def create_cacheversion(
 
     directory = get_new_cacheversion_directory(workspace)
     os.makedirs(directory)
-    name = name or directory[-3:]
+    name = directory[-3:] if name is None else name + '_' + directory[-3:]
     nodes_infos = {}
     for node in nodes:
         namespace, nodename = split_namespace_nodename(node)
@@ -140,9 +140,9 @@ def create_cacheversion(
             'namespace': namespace,
             'timespent': timespent}
 
-    infos = dict(
-        name=name, comment=comment, nodes=nodes_infos,
-        start_frame=0, end_frame=0)
+    infos = {
+        'name': name, 'comment': comment, 'nodes': nodes_infos,
+        'start_frame': 0, 'end_frame': 0}
 
     infos_filepath = os.path.join(directory, INFOS_FILENAME)
     with open(infos_filepath, 'w') as infos_file:

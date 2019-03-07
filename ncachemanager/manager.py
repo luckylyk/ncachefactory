@@ -46,7 +46,7 @@ def create_and_record_cacheversion(
     return cacheversion
 
 
-def record_into_existing_cacheversion(
+def record_in_existing_cacheversion(
         cacheversion, start_frame, end_frame, nodes=None, behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     save_pervertex_maps(nodes=nodes, directory=cacheversion.directory)

@@ -3,7 +3,7 @@ from maya import cmds
 import maya.OpenMaya as om
 
 from ncachemanager.qtutils import get_icon
-from ncachemanager.nodes import list_dynamic_nodes, create_dynamic_node
+from ncachemanager.nodes import filtered_dynamic_nodes, create_dynamic_node
 from ncachemanager.manager import filter_connected_cacheversions
 from ncachemanager.versioning import list_available_cacheversions
 from ncachemanager.cache import (
@@ -29,6 +29,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(DynamicNodesTableWidget, self).__init__(parent)
+        self._active_selection_callbacks = True
         self._callbacks = []
         self._jobs = []
         self.script_jobs = []
@@ -36,8 +37,10 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model = DynamicNodeTableModel()
         self.table_view = DynamicNodeTableView()
         self.table_view.set_model(self.table_model)
-        self.table_view.selectionIsChanged.connect(
-            self.selectionIsChanged.emit)
+        method = self.selectionIsChanged.emit
+        self.table_view.selectionIsChanged.connect(method)
+        method = self._synchronise_from_selection_from_tableview
+        self.table_view.selectionIsChanged.connect(method)
         self.table_color_square = ColorSquareDelegate(self.table_view)
         self.table_enable = EnableDelegate(self.table_view)
         self.table_visibility = VisibilityDelegate(self.table_view)
@@ -46,7 +49,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_view.set_enable_delegate(self.table_enable)
         self.table_view.set_visibility_delegate(self.table_visibility)
         self.table_view.set_cacherange_delegate(self.table_cached_range)
-        self.table_model.set_nodes(list_dynamic_nodes())
+        self.table_model.set_nodes(filtered_dynamic_nodes())
         self.table_toolbar = TableToolBar(self.table_view)
         self.table_toolbar.updateRequested.connect(self.update_layout)
         self.table_toolbar_layout = QtWidgets.QHBoxLayout()
@@ -61,7 +64,10 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
     @property
     def selected_nodes(self):
-        return self.table_view.selected_nodes
+        nodes = self.table_view.selected_nodes
+        if nodes is None:
+            return
+        return [node.name for node in nodes]
 
     def set_workspace(self, workspace):
         cacheversions = list_available_cacheversions(workspace)
@@ -81,6 +87,9 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         for event in FULL_UPDATE_REQUIRED_EVENTS:
             cb = om.MSceneMessage.addCallback(event, function)
             self._callbacks.append(cb)
+
+        function = self._synchronise_selection_from_maya
+        cb = om.MEventMessage.addEventCallback('SelectionChanged', function)
 
         function = self.update_layout
         cb = om.MNodeMessage.addNameChangedCallback(om.MObject(), function)
@@ -113,7 +122,30 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model.insert_node(dynamic_node)
 
     def _full_update_callback(self, *unused_callbacks_args):
-        self.table_model.set_nodes(list_dynamic_nodes())
+        self.table_model.set_nodes(filtered_dynamic_nodes())
+
+    def _synchronise_selection_from_maya(self, *unused_callbacks_args):
+        if self._active_selection_callbacks is False:
+            return
+        if not self.table_toolbar.interactive.isChecked():
+            return
+        self._active_selection_callbacks = False
+        nodes = cmds.ls(selection=True, dag=True, type=DYNAMIC_NODES)
+        dynamic_nodes = [n for n in self.table_model.nodes if n.name in nodes]
+        rows = [self.table_model.nodes.index(n) for n in dynamic_nodes]
+        self.table_view.select_rows(rows)
+        self._active_selection_callbacks = True
+
+    def _synchronise_from_selection_from_tableview(self):
+        if self._active_selection_callbacks is False:
+            return
+        if not self.table_toolbar.interactive.isChecked():
+            return
+        self._active_selection_callbacks = False
+        nodes = self.table_view.selected_nodes
+        if nodes:
+            cmds.select([node.name for node in nodes])
+        self._active_selection_callbacks = True
 
     def update_layout(self, *unused_callbacks_args):
         self.table_model.layoutChanged.emit()
@@ -192,6 +224,21 @@ class DynamicNodeTableView(QtWidgets.QTableView):
     def selection_changed(self, *unused_signals_args):
         self.selectionIsChanged.emit()
 
+    def select_rows(self, rows):
+        self.blockSignals(True)
+        if self._selection_model is None:
+            return
+        self._selection_model.clearSelection()
+        flag = QtCore.QItemSelectionModel.Select
+        for row in range(self._model.rowCount()):
+            if row not in rows:
+                continue
+            for col in range(self._model.columnCount()):
+                index = self._model.index(row, col, QtCore.QModelIndex())
+                self._selection_model.select(index, flag)
+        self.blockSignals(False)
+        self.selectionIsChanged.emit()
+
     def set_color_delegate(self, item_delegate):
         self.color_delegate = item_delegate
         self.setItemDelegateForColumn(0, item_delegate)
@@ -217,10 +264,10 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
         self.nodes = []
         self.cacheversions = []
 
-    def columnCount(self, _):
+    def columnCount(self, _=None):
         return len(self.HEADERS)
 
-    def rowCount(self, _):
+    def rowCount(self, _=None):
         return len(self.nodes)
 
     def set_nodes(self, nodes):
@@ -496,6 +543,8 @@ class TableToolBar(QtWidgets.QToolBar):
         self.updateRequested.emit()
 
     def select_nodes(self):
+        if not self.table.selected_nodes:
+            return
         nodes = [node.name for node in self.table.selected_nodes]
         if not nodes:
             return

@@ -36,12 +36,19 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.layout_cacheversion.setContentsMargins(0, 0, 0, 0)
         self.layout_cacheversion.addWidget(self.cacheversion_infos)
 
-        self.connect_cache = QtWidgets.QPushButton("connect version")
-        self.blend_cache = QtWidgets.QPushButton("blend version")
+        self.connect_cache = QtWidgets.QPushButton("connect cache")
+        self.blend_cache = QtWidgets.QPushButton("blend cache")
         self.connect_layout = QtWidgets.QHBoxLayout()
         self.connect_layout.setContentsMargins(0, 0, 0, 0)
         self.connect_layout.addWidget(self.connect_cache)
         self.connect_layout.addWidget(self.blend_cache)
+
+        self.connect_input = QtWidgets.QPushButton("connect to input")
+        self.connect_rest = QtWidgets.QPushButton("connect to restShape")
+        self.connect_layout2 = QtWidgets.QHBoxLayout()
+        self.connect_layout2.setContentsMargins(0, 0, 0, 0)
+        self.connect_layout2.addWidget(self.connect_input)
+        self.connect_layout2.addWidget(self.connect_rest)
 
         self.apply_attributes = QtWidgets.QPushButton("apply attributes")
         self.blend_attributes = QtWidgets.QPushButton("%")
@@ -61,6 +68,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.layout.addLayout(self.version_layout)
         self.layout.addWidget(self.groupbox_infos)
         self.layout.addLayout(self.connect_layout)
+        self.layout.addLayout(self.connect_layout2)
         self.layout.addLayout(self.attributes_layout)
         self.setEnabled(False)
 

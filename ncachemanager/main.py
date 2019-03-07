@@ -1,40 +1,47 @@
 
 import os
+from functools import partial
 
 from PySide2 import QtCore, QtWidgets
-from shiboken2 import wrapInstance
 from maya import cmds
-import maya.OpenMayaUI as omui
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from ncachemanager.nodetable import DynamicNodesTableWidget
 from ncachemanager.comparator import ComparisonWidget
+from ncachemanager.cache import DYNAMIC_NODES
 from ncachemanager.options import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
-from ncachemanager.manager import filter_connected_cacheversions
+from ncachemanager.manager import (
+    filter_connected_cacheversions, create_and_record_cacheversion,
+    record_in_existing_cacheversion)
 from ncachemanager.infos import WorkspaceCacheversionsExplorer
 from ncachemanager.versioning import (
     ensure_workspace_exists, list_available_cacheversions)
+from ncachemanager.optionvars import (
+    CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
+    VERSION_EXP_OPTIONVAR, ensure_optionvars_exists)
+
 
 WINDOW_TITLE = "NCache Manager"
-CACHEOPTIONS_EXP_OPTIONVAR = 'ncachemanager_cacheoptions_expanded'
-COMPARISON_EXP_OPTIONVAR = 'ncachemanager_comparison_expanded'
-VERSION_EXP_OPTIONVAR = 'ncachemanager_version_expanded'
-OPTIONVARS = {
-    CACHEOPTIONS_EXP_OPTIONVAR: 0,
-    COMPARISON_EXP_OPTIONVAR: 0,
-    VERSION_EXP_OPTIONVAR: 0
-}
 
 
 class NCacheManager(QtWidgets.QWidget):
-    def __init__(self):
-        parent = get_maya_windows()
+    def __init__(self, parent=None):
         super(NCacheManager, self).__init__(parent, QtCore.Qt.Window)
         self.setWindowTitle(WINDOW_TITLE)
         self.workspace_widget = WorkspaceWidget()
         self.nodetable = DynamicNodesTableWidget()
+
         self.senders = CacheSendersWidget()
+        method = partial(self.create_cache, selection=False)
+        self.senders.cache_all_inc.released.connect(method)
+        method = partial(self.create_cache, selection=True)
+        self.senders.cache_selection.released.connect(method)
+        method = partial(self.erase_cache, selection=False)
+        self.senders.cache_all.released.connect(method)
+        method = partial(self.erase_cache, selection=True)
+        self.senders.cache_selection.released.connect(method)
+
         self.cacheoptions = CacheOptions()
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
         self.cacheoptions_expander.clicked.connect(self.adjust_size)
@@ -89,7 +96,7 @@ class NCacheManager(QtWidgets.QWidget):
         # update comparisons table
         if not self.nodetable.selected_nodes:
             return self.comparison.set_node_and_cacheversion(None, None)
-        nodes = [node.name for node in self.nodetable.selected_nodes]
+        nodes = self.nodetable.selected_nodes
         workspace = self.workspace_widget.workspace
         cacheversions = list_available_cacheversions(workspace)
 
@@ -119,6 +126,50 @@ class NCacheManager(QtWidgets.QWidget):
 
     def sizeHint(self):
         return QtCore.QSize(350, 650)
+
+    def create_cache(self, selection=True):
+        start_frame, end_frame = self.cacheoptions.range
+        workspace = self.workspace_widget.directory
+        if workspace is None:
+            return cmds.warning("no workspace set")
+        if selection is True:
+            nodes = self.nodetable.selected_nodes or []
+        else:
+            nodes = cmds.ls(type=DYNAMIC_NODES)
+
+        create_and_record_cacheversion(
+            workspace=workspace,
+            start_frame=start_frame,
+            end_frame=end_frame,
+            nodes=nodes,
+            behavior=self.cacheoptions.behavior)
+        return
+
+    def erase_cache(self, selection=True):
+        start_frame, end_frame = self.cacheoptions.range
+        workspace = self.workspace_widget.directory
+        if workspace is None:
+            return cmds.warning("no workspace set")
+        if selection is True:
+            nodes = self.nodetable.selected_nodes or []
+        else:
+            nodes = cmds.ls(type=DYNAMIC_NODES)
+        cacheversions = filter_connected_cacheversions(
+            nodes, list_available_cacheversions(workspace))
+
+        if not cacheversions or len(cacheversions) > 1:
+            cmds.warning(
+                'no valid cache version or more than one cacheversion are '
+                'connected to the selected dynamic nodes')
+            self.create_cache(selection=selection)
+
+        record_in_existing_cacheversion(
+            cacheversion=cacheversions[0],
+            start_frame=start_frame,
+            end_frame=end_frame,
+            nodes=nodes,
+            behavior=self.cacheoptions.behavior)
+        return
 
 
 class Expander(QtWidgets.QPushButton):
@@ -155,6 +206,7 @@ class WorkspaceWidget(QtWidgets.QWidget):
         self.edit.returnPressed.connect(self._call_set_workspace)
         self.browse = QtWidgets.QPushButton(get_icon("folder.png"), "")
         self.browse.setFixedSize(22, 22)
+        self.browse.released.connect(self.get_directory)
 
         self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
@@ -163,6 +215,17 @@ class WorkspaceWidget(QtWidgets.QWidget):
         self.layout.addSpacing(8)
         self.layout.addWidget(self.edit)
         self.layout.addWidget(self.browse)
+
+    def get_directory(self):
+        if os.path.exists(self.edit.text()):
+            directory = os.path.exists(self.edit.text())
+        else:
+            directory = os.path.expanduser("~")
+        workspace = QtWidgets.QFileDialog.getExistingDirectory(
+            parent=self,
+            caption='select workspace',
+            dir=directory)
+        self.set_workspace(workspace)
 
     @property
     def directory(self):
@@ -191,31 +254,29 @@ class WorkspaceWidget(QtWidgets.QWidget):
 class CacheSendersWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(CacheSendersWidget, self).__init__(parent)
-        text = "Erase current cache"
-        self.erase_cache_in_version = QtWidgets.QPushButton(text)
-        self.erase_all_in_verion = QtWidgets.QPushButton("all")
-        self.erase_all_in_verion.setFixedWidth(40)
-        text = "Create new version"
-        self.create_cacheversion = QtWidgets.QPushButton(text)
-        self.create_cacheversion_all = QtWidgets.QPushButton("all")
-        self.create_cacheversion_all.setFixedWidth(40)
-        self.append_cache = QtWidgets.QPushButton("append cache")
+        text = "Cache selection"
+        self.cache_selection = QtWidgets.QPushButton(text)
+        self.cache_selection_inc = QtWidgets.QPushButton("+")
+        self.cache_selection_inc.setFixedWidth(12)
+        text = "Cache all"
+        self.cache_all = QtWidgets.QPushButton(text)
+        self.cache_all_inc = QtWidgets.QPushButton("+")
+        self.cache_all_inc.setFixedWidth(12)
+        self.append_cache = QtWidgets.QPushButton("Append selection")
         self.append_cache_all = QtWidgets.QPushButton("all")
         self.append_cache_all.setFixedWidth(40)
 
-        self.layout = QtWidgets.QGridLayout(self)
+        self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setHorizontalSpacing(1)
-        self.layout.setVerticalSpacing(4)
-        self.layout.addWidget(self.erase_cache_in_version, 0, 0)
-        self.layout.addWidget(self.erase_all_in_verion, 0, 1)
-        self.layout.addWidget(self.create_cacheversion, 1, 0)
-        self.layout.addWidget(self.create_cacheversion_all, 1, 1)
-        self.layout.addWidget(self.append_cache, 2, 0)
-        self.layout.addWidget(self.append_cache_all, 2, 1)
-
-
-def ensure_optionvars_exists():
-    for optionvar, default_value in OPTIONVARS.items():
-        if not cmds.optionVar(exists=optionvar):
-            cmds.optionVar(intValue=[optionvar, default_value])
+        self.layout.setSpacing(0)
+        self.layout.addWidget(self.cache_selection)
+        self.layout.addSpacing(1)
+        self.layout.addWidget(self.cache_selection_inc)
+        self.layout.addSpacing(4)
+        self.layout.addWidget(self.cache_all)
+        self.layout.addSpacing(1)
+        self.layout.addWidget(self.cache_all_inc)
+        self.layout.addSpacing(4)
+        self.layout.addWidget(self.append_cache)
+        self.layout.addSpacing(1)
+        self.layout.addWidget(self.append_cache_all)

@@ -5,7 +5,13 @@ import xml.etree.ElementTree
 from maya import cmds
 from ncachemanager.cache import DYNAMIC_NODES
 
-
+FILTERED_FOR_NCACHEMANAGER = 'isFilteredForNCacheManager'
+TAGS = [
+    {
+        'longName': FILTERED_FOR_NCACHEMANAGER,
+        'attributeType': 'bool',
+        'defaultValue': False
+    }]
 PERVERTEX_FILE = 'pervertexmaps.json'
 PERVERTEX_ATTRIBUTE = [
     u'thicknessPerVertex',
@@ -117,3 +123,9 @@ def list_node_attributes_values(node):
         except ValueError:
             pass
     return attributes
+
+
+def ensure_node_has_tag(node):
+    for tag in TAGS:
+        if not cmds.attributeQuery(tag['longName'], node=node, exists=True):
+            cmds.addAttr(node, **tag)
