@@ -125,7 +125,7 @@ def list_node_attributes_values(node):
     return attributes
 
 
-def ensure_node_has_tag(node):
+def ensure_node_has_ncachemanager_tags(node):
     for tag in TAGS:
         if not cmds.attributeQuery(tag['longName'], node=node, exists=True):
             cmds.addAttr(node, **tag)

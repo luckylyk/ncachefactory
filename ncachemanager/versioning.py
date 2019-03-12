@@ -26,7 +26,7 @@ import shutil
 
 INFOS_FILENAME = 'infos.json'
 VERSION_FOLDERNAME = 'version_{}'
-WORKSPACE_FOLDERNAME = 'caches'
+WORKSPACE_FOLDERNAME = 'ncaches'
 
 
 class CacheVersion(object):
@@ -55,6 +55,7 @@ class CacheVersion(object):
             # if only one value is modified, the other one is kept
             start = start_frame or self.infos['nodes'][node]['range'][0]
             end = end_frame or self.infos['nodes'][node]['range'][1]
+            _, node = split_namespace_nodename(node)
             self.infos['nodes'][node]['range'] = start, end
         self.save_infos()
 
@@ -62,6 +63,7 @@ class CacheVersion(object):
         nodes = nodes or self.infos['nodes']
         if nodes:
             for node in nodes:
+                _, node = split_namespace_nodename(node)
                 self.infos['nodes'][node]['timespent'] = seconds
         self.save_infos()
 

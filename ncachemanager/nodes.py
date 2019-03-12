@@ -5,7 +5,7 @@ from ncachemanager.ncloth import (
     get_clothnode_color, set_clothnode_color, switch_visibility,
     find_input_mesh_dagpath, find_output_mesh_dagpath, is_mesh_visible)
 from ncachemanager.attributes import (
-    ensure_node_has_tag, FILTERED_FOR_NCACHEMANAGER)
+    ensure_node_has_ncachemanager_tags, FILTERED_FOR_NCACHEMANAGER)
 
 
 class DynamicNode(object):
@@ -19,7 +19,7 @@ class DynamicNode(object):
     def __init__(self, nodename):
         if cmds.nodeType(nodename) != self.TYPE:
             raise ValueError('wrong node type, {} excepted'.format(self.TYPE))
-        ensure_node_has_tag(nodename)
+        ensure_node_has_ncachemanager_tags(nodename)
         dependnode = om2.MSelectionList().add(nodename).getDependNode(0)
         self._dagnode = om2.MFnDagNode(dependnode)
         self._color = None

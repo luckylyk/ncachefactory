@@ -9,7 +9,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from ncachemanager.nodetable import DynamicNodesTableWidget
 from ncachemanager.comparator import ComparisonWidget
 from ncachemanager.cache import DYNAMIC_NODES
-from ncachemanager.options import CacheOptions
+from ncachemanager.cacheoptions import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
 from ncachemanager.manager import (
     filter_connected_cacheversions, create_and_record_cacheversion,
@@ -72,6 +72,8 @@ class NCacheManager(QtWidgets.QWidget):
         self.layout.addSpacing(0)
         self.layout.addWidget(self.versions_expander)
         self.layout.addWidget(self.versions)
+
+        self.set_workspace(get_default_workspace())
 
     def show(self, **kwargs):
         super(NCacheManager, self).show(**kwargs)
@@ -280,3 +282,10 @@ class CacheSendersWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.append_cache)
         self.layout.addSpacing(1)
         self.layout.addWidget(self.append_cache_all)
+
+
+def get_default_workspace():
+    filename = cmds.file(expandName=True, query=True)
+    if os.path.basename(filename) == 'untitled':
+        return cmds.workspace(query=True, active=True)
+    return os.path.dirname(filename)

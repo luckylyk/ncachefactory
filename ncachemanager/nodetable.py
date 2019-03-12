@@ -5,10 +5,12 @@ import maya.OpenMaya as om
 from ncachemanager.qtutils import get_icon
 from ncachemanager.nodes import filtered_dynamic_nodes, create_dynamic_node
 from ncachemanager.manager import filter_connected_cacheversions
-from ncachemanager.versioning import list_available_cacheversions
+from ncachemanager.versioning import (
+    list_available_cacheversions, split_namespace_nodename)
 from ncachemanager.cache import (
     DYNAMIC_NODES, clear_cachenodes, list_connected_cachefiles,
     list_connected_cacheblends)
+from ncachemanager.filtering import FilterDialog
 
 RANGE_CACHED_COLOR = "#44aa22"
 RANGE_NOT_CACHED_COLOR = "#333333"
@@ -32,6 +34,8 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self._active_selection_callbacks = True
         self._callbacks = []
         self._jobs = []
+        self._filter = FilterDialog()
+        self._filter.updateRequested.connect(self._full_update_callback)
         self.script_jobs = []
         self.versions = []
         self.table_model = DynamicNodeTableModel()
@@ -52,6 +56,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model.set_nodes(filtered_dynamic_nodes())
         self.table_toolbar = TableToolBar(self.table_view)
         self.table_toolbar.updateRequested.connect(self.update_layout)
+        self.table_toolbar.showFilterRequested.connect(self._filter.show)
         self.table_toolbar_layout = QtWidgets.QHBoxLayout()
         self.table_toolbar_layout.setContentsMargins(0, 0, 0, 0)
         self.table_toolbar_layout.addStretch(1)
@@ -337,7 +342,8 @@ class ColorSquareDelegate(QtWidgets.QStyledItemDelegate):
         rect = QtCore.QRect(left, top, 14, 14)
         pen = QtGui.QPen(QtGui.QColor("black"))
         pen.setWidth(2)
-        color = QtGui.QColor(*[c * 255 for c in dynamic_node.color])
+        color = dynamic_node.color or (0, 0, 0)
+        color = QtGui.QColor(*[c * 255 for c in color])
         brush = QtGui.QBrush(color)
         painter.setPen(pen)
         painter.setBrush(brush)
@@ -430,9 +436,10 @@ class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
 
     def paint(self, painter, option, index):
         dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
-        node = dynamic_node.name
+        _, node = split_namespace_nodename(dynamic_node.name)
         cacheversions = self._model.cacheversions
-        cacheversions = filter_connected_cacheversions(node, cacheversions)
+        cacheversions = filter_connected_cacheversions(
+            dynamic_node.name, cacheversions)
         if not cacheversions:
             return
         cachedstart, cachedend = cacheversions[0].infos["nodes"][node]["range"]
@@ -492,6 +499,7 @@ def from_percent(value, rangein=0, rangeout=100):
 
 class TableToolBar(QtWidgets.QToolBar):
     updateRequested = QtCore.Signal()
+    showFilterRequested = QtCore.Signal()
 
     def __init__(self, table, parent=None):
         super(TableToolBar, self).__init__(parent)
@@ -513,6 +521,9 @@ class TableToolBar(QtWidgets.QToolBar):
         self.delete = QtWidgets.QAction(get_icon('trash.png'), '', self)
         self.delete.setToolTip('remove cache connected')
         self.delete.triggered.connect(self.clear_connected_caches)
+        self.filter = QtWidgets.QAction(get_icon('filter.png'), '', self)
+        self.filter.setToolTip('exclude node to manager')
+        self.filter.triggered.connect(self.showFilterRequested.emit)
 
         self.addAction(self.selection)
         self.addAction(self.interactive)
@@ -520,6 +531,8 @@ class TableToolBar(QtWidgets.QToolBar):
         self.addAction(self.switch)
         self.addAction(self.visibility)
         self.addAction(self.delete)
+        self.addSeparator()
+        self.addAction(self.filter)
 
     def clear_connected_caches(self):
         nodes = self.table.selected_nodes or self.table.model().nodes

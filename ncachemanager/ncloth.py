@@ -3,13 +3,12 @@ import maya.api.OpenMaya as om2
 
 
 def get_clothnode_color(clothnode_name):
-    outmeshes = cmds.listConnections(
-        clothnode_name + '.outputMesh', type='mesh', shapes=True)
-    if not outmeshes:
+    outmesh = find_output_mesh_dagpath(clothnode_name).name()
+    if not outmesh:
         return None
 
     shading_engines = cmds.listConnections(
-        outmeshes[0] + '.instObjGroups', type='shadingEngine')
+        outmesh + '.instObjGroups', type='shadingEngine')
     if not shading_engines:
         return None
 
@@ -21,12 +20,11 @@ def get_clothnode_color(clothnode_name):
 
 
 def set_clothnode_color(clothnode_name, red, green, blue):
-    outmeshes = cmds.listConnections(
-        clothnode_name + '.outputMesh', type='mesh', shapes=True)
-    if not outmeshes:
+    outmesh = find_output_mesh_dagpath(clothnode_name).name()
+    if not outmesh:
         return None
     old_shading_engines = cmds.listConnections(
-        outmeshes[0] + '.instObjGroups', type='shadingEngine')
+        outmesh + '.instObjGroups', type='shadingEngine')
     if not old_shading_engines:
         return None
 
@@ -34,7 +32,7 @@ def set_clothnode_color(clothnode_name, red, green, blue):
     cmds.setAttr(blinn + ".color", red, green, blue, type='double3')
 
     selection = cmds.ls(sl=True)
-    cmds.select(outmeshes)
+    cmds.select(outmesh)
     cmds.hyperShade(assign=blinn)
     # old_shading_engines should contain only one shading engine
     for shading_engine in old_shading_engines:
