@@ -97,8 +97,38 @@ class ClothNode(DynamicNode):
     def __init__(self, nodename):
         super(ClothNode, self).__init__(nodename)
         self._color = None
-        self._in_mesh = find_input_mesh_dagpath(nodename)
-        self._out_mesh = find_output_mesh_dagpath(nodename)
+        self._in_mesh = None
+        self._out_mesh = None
+
+    @property
+    def in_mesh(self):
+        # This property is an evaluation fix for maya 2019
+        # Maya 2019 need time to create his connections to in and out mesh
+        # When the ClothNode object is create during the maya ncloth node
+        # creation call back process, connections to inmesh are not done
+        # yet when the __init__ is triggered. This delay the assignement.
+        if self._in_mesh is not None:
+            return self._in_mesh
+        try:
+            self._in_mesh = find_input_mesh_dagpath(self.name)
+            return self._in_mesh
+        except:
+            return None
+
+    @property
+    def out_mesh(self):
+        # This property is an evaluation fix for maya 2019
+        # Maya 2019 need time to create his connections to in and out mesh
+        # When the ClothNode object is create during the maya ncloth node
+        # creation call back process, connections to inmesh are not done
+        # yet when the __init__ is triggered. This delay the assignement.
+        if self._out_mesh is not None:
+            return self._out_mesh
+        try:
+            self._out_mesh = find_output_mesh_dagpath(self.name)
+            return self._out_mesh
+        except:
+            return None
 
     @property
     def color(self):
@@ -112,11 +142,15 @@ class ClothNode(DynamicNode):
 
     @property
     def visible(self):
-        return is_mesh_visible(self._out_mesh.name())
+        if self.out_mesh is None:
+            return False
+        return is_mesh_visible(self.out_mesh.name())
 
     def set_visible(self, state):
-        mesh_to_show = self._out_mesh if state else self._in_mesh
-        mesh_to_hide = self._in_mesh if state else self._out_mesh
+        if not self.out_mesh or not self.in_mesh:
+            return
+        mesh_to_show = self.out_mesh if state else self.in_mesh
+        mesh_to_hide = self.in_mesh if state else self.out_mesh
         switch_visibility(mesh_to_show.name(), mesh_to_hide.name())
 
 

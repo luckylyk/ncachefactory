@@ -12,6 +12,7 @@ TAGS = [
         'attributeType': 'bool',
         'defaultValue': False
     }]
+
 PERVERTEX_FILE = 'pervertexmaps.json'
 PERVERTEX_ATTRIBUTE = [
     u'thicknessPerVertex',
@@ -117,10 +118,15 @@ def list_node_attributes_values(node):
             value = cmds.getAttr(plug)
             attributes[plug] = value
         # RuntimeError is not a numerical attribute
-        # Value Error is a compount or subattribute
         except RuntimeError:
             pass
+        # Value Error is a compount or subattribute
         except ValueError:
+            pass
+        # TypeError this is a WTF bug which happen sometime in maya. My raise
+        # an error on the getAttr(plug, type=True) which says that True is not
+        # a boolean. Ole !
+        except TypeError:
             pass
     return attributes
 

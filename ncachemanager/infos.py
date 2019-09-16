@@ -2,14 +2,20 @@
 import datetime
 from PySide2 import QtWidgets, QtCore
 from ncachemanager.versioning import filter_cachversions_containing_nodes
+from ncachemanager.manager import (
+    filter_connected_cacheversions, connect_cacheversion)
 from ncachemanager.qtutils import get_icon
+from ncachemanager.attributes import set_pervertex_maps
 
 
 class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
+    cacheApplied = QtCore.Signal()
+
     def __init__(self, parent=None):
         super(WorkspaceCacheversionsExplorer, self).__init__(parent)
-        self.setFixedHeight(300)
+        self.setFixedHeight(350)
         self.cacheversion = None
+        self.nodes = None
 
         minpolicy = QtWidgets.QSizePolicy()
         minpolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
@@ -37,7 +43,9 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.layout_cacheversion.addWidget(self.cacheversion_infos)
 
         self.connect_cache = QtWidgets.QPushButton("connect cache")
+        self.connect_cache.released.connect(self._call_connect_cache)
         self.blend_cache = QtWidgets.QPushButton("blend cache")
+        self.blend_cache.released.connect(self._call_blend_cache)
         self.connect_layout = QtWidgets.QHBoxLayout()
         self.connect_layout.setContentsMargins(0, 0, 0, 0)
         self.connect_layout.addWidget(self.connect_cache)
@@ -54,6 +62,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.blend_attributes = QtWidgets.QPushButton("%")
         self.blend_attributes.setFixedWidth(25)
         self.apply_maps = QtWidgets.QPushButton("apply maps")
+        self.apply_maps.released.connect(self._call_apply_maps)
         self.attributes_layout = QtWidgets.QHBoxLayout()
         self.attributes_layout.setContentsMargins(0, 0, 0, 0)
         self.attributes_layout.setSpacing(0)
@@ -73,12 +82,20 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.setEnabled(False)
 
     def set_nodes_and_cacheversions(self, nodes=None, cacheversions=None):
+        self.nodes = nodes
         if cacheversions is None:
             self.setEnabled(False)
             self.cacheversion_infos.set_cacheversion(None)
         self.setEnabled(True)
         self.version_selector_model.set_cacheversions(
             filter_cachversions_containing_nodes(nodes, cacheversions))
+        if nodes is None:
+            return
+        cacheversions = filter_connected_cacheversions(nodes[0], cacheversions)
+        if not cacheversions:
+            return
+        index = self.version_selector_model.cacheversions.index(cacheversions[0])
+        self.version_selector.setCurrentIndex(index)
 
     def _call_index_changed(self, index):
         if not self.version_selector_model.cacheversions:
@@ -87,6 +104,18 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
             return
         self.cacheversion = self.version_selector_model.cacheversions[index]
         self.cacheversion_infos.set_cacheversion(self.cacheversion)
+
+    def _call_connect_cache(self):
+        connect_cacheversion(self.cacheversion, nodes=self.nodes, behavior=0)
+
+    def _call_blend_cache(self):
+        connect_cacheversion(self.cacheversion, nodes=True, behavior=2)
+
+    def _call_apply_attributes(self):
+        pass
+
+    def _call_apply_maps(self):
+        set_pervertex_maps(self.nodes, self.cacheversion.directory)
 
 
 class CacheversionsListModel(QtCore.QAbstractListModel):
@@ -109,11 +138,9 @@ class CacheversionsListModel(QtCore.QAbstractListModel):
             return self.cacheversions[index.row()].infos['name']
 
 
-
 class CacheversionInfosWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(CacheversionInfosWidget, self).__init__(parent)
-        self.setFixedHeight(200)
         self.cacheversion = None
         self.name = QtWidgets.QLineEdit()
         self.name.setEnabled(False)

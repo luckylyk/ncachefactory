@@ -31,6 +31,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(DynamicNodesTableWidget, self).__init__(parent)
+        self._workspace = None
         self._active_selection_callbacks = True
         self._callbacks = []
         self._jobs = []
@@ -75,7 +76,8 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         return [node.name for node in nodes]
 
     def set_workspace(self, workspace):
-        cacheversions = list_available_cacheversions(workspace)
+        self._workspace = workspace
+        cacheversions = list_available_cacheversions(self._workspace)
         self.table_model.set_cacheversions(cacheversions)
 
     def register_callbacks(self):
@@ -128,6 +130,10 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
     def _full_update_callback(self, *unused_callbacks_args):
         self.table_model.set_nodes(filtered_dynamic_nodes())
+        if not self._workspace:
+            return
+        cacheversions = list_available_cacheversions(self._workspace)
+        self.table_model.set_cacheversions(cacheversions)
 
     def _synchronise_selection_from_maya(self, *unused_callbacks_args):
         if self._active_selection_callbacks is False:

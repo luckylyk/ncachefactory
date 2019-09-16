@@ -1,5 +1,5 @@
 """
-This module is a collection of methods changing the automatic cache connection
+This module is a collection of functions changing the automatic cache connection
 system provided by maya. It's wrap aronud the mel command: doCreateNclothCache
 
 By default maya allow the possibility to write cache for different node in a
@@ -8,7 +8,7 @@ a ncache with the flag : oneFilePerGeometry.
 That's where the complexity start, cause maya doesn't allow this flag if a
 cache is already connected in a dynamic node.
 That's why this module is modifying the doCreateNclothCache behaviour.
-The main module method is record_ncache. For more informations, refere to his
+The main module function is record_ncache. For more informations, refere to his
 docstring.
 
 The module respect a nomenclature:
@@ -27,10 +27,10 @@ DYNAMIC_NODES = 'nCloth', 'hairSystem'
 def record_ncache(
         nodes=None, start_frame=0, end_frame=100, output=None, behavior=0):
     '''
-    this method is a wrap around the mel command doCreateNclothCache
+    this function is a wrap around the mel command doCreateNclothCache
     it force an cache with one cache per geometry (containing all frame).
     :nodes: one or list of dynamic nodes as string ('hairSystem' and 'nCloth')
-    :output: output folder (not without filename)
+    :output: output folder (without filename)
     :behavior: as int
         0: replace all old connected cachenodes and blendnodes
         1: replace all old connected cachenodes but add new cache in blendnodes
@@ -52,7 +52,7 @@ def record_ncache(
     command = (
         'doCreateNclothCache 5 {{ "0", "{start_frame}", "{end_frame}",'
         '"OneFile", "1", "{output}", "1", "", "0", "replace", "1", "1", '
-        '"1", "0", "1","mcx"}}').format(
+        '"1", "0", "1","mcc"}}').format(
             start_frame=start_frame,
             end_frame=end_frame,
             output=output)
@@ -66,7 +66,7 @@ def record_ncache(
 
 def import_ncache(node, filename, behavior=0):
     """
-    This method create a cachenode and connect it to the corresponding dynamic
+    This fubction create a cachenode and connect it to the corresponding dynamic
     node. It respect the record_ncache behavior system.
     :nodes: one or list of dynamic nodes as string ('hairSystem' and 'nCloth')
     :filename: path pointing an mcx file
@@ -99,7 +99,7 @@ def import_ncache(node, filename, behavior=0):
 
 def reconnect_cachenodes(connections, nodetypes=None):
     '''
-    this method reconnect the cache receveiving a dict with the connections
+    this function reconnect the cache receveiving a dict with the connections
     setup before the cache.
     '''
     for cachenode, node in connections.iteritems():
@@ -174,7 +174,7 @@ def get_connected_dynamicnodes(cachenode):
 
 def disconnect_cachenodes(nodes=None):
     '''
-    This method disconnect all cache node and return all connected nodes
+    This function disconnect all cache node and return all connected nodes
     as dict.
     :nodes: one or list of dynamic nodes as string ('hairSystem' and 'nCloth')
     '''

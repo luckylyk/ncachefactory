@@ -36,7 +36,7 @@ class NCacheManager(QtWidgets.QWidget):
         method = partial(self.create_cache, selection=False)
         self.senders.cache_all_inc.released.connect(method)
         method = partial(self.create_cache, selection=True)
-        self.senders.cache_selection.released.connect(method)
+        self.senders.cache_selection_inc.released.connect(method)
         method = partial(self.erase_cache, selection=False)
         self.senders.cache_all.released.connect(method)
         method = partial(self.erase_cache, selection=True)
@@ -101,7 +101,6 @@ class NCacheManager(QtWidgets.QWidget):
         nodes = self.nodetable.selected_nodes
         workspace = self.workspace_widget.workspace
         cacheversions = list_available_cacheversions(workspace)
-
         self.versions.set_nodes_and_cacheversions(nodes, cacheversions)
         cacheversions = filter_connected_cacheversions(nodes[0], cacheversions)
         if not cacheversions:
@@ -145,6 +144,9 @@ class NCacheManager(QtWidgets.QWidget):
             end_frame=end_frame,
             nodes=nodes,
             behavior=self.cacheoptions.behavior)
+        self.nodetable.set_workspace(workspace)
+        self.nodetable.update_layout()
+        self.selection_changed()
         return
 
     def erase_cache(self, selection=True):
@@ -164,13 +166,15 @@ class NCacheManager(QtWidgets.QWidget):
                 'no valid cache version or more than one cacheversion are '
                 'connected to the selected dynamic nodes')
             self.create_cache(selection=selection)
-
-        record_in_existing_cacheversion(
-            cacheversion=cacheversions[0],
-            start_frame=start_frame,
-            end_frame=end_frame,
-            nodes=nodes,
-            behavior=self.cacheoptions.behavior)
+        else:
+            record_in_existing_cacheversion(
+                cacheversion=cacheversions[0],
+                start_frame=start_frame,
+                end_frame=end_frame,
+                nodes=nodes,
+                behavior=self.cacheoptions.behavior)
+        self.nodetable.update_layout()
+        self.selection_changed()
         return
 
 
@@ -219,14 +223,7 @@ class WorkspaceWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.browse)
 
     def get_directory(self):
-        if os.path.exists(self.edit.text()):
-            directory = os.path.exists(self.edit.text())
-        else:
-            directory = os.path.expanduser("~")
-        workspace = QtWidgets.QFileDialog.getExistingDirectory(
-            parent=self,
-            caption='select workspace',
-            dir=directory)
+        workspace = QtWidgets.QFileDialog.getExistingDirectory()
         self.set_workspace(workspace)
 
     @property
@@ -287,5 +284,5 @@ class CacheSendersWidget(QtWidgets.QWidget):
 def get_default_workspace():
     filename = cmds.file(expandName=True, query=True)
     if os.path.basename(filename) == 'untitled':
-        return cmds.workspace(query=True, active=True)
+        return cmds.workspace(query=True, directory=True)
     return os.path.dirname(filename)

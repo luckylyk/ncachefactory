@@ -91,7 +91,7 @@ class CacheOptions(QtWidgets.QWidget):
     def range(self):
         if self._rangetype.checkedId() == 0:
             startframe = cmds.playbackOptions(minTime=True, query=True)
-            endframe = cmds.playblackOptions(maxTime=True, query=True)
+            endframe = cmds.playbackOptions(maxTime=True, query=True)
         else:
             startframe = int(self._rangein.text())
             endframe = int(self._rangeout.text())

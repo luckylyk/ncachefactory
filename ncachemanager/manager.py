@@ -109,6 +109,20 @@ def compare_node_and_version(node, cacheversion):
     return differences
 
 
+def apply_settings(cacheversion, nodes):
+    for node in nodes:
+        filename = find_file_match(node, cacheversion, extention='xml')
+        xml_attributes = extract_xml_attributes(filename)
+        xml_attributes = clean_namespaces_in_attributes_dict(xml_attributes)
+        for key, value in xml_attributes.items():
+            attributes = cmds.ls([key, "*" + key, "*:" + key, "*:*:" + key])
+            for attribute in attributes:
+                atype = cmds.getAttr(attribute, type=True)
+                cmds.setAttr(attribute, value, type=atype)
+
+
+
+
 if __name__ == "__main__":
     create_and_record_cacheversion(
         workspace="C:/test/chrfx", nodes=None, start_frame=0, end_frame=100,

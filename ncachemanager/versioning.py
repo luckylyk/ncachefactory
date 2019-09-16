@@ -87,6 +87,11 @@ class CacheVersion(object):
         assert isinstance(cacheversion, CacheVersion)
         return cacheversion.directory == self.directory
 
+    def __repr__(self):
+        reprname = "CacheVersion | name={}, directory={}".format(
+            self.infos["name"], self.directory)
+        return reprname
+
 
 def load_json(filename):
     with open(filename, 'r') as f:
@@ -191,7 +196,6 @@ def filter_cachversions_containing_nodes(nodes, cacheversions):
         for cacheversion in cacheversions:
             if cacheversion_contains_node(node, cacheversion):
                 filtered.append(cacheversion)
-                cacheversions.remove(cacheversion)
     return filtered
 
 
