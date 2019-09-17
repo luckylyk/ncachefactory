@@ -199,7 +199,7 @@ class NodeInfosTableView(QtWidgets.QTableView):
         self.setWordWrap(False)
         self.setAlternatingRowColors(True)
         self.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        self.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.setSelectionMode(QtWidgets.QAbstractItemView.NoSelection)
         scrollmode = QtWidgets.QAbstractItemView.ScrollPerPixel
         self.setVerticalScrollMode(scrollmode)
         self.setHorizontalScrollMode(scrollmode)

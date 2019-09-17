@@ -87,9 +87,9 @@ def delete_cacheversion(cacheversion):
 def filter_connected_cacheversions(nodes=None, cacheversions=None):
     assert cacheversions is not None
     nodes = nodes or []
-    cachenodes = (
-        (list_connected_cacheblends(nodes) or []) +
-        (list_connected_cachefiles(nodes) or []))
+    blends = list_connected_cacheblends(nodes) or []
+    cachenodes = list_connected_cachefiles(nodes) or []
+    cachenodes += list_connected_cachefiles(blends) or []
     directories = list({cmds.getAttr(n + '.cachePath') for n in cachenodes})
     directories = [os.path.normpath(directory) for directory in directories]
     return [

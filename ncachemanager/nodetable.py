@@ -15,6 +15,7 @@ from ncachemanager.filtering import FilterDialog
 RANGE_CACHED_COLOR = "#44aa22"
 RANGE_NOT_CACHED_COLOR = "#333333"
 CURRENT_TIME_COLOR = "#CC5533"
+NUCLEUS_START_TIME_COLOR = "#363430"
 FULL_UPDATE_REQUIRED_EVENTS = (
     om.MSceneMessage.kAfterNew,
     om.MSceneMessage.kAfterImport,
@@ -461,42 +462,54 @@ class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
         cacheversions = self._model.cacheversions
         cacheversions = filter_connected_cacheversions(
             dynamic_node.name, cacheversions)
-        if not cacheversions:
-            return
-        cachedstart, cachedend = cacheversions[0].infos["nodes"][node]["range"]
+
         scenestart = cmds.playbackOptions(query=True, minTime=True)
         sceneend = cmds.playbackOptions(query=True, maxTime=True)
-        invalue = percent(cachedstart, scenestart, sceneend)
-        outvalue = percent(cachedend, scenestart, sceneend)
         bg_rect = QtCore.QRect(
             option.rect.left() + 8,
-            option.rect.top() + 10,
+            option.rect.top() + 8,
             option.rect.width() - 16,
-            option.rect.height() - 20)
-        pen = QtGui.QPen(QtGui.QColor(0, 0, 0, 0))
-        brush = QtGui.QBrush(QtGui.QColor(RANGE_NOT_CACHED_COLOR))
-        painter.setPen(pen)
-        painter.setBrush(brush)
-        painter.drawRect(bg_rect)
+            option.rect.height() - 16)
 
-        if outvalue != invalue:
-            left = from_percent(invalue, bg_rect.left(), bg_rect.right())
-            right = from_percent(outvalue, bg_rect.left(), bg_rect.right())
-            top = bg_rect.top()
-            height = bg_rect.height()
-            cached_rect = QtCore.QRect(left, top, right, height)
-            cached_rect.setRight(right)
-            brush = QtGui.QBrush(QtGui.QColor(RANGE_CACHED_COLOR))
+        if cacheversions and not len(cacheversions) > 1:
+            cachedstart, cachedend = cacheversions[0].infos["nodes"][node]["range"]
+            invalue = percent(cachedstart, scenestart, sceneend)
+            outvalue = percent(cachedend, scenestart, sceneend)
+            brush = QtGui.QBrush(QtGui.QColor(RANGE_NOT_CACHED_COLOR))
+            pen = QtGui.QPen(QtGui.QColor(0, 0, 0, 0))
+            painter.setPen(pen)
             painter.setBrush(brush)
-            painter.drawRect(cached_rect)
+            painter.drawRect(bg_rect)
+            if outvalue != invalue:
+                left = from_percent(invalue, bg_rect.left(), bg_rect.right())
+                right = from_percent(outvalue, bg_rect.left(), bg_rect.right())
+                top = bg_rect.top()
+                height = bg_rect.height()
+                cached_rect = QtCore.QRect(left, top, right, height)
+                cached_rect.setRight(right)
+                brush = QtGui.QBrush(QtGui.QColor(RANGE_CACHED_COLOR))
+                painter.setBrush(brush)
+                painter.drawRect(cached_rect)
 
         time = cmds.currentTime(query=True)
-        left = percent(time, scenestart, sceneend)
-        left = from_percent(left, bg_rect.left(), bg_rect.right())
-        pen = QtGui.QPen(QtGui.QColor(CURRENT_TIME_COLOR))
-        pen.setWidth(2)
-        painter.setPen(pen)
-        painter.drawLine(left, bg_rect.top(), left, bg_rect.bottom())
+        if time > scenestart and time < sceneend:
+            left = percent(time, scenestart, sceneend)
+            left = from_percent(left, bg_rect.left(), bg_rect.right())
+            pen = QtGui.QPen(QtGui.QColor(CURRENT_TIME_COLOR))
+            pen.setWidth(2)
+            painter.setPen(pen)
+            painter.drawLine(left, option.rect.top(), left, option.rect.bottom())
+
+        for nucleus in cmds.ls(type='nucleus'):
+            time = cmds.getAttr(nucleus + '.startFrame')
+            if time < scenestart or time > sceneend:
+                continue
+            left = percent(time, scenestart, sceneend)
+            left = from_percent(left, bg_rect.left(), bg_rect.right())
+            pen = QtGui.QPen(QtGui.QColor(NUCLEUS_START_TIME_COLOR))
+            pen.setWidth(1)
+            painter.setPen(pen)
+            painter.drawLine(left, option.rect.top(), left, option.rect.bottom())
 
     def sizeHint(self, _, __):
         return QtCore.QSize(60, 22)

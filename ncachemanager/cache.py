@@ -111,6 +111,7 @@ def reconnect_cachenodes(connections, nodetypes=None):
     this function reconnect the cache receveiving a dict with the connections
     setup before the cache.
     '''
+    print connections
     for cachenode, node in connections.iteritems():
         cachefile = get_connected_cachenode(node)
         if not cachefile:
@@ -249,7 +250,7 @@ def attach_cachefile_to_cacheblend(cachefile, cacheblend, node):
 
 
 def attach_cachenode(cachenode, node):
-    if cmds.nodeType(cachenode) == "nCloth":
+    if cmds.nodeType(node) == "nCloth":
         connections = {
             'outCacheData[0]': 'positions',
             'inRange': 'playFromCache'}
