@@ -79,10 +79,10 @@ class HairNode(DynamicNode):
 
     @property
     def visible(self):
-        return cmds.getAttr(self.name, '.solverDisplay')
+        return cmds.getAttr(self.name + '.solverDisplay')
 
     def set_visible(self, state):
-        return cmds.setAttr(self.name, '.solverDisplay', state)
+        return cmds.setAttr(self.name + '.solverDisplay', state)
 
 
 class ClothNode(DynamicNode):
@@ -97,6 +97,10 @@ class ClothNode(DynamicNode):
     def __init__(self, nodename):
         super(ClothNode, self).__init__(nodename)
         self._color = None
+        self._in_mesh = None
+        self._out_mesh = None
+
+    def reset_connections(self):
         self._in_mesh = None
         self._out_mesh = None
 

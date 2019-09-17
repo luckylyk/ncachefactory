@@ -3,7 +3,7 @@ import datetime
 from PySide2 import QtWidgets, QtCore
 from ncachemanager.versioning import filter_cachversions_containing_nodes
 from ncachemanager.manager import (
-    filter_connected_cacheversions, connect_cacheversion)
+    filter_connected_cacheversions, connect_cacheversion, apply_settings)
 from ncachemanager.qtutils import get_icon
 from ncachemanager.attributes import set_pervertex_maps
 
@@ -58,7 +58,8 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.connect_layout2.addWidget(self.connect_input)
         self.connect_layout2.addWidget(self.connect_rest)
 
-        self.apply_attributes = QtWidgets.QPushButton("apply attributes")
+        self.apply_settings = QtWidgets.QPushButton("apply settings")
+        self.apply_settings.released.connect(self._call_apply_settings)
         self.blend_attributes = QtWidgets.QPushButton("%")
         self.blend_attributes.setFixedWidth(25)
         self.apply_maps = QtWidgets.QPushButton("apply maps")
@@ -66,7 +67,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.attributes_layout = QtWidgets.QHBoxLayout()
         self.attributes_layout.setContentsMargins(0, 0, 0, 0)
         self.attributes_layout.setSpacing(0)
-        self.attributes_layout.addWidget(self.apply_attributes)
+        self.attributes_layout.addWidget(self.apply_settings)
         self.attributes_layout.addSpacing(1)
         self.attributes_layout.addWidget(self.blend_attributes)
         self.attributes_layout.addSpacing(4)
@@ -109,10 +110,10 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         connect_cacheversion(self.cacheversion, nodes=self.nodes, behavior=0)
 
     def _call_blend_cache(self):
-        connect_cacheversion(self.cacheversion, nodes=True, behavior=2)
+        connect_cacheversion(self.cacheversion, nodes=self.nodes, behavior=2)
 
-    def _call_apply_attributes(self):
-        pass
+    def _call_apply_settings(self):
+        apply_settings(self.cacheversion, self.nodes)
 
     def _call_apply_maps(self):
         set_pervertex_maps(self.nodes, self.cacheversion.directory)

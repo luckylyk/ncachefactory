@@ -22,7 +22,9 @@ from maya import cmds, mel
 
 
 DYNAMIC_NODES = 'nCloth', 'hairSystem'
-
+CACHE_COMMAND_TEMPLATE = """
+doCreateNclothCache 5 {{ "0", "{start_frame}", "{end_frame}", "OneFile", "1",\
+"{output}", "1", "", "0", "replace", "1", "1", "1", "0", "1","mcc"}}"""
 
 def record_ncache(
         nodes=None, start_frame=0, end_frame=100, output=None, behavior=0):
@@ -49,13 +51,8 @@ def record_ncache(
         connections = disconnect_cachenodes(nodes)
 
     cmds.select(nodes)
-    command = (
-        'doCreateNclothCache 5 {{ "0", "{start_frame}", "{end_frame}",'
-        '"OneFile", "1", "{output}", "1", "", "0", "replace", "1", "1", '
-        '"1", "0", "1","mcc"}}').format(
-            start_frame=start_frame,
-            end_frame=end_frame,
-            output=output)
+    command = CACHE_COMMAND_TEMPLATE.format(
+        start_frame=start_frame, end_frame=end_frame, output=output)
     cache_nodes = mel.eval(command)
 
     if behavior:
@@ -66,16 +63,15 @@ def record_ncache(
 
 def import_ncache(node, filename, behavior=0):
     """
-    This fubction create a cachenode and connect it to the corresponding dynamic
-    node. It respect the record_ncache behavior system.
+    This fubction create a cachenode and connect it to the corresponding
+    dynamic node. It respect the record_ncache behavior system.
     :nodes: one or list of dynamic nodes as string ('hairSystem' and 'nCloth')
-    :filename: path pointing an mcx file
+    :filename: path pointing an mcc file
     :behavior: as int
         0: replace all old connected cachenodes and blendnodes
         1: replace all old connected cachenodes but add new cache in blendnodes
         2: blend all existing cachenodes with new cache
     """
-
     connected_cachenode = get_connected_cachenode([node])
     if behavior is 0:
         cmds.delete(connected_cachenode)
@@ -89,9 +85,22 @@ def import_ncache(node, filename, behavior=0):
         attribute = channelname.split("_")[-1]
         return plug + "." + attribute
 
-    channels = cmds.cacheFile(fileName=filename, query=True, channelName=True)
-    inattrs = [convert_channelname_to_inattr(channel) for channel in channels]
-    cmds.cacheFile(attachFile=True, fileName=filename, inAttr=inattrs)
+    if cmds.nodeType(node) == 'hairSystem':
+        channels = cmds.cacheFile(
+            fileName=filename,
+            query=True,
+            channelName=True)
+        inattrs = [
+            convert_channelname_to_inattr(channel)
+            for channel in channels]
+    # doesn't need channel check for cloth nodes
+    else:
+        inattrs = node + '.positions'
+        cache = cmds.cacheFile(
+            attachFile=True,
+            fileName=filename,
+            inAttr=inattrs)
+        cmds.connectAttr(cache + '.inRange', node + '.playFromCache')
 
     if connections:
         reconnect_cachenodes(connections)
@@ -272,7 +281,7 @@ def clear_cachenodes(nodes=None, cachenames=None, workspace=None):
 
 
 if __name__ == "__main__":
-    #import_cachefile(r"hairSyst_emShape1", r"C:\test\chrfx\hairSyst_emShape1.mcx", behavior=2)
+    #import_cachefile(r"hairSyst_emShape1", r"C:\test\chrfx\hairSyst_emShape1.mcc", behavior=2)
     #connections = disconnect_cachenodes("hairSyst_emShape1Cache1")
     record_ncache(
         nodes=None, start_frame=0, end_frame=100,

@@ -61,7 +61,7 @@ SUPPORTED_TYPES = (
 
 
 def save_pervertex_maps(nodes=None, directory=''):
-    nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
+    nodes = nodes if nodes is not None else cmds.ls(type=DYNAMIC_NODES)
     attributes = {}
     filename = os.path.join(directory, PERVERTEX_FILE)
     if os.path.exists(filename):
@@ -76,7 +76,7 @@ def save_pervertex_maps(nodes=None, directory=''):
 
 
 def set_pervertex_maps(nodes=None, directory=''):
-    nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
+    nodes = nodes if nodes is not None else cmds.ls(type=DYNAMIC_NODES)
     filename = os.path.join(directory, PERVERTEX_FILE)
     with open(filename, 'r') as f:
         attributes = json.load(f)

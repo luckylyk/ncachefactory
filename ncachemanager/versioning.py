@@ -4,7 +4,7 @@ It provide utils and constants of the file system cache management
 
 The module respect a nomenclature:
     version: a folder containing all file of a cache:
-        - the maya .mcx: the cache datas
+        - the maya .mcc: the cache datas
         - the maya .xml: the setting used
         - the infos.json: json contain interesting information (range, nodes)
     workspace: a folder containing lot of versions
@@ -178,7 +178,7 @@ def split_namespace_nodename(node):
     return None, names[0]
 
 
-def find_file_match(node, cacheversion, extention='mcx'):
+def find_file_match(node, cacheversion, extention='mcc'):
     _, nodename = split_namespace_nodename(node)
     filename = nodename + '.' + extention
     cached_namespace = cacheversion.infos["nodes"][nodename]["namespace"]
@@ -202,6 +202,7 @@ def filter_cachversions_containing_nodes(nodes, cacheversions):
 def ensure_workspace_exists(workspace):
     if is_workspace_folder(workspace):
         return workspace
+    print "not in ncache " + workspace
     return create_workspace_folder(workspace)
 
 

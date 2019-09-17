@@ -30,7 +30,9 @@ def create_and_record_cacheversion(
         start_frame=start_frame,
         end_frame=end_frame,
         timespent=None)
-    save_pervertex_maps(nodes=nodes, directory=cacheversion.directory)
+    # hairSystems doesn't contains vertex maps
+    cloth_nodes = cmds.ls(nodes, type="nCloth")
+    save_pervertex_maps(nodes=cloth_nodes, directory=cacheversion.directory)
     start_time = datetime.now()
     record_ncache(
         nodes=nodes,
@@ -49,7 +51,9 @@ def create_and_record_cacheversion(
 def record_in_existing_cacheversion(
         cacheversion, start_frame, end_frame, nodes=None, behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
-    save_pervertex_maps(nodes=nodes, directory=cacheversion.directory)
+    # hairSystems doesn't contains vertex maps
+    cloth_nodes = cmds.ls(nodes, type="nCloth")
+    save_pervertex_maps(nodes=cloth_nodes, directory=cacheversion.directory)
     start_time = datetime.now()
     record_ncache(
         nodes=nodes,
@@ -67,14 +71,15 @@ def record_in_existing_cacheversion(
 def connect_cacheversion(cacheversion, nodes=None, behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     for node in nodes:
-        mcx_file = find_file_match(node, cacheversion, extention='mcx')
-        if not mcx_file:
+        xml_file = find_file_match(node, cacheversion, extention='xml')
+        if not xml_file:
+            cmds.warning("no cache to connect for {}".format(xml_file))
             continue
-        import_ncache(node, mcx_file, behavior=behavior)
+        import_ncache(node, xml_file, behavior=behavior)
 
 
 def delete_cacheversion(cacheversion):
-    cachenames = [f[:-4] for f in cacheversion.get_files('mcx')]
+    cachenames = [f[:-4] for f in cacheversion.get_files('mcc')]
     clear_cachenodes(cachenames=cachenames, workspace=cacheversion.workspace)
     clear_cacheversion_content(cacheversion)
 
@@ -101,6 +106,10 @@ def compare_node_and_version(node, cacheversion):
     differences = {}
     for key, value in xml_attributes.items():
         current_value = node_attributes.get(key)
+        # in case of value are store in format like: "-1e5", that's stored in
+        # string instead of float. So we reconverted it to float
+        if isinstance(value, str):
+            value = float(value)
         # value in xml are slightly less precise than the current value
         # in maya, it doesn't compare the exact result but the difference
         if current_value is None or abs(current_value - value) < 1e-6:
@@ -121,9 +130,12 @@ def apply_settings(cacheversion, nodes):
                 cmds.setAttr(attribute, value, type=atype)
 
 
-
-
 if __name__ == "__main__":
     create_and_record_cacheversion(
-        workspace="C:/test/chrfx", nodes=None, start_frame=0, end_frame=100,
-        behavior=2, name="Cache", comment="salut")
+        workspace="C:/test/chrfx",
+        nodes=None,
+        start_frame=0,
+        end_frame=100,
+        behavior=2,
+        name="Cache",
+        comment="salut")

@@ -50,6 +50,7 @@ class NCacheManager(QtWidgets.QWidget):
         self.comparison_expander = Expander("Comparisons", self.comparison)
         self.comparison_expander.clicked.connect(self.adjust_size)
         self.versions = WorkspaceCacheversionsExplorer()
+        self.versions.cacheApplied.connect(self.nodetable.update_layout)
         text = "Available Versions"
         self.versions_expander = Expander(text, self.versions)
         self.versions_expander.clicked.connect(self.adjust_size)

@@ -81,6 +81,10 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model.set_cacheversions(cacheversions)
 
     def register_callbacks(self):
+        function = self._preconnection_made_callback
+        cb = om.MDGMessage.addPreConnectionCallback(function)
+        self._callbacks.append(cb)
+
         for nodetype in DYNAMIC_NODES:
             function = self._remove_node_callback
             cb = om.MDGMessage.addNodeRemovedCallback(function, nodetype)
@@ -121,6 +125,17 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
             return
         for dynamic_node in dynamic_nodes:
             self.table_model.remove_node(dynamic_node)
+
+    def _preconnection_made_callback(self, inplug, outplug, *unused_args):
+        for plug in (inplug, outplug):
+            name = plug.name()
+            if 'outputMesh' not in name and 'inputMesh' not in name:
+                continue
+            plug_node = om.MFnDagNode(plug.node()).name()
+            for node in self.table_model.nodes:
+                if node.name == plug_node:
+                    node.reset_connections()
+                    return
 
     def _created_node_callback(self, mobject, *unused_callbacks_args):
         if mobject.apiType() not in OM_DYNAMIC_NODES:
