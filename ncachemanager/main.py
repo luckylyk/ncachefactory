@@ -8,12 +8,12 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
 from ncachemanager.nodetable import DynamicNodesTableWidget
 from ncachemanager.comparator import ComparisonWidget
-from ncachemanager.cache import DYNAMIC_NODES
-from ncachemanager.cacheoptions import CacheOptions
+from ncachemanager.ncache import DYNAMIC_NODES
+from ncachemanager.ncacheoptions import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
 from ncachemanager.manager import (
     filter_connected_cacheversions, create_and_record_cacheversion,
-    record_in_existing_cacheversion)
+    record_in_existing_cacheversion, append_to_cacheversion)
 from ncachemanager.infos import WorkspaceCacheversionsExplorer
 from ncachemanager.versioning import (
     ensure_workspace_exists, list_available_cacheversions)
@@ -41,6 +41,10 @@ class NCacheManager(QtWidgets.QWidget):
         self.senders.cache_all.released.connect(method)
         method = partial(self.erase_cache, selection=True)
         self.senders.cache_selection.released.connect(method)
+        method = partial(self.append_cache, selection=True)
+        self.senders.append_cache.released.connect(method)
+        method = partial(self.append_cache, selection=False)
+        self.senders.append_cache_all.released.connect(method)
 
         self.cacheoptions = CacheOptions()
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
@@ -94,6 +98,7 @@ class NCacheManager(QtWidgets.QWidget):
     def set_workspace(self, workspace):
         self.nodetable.set_workspace(workspace)
         self.workspace_widget.set_workspace(workspace)
+        self.nodetable.update_layout()
 
     def selection_changed(self):
         # update comparisons table
@@ -148,7 +153,6 @@ class NCacheManager(QtWidgets.QWidget):
         self.nodetable.set_workspace(workspace)
         self.nodetable.update_layout()
         self.selection_changed()
-        return
 
     def erase_cache(self, selection=True):
         start_frame, end_frame = self.cacheoptions.range
@@ -176,7 +180,34 @@ class NCacheManager(QtWidgets.QWidget):
                 behavior=self.cacheoptions.behavior)
         self.nodetable.update_layout()
         self.selection_changed()
-        return
+
+    def append_cache(self, selection=True):
+        workspace = self.workspace_widget.directory
+        if workspace is None:
+            return cmds.warning("no workspace set")
+        if selection is True:
+            nodes = self.nodetable.selected_nodes or []
+        else:
+            nodes = cmds.ls(type=DYNAMIC_NODES)
+        if not nodes:
+            return cmds.warning("no nodes selected")
+
+        cacheversion = None
+        for node in nodes:
+            cacheversions = filter_connected_cacheversions(
+                [node], list_available_cacheversions(workspace))
+            if not cacheversions:
+                message = "some nodes doesn't have cache connected to append"
+                return cmds.warning(message)
+            if cacheversion is None:
+                cacheversion = cacheversions[0]
+            if cacheversions[0] != cacheversion:
+                message = "append cache on multiple version is not suppported."
+                return cmds.warning(message)
+
+        append_to_cacheversion(nodes=nodes, cacheversion=cacheversion)
+        self.nodetable.update_layout()
+        self.selection_changed()
 
 
 class Expander(QtWidgets.QPushButton):

@@ -3,7 +3,7 @@ import os
 import json
 import xml.etree.ElementTree
 from maya import cmds
-from ncachemanager.cache import DYNAMIC_NODES
+from ncachemanager.ncache import DYNAMIC_NODES
 
 FILTERED_FOR_NCACHEMANAGER = 'isFilteredForNCacheManager'
 TAGS = [

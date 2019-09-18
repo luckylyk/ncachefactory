@@ -7,7 +7,7 @@ from ncachemanager.nodes import filtered_dynamic_nodes, create_dynamic_node
 from ncachemanager.manager import filter_connected_cacheversions
 from ncachemanager.versioning import (
     list_available_cacheversions, split_namespace_nodename)
-from ncachemanager.cache import (
+from ncachemanager.ncache import (
     DYNAMIC_NODES, clear_cachenodes, list_connected_cachefiles,
     list_connected_cacheblends)
 from ncachemanager.filtering import FilterDialog

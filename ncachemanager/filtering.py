@@ -1,6 +1,6 @@
 from PySide2 import QtCore, QtWidgets
 from maya import cmds
-from ncachemanager.cache import DYNAMIC_NODES
+from ncachemanager.ncache import DYNAMIC_NODES
 from ncachemanager.attributes import FILTERED_FOR_NCACHEMANAGER
 
 

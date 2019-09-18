@@ -61,6 +61,18 @@ def record_ncache(
     return cache_nodes
 
 
+def append_ncache(nodes=None):
+    nodes = nodes or cmds.ls(DYNAMIC_NODES)
+    cmds.cacheFile(
+        refresh=True,
+        noBackup=True,
+        simulationRate=1,
+        sampleMultiplier=1,
+        cacheableNode=nodes,
+        startTime=cmds.currentTime(query=True),
+        endTime=cmds.playbackOptions(max=True))
+
+
 def import_ncache(node, filename, behavior=0):
     """
     This fubction create a cachenode and connect it to the corresponding

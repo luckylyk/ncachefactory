@@ -9,9 +9,9 @@ from maya import cmds
 from ncachemanager.versioning import (
     create_cacheversion, ensure_workspace_exists, find_file_match,
     clear_cacheversion_content)
-from ncachemanager.cache import (
+from ncachemanager.ncache import (
     import_ncache, record_ncache, DYNAMIC_NODES, clear_cachenodes,
-    list_connected_cachefiles, list_connected_cacheblends)
+    list_connected_cachefiles, list_connected_cacheblends, append_ncache)
 from ncachemanager.attributes import (
     save_pervertex_maps, extract_xml_attributes, list_node_attributes_values,
     clean_namespaces_in_attributes_dict)
@@ -66,6 +66,27 @@ def record_in_existing_cacheversion(
     time = cmds.currentTime(query=True)
     cacheversion.set_range(nodes, start_frame=start_frame, end_frame=time)
     cacheversion.set_timespent(nodes=nodes, seconds=timespent)
+
+
+def append_to_cacheversion(cacheversion, nodes=None):
+    nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
+    start_time = datetime.now()
+    append_ncache(nodes=nodes)
+    end_time = datetime.now()
+    # Add up the second spent for the append cache to the cache time spent
+    # already recorded.
+    timespent = (end_time - start_time).total_seconds()
+    for node in cacheversion.infos['nodes']:
+        if node not in nodes:
+            continue
+        seconds = cacheversion.infos['nodes'][node]["timespent"] + timespent
+        cacheversion.set_timespent(nodes=[node], seconds=seconds)
+    # Update the cached range in the cache info if the append cache
+    # finished further the original cache
+    time = cmds.currentTime(query=True)
+    end_frame = cacheversion.infos['nodes'][node]['range'][1]
+    if time > end_frame:
+        cacheversion.set_range(nodes=nodes, end_frame=time)
 
 
 def connect_cacheversion(cacheversion, nodes=None, behavior=0):
