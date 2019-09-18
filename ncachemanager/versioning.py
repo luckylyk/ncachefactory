@@ -87,6 +87,10 @@ class CacheVersion(object):
         assert isinstance(cacheversion, CacheVersion)
         return cacheversion.directory == self.directory
 
+    def __ne__(self, cacheversion):
+        assert isinstance(cacheversion, CacheVersion)
+        return not self.__eq__(cacheversion)
+
     def __repr__(self):
         reprname = "CacheVersion | name={}, directory={}".format(
             self.infos["name"], self.directory)

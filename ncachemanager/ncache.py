@@ -70,7 +70,7 @@ def append_ncache(nodes=None):
         sampleMultiplier=1,
         cacheableNode=nodes,
         startTime=cmds.currentTime(query=True),
-        endTime=cmds.playbackOptions(max=True))
+        endTime=cmds.playbackOptions(max=True, query=True))
 
 
 def import_ncache(node, filename, behavior=0):

@@ -9,7 +9,7 @@ from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from ncachemanager.nodetable import DynamicNodesTableWidget
 from ncachemanager.comparator import ComparisonWidget
 from ncachemanager.ncache import DYNAMIC_NODES
-from ncachemanager.ncacheoptions import CacheOptions
+from ncachemanager.cacheoptions import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
 from ncachemanager.manager import (
     filter_connected_cacheversions, create_and_record_cacheversion,

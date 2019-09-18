@@ -344,8 +344,7 @@ class DynamicNodeTableModel(QtCore.QAbstractTableModel):
                 return get_connected_cache_names(node.name, self.cacheversions)
         elif role == QtCore.Qt.UserRole:
             return node
-
-        if role == QtCore.Qt.TextAlignmentRole:
+        elif role == QtCore.Qt.TextAlignmentRole:
             return QtCore.Qt.AlignCenter
 
 
