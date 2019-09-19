@@ -8,8 +8,8 @@ _ncachemanager_window = None
 
 
 def launch():
+    global _ncachemanager_window
     if _ncachemanager_window is None:
-        global _ncachemanager_window
-        _ncachemanager_window = NCacheManager(get_maya_windows())
-    _ncachemanager_window.show()
+        _ncachemanager_window = NCacheManager()
+    _ncachemanager_window.show(dockable=True)
 

@@ -83,6 +83,9 @@ class CacheVersion(object):
     def workspace(self):
         return os.path.dirname(self.directory)
 
+    def update(self):
+        self.infos = load_json(self.infos_path)
+
     def __eq__(self, cacheversion):
         assert isinstance(cacheversion, CacheVersion)
         return cacheversion.directory == self.directory
@@ -193,20 +196,19 @@ def find_file_match(node, cacheversion, extention='mcc'):
             return cacheversion_filename
 
 
-def filter_cachversions_containing_nodes(nodes, cacheversions):
+def filter_cacheversions_containing_nodes(nodes, cacheversions):
     nodes = [split_namespace_nodename(node)[1] for node in nodes]
-    filtered = []
+    filtered = set()
     for node in nodes:
         for cacheversion in cacheversions:
             if cacheversion_contains_node(node, cacheversion):
-                filtered.append(cacheversion)
-    return filtered
+                filtered.add(cacheversion)
+    return sorted(list(filtered), key=lambda x: x.name)
 
 
 def ensure_workspace_exists(workspace):
     if is_workspace_folder(workspace):
         return workspace
-    print "not in ncache " + workspace
     return create_workspace_folder(workspace)
 
 

@@ -175,6 +175,8 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self._active_selection_callbacks = True
 
     def update_layout(self, *unused_callbacks_args):
+        for cacheversion in self.table_model.cacheversions:
+            cacheversion.update()
         self.table_model.layoutChanged.emit()
 
     def show(self):
@@ -490,15 +492,6 @@ class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
                 painter.setBrush(brush)
                 painter.drawRect(cached_rect)
 
-        time = cmds.currentTime(query=True)
-        if time > scenestart and time < sceneend:
-            left = percent(time, scenestart, sceneend)
-            left = from_percent(left, bg_rect.left(), bg_rect.right())
-            pen = QtGui.QPen(QtGui.QColor(CURRENT_TIME_COLOR))
-            pen.setWidth(2)
-            painter.setPen(pen)
-            painter.drawLine(left, option.rect.top(), left, option.rect.bottom())
-
         for nucleus in cmds.ls(type='nucleus'):
             time = cmds.getAttr(nucleus + '.startFrame')
             if time < scenestart or time > sceneend:
@@ -507,6 +500,15 @@ class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
             left = from_percent(left, bg_rect.left(), bg_rect.right())
             pen = QtGui.QPen(QtGui.QColor(NUCLEUS_START_TIME_COLOR))
             pen.setWidth(1)
+            painter.setPen(pen)
+            painter.drawLine(left, option.rect.top(), left, option.rect.bottom())
+
+        time = cmds.currentTime(query=True)
+        if time > scenestart and time < sceneend:
+            left = percent(time, scenestart, sceneend)
+            left = from_percent(left, bg_rect.left(), bg_rect.right())
+            pen = QtGui.QPen(QtGui.QColor(CURRENT_TIME_COLOR))
+            pen.setWidth(2)
             painter.setPen(pen)
             painter.drawLine(left, option.rect.top(), left, option.rect.bottom())
 

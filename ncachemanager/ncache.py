@@ -151,6 +151,8 @@ def list_connected_cachefiles(nodes=None):
     :nodes: one or list of dynamic nodes as string ('hairSystem' and 'nCloth')
     '''
     nodes = nodes or cmds.ls(DYNAMIC_NODES)
+    if not nodes:
+        return []
     cachenodes = cmds.listConnections(nodes, type='cacheFile')
     if cachenodes:
         return list(set(cachenodes))
@@ -161,6 +163,8 @@ def list_connected_cacheblends(nodes=None):
     :nodes: one or list of dyna,ic nodes as string ('hairSystem' and 'nCloth')
     '''
     nodes = nodes or cmds.ls(DYNAMIC_NODES)
+    if not nodes:
+        return []
     blendnodes = cmds.listConnections(nodes, type='cacheBlend')
     if blendnodes:
         return list(set(blendnodes))

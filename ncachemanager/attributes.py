@@ -82,8 +82,9 @@ def set_pervertex_maps(nodes=None, directory=''):
         attributes = json.load(f)
     for node in nodes:
         for attribute, values in attributes[node].items():
-            cmds.setAttr(
-                node + '.' + attribute, values, dataType='doubleArray')
+            if values is None:
+                continue
+            cmds.setAttr(node + '.' + attribute, values, type='doubleArray')
 
 
 def to_maya_value(string):

@@ -1,7 +1,9 @@
 
 import datetime
+from maya import cmds
 from PySide2 import QtWidgets, QtCore
-from ncachemanager.versioning import filter_cachversions_containing_nodes
+from ncachemanager.versioning import (
+    filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachemanager.manager import (
     filter_connected_cacheversions, connect_cacheversion, apply_settings)
 from ncachemanager.qtutils import get_icon
@@ -10,6 +12,7 @@ from ncachemanager.attributes import set_pervertex_maps
 
 class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
     cacheApplied = QtCore.Signal()
+    infosModified = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(WorkspaceCacheversionsExplorer, self).__init__(parent)
@@ -38,6 +41,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
         self.groupbox_infos = QtWidgets.QGroupBox()
         self.cacheversion_infos = CacheversionInfosWidget()
+        self.cacheversion_infos.infosModified.connect(self.infosModified.emit)
         self.layout_cacheversion = QtWidgets.QVBoxLayout(self.groupbox_infos)
         self.layout_cacheversion.setContentsMargins(0, 0, 0, 0)
         self.layout_cacheversion.addWidget(self.cacheversion_infos)
@@ -84,16 +88,16 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
     def set_nodes_and_cacheversions(self, nodes=None, cacheversions=None):
         self.nodes = nodes
-        if cacheversions is None:
+        if cacheversions is None or nodes is None:
             self.setEnabled(False)
             self.cacheversion_infos.set_cacheversion(None)
+            return
         self.setEnabled(True)
         self.version_selector_model.set_cacheversions(
-            filter_cachversions_containing_nodes(nodes, cacheversions))
-        if nodes is None:
-            return
+            filter_cacheversions_containing_nodes(nodes, cacheversions))
         cacheversions = filter_connected_cacheversions(nodes[0], cacheversions)
         if not cacheversions:
+            self.version_selector.setCurrentIndex(0)
             return
         index = self.version_selector_model.cacheversions.index(cacheversions[0])
         self.version_selector.setCurrentIndex(index)
@@ -106,11 +110,23 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.cacheversion = self.version_selector_model.cacheversions[index]
         self.cacheversion_infos.set_cacheversion(self.cacheversion)
 
+    def get_connectable_nodes(self):
+        nodes = []
+        for node in self.nodes:
+            if not cacheversion_contains_node(node, self.cacheversion):
+                msg = '{} is not cached in version: {}. Skip connection'
+                cmds.warning(msg.format(node, self.cacheversion.infos['name']))
+                continue
+            nodes.append(node)
+        return nodes
+
     def _call_connect_cache(self):
-        connect_cacheversion(self.cacheversion, nodes=self.nodes, behavior=0)
+        nodes = self.get_connectable_nodes()
+        connect_cacheversion(self.cacheversion, nodes=nodes, behavior=0)
 
     def _call_blend_cache(self):
-        connect_cacheversion(self.cacheversion, nodes=self.nodes, behavior=2)
+        nodes = self.get_connectable_nodes()
+        connect_cacheversion(self.cacheversion, nodes=nodes, behavior=2)
 
     def _call_apply_settings(self):
         apply_settings(self.cacheversion, self.nodes)
@@ -140,6 +156,8 @@ class CacheversionsListModel(QtCore.QAbstractListModel):
 
 
 class CacheversionInfosWidget(QtWidgets.QWidget):
+    infosModified = QtCore.Signal()
+
     def __init__(self, parent=None):
         super(CacheversionInfosWidget, self).__init__(parent)
         self.cacheversion = None
@@ -182,6 +200,7 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         if self.cacheversion is None:
             return
         self.cacheversion.set_name(text)
+        self.infosModified.emit()
 
     def _call_comment_changed(self, *unused_signal_args):
         if self.cacheversion is None:

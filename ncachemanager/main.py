@@ -16,7 +16,8 @@ from ncachemanager.manager import (
     record_in_existing_cacheversion, append_to_cacheversion)
 from ncachemanager.infos import WorkspaceCacheversionsExplorer
 from ncachemanager.versioning import (
-    ensure_workspace_exists, list_available_cacheversions)
+    ensure_workspace_exists, list_available_cacheversions,
+    filter_cacheversions_containing_nodes)
 from ncachemanager.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
     VERSION_EXP_OPTIONVAR, ensure_optionvars_exists)
@@ -25,9 +26,9 @@ from ncachemanager.optionvars import (
 WINDOW_TITLE = "NCache Manager"
 
 
-class NCacheManager(QtWidgets.QWidget):
+class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def __init__(self, parent=None):
-        super(NCacheManager, self).__init__(parent, QtCore.Qt.Window)
+        super(NCacheManager, self).__init__(parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.workspace_widget = WorkspaceWidget()
         self.nodetable = DynamicNodesTableWidget()
@@ -54,6 +55,7 @@ class NCacheManager(QtWidgets.QWidget):
         self.comparison_expander = Expander("Comparisons", self.comparison)
         self.comparison_expander.clicked.connect(self.adjust_size)
         self.versions = WorkspaceCacheversionsExplorer()
+        self.versions.infosModified.connect(self.nodetable.update_layout)
         self.versions.cacheApplied.connect(self.nodetable.update_layout)
         text = "Available Versions"
         self.versions_expander = Expander(text, self.versions)
@@ -80,11 +82,11 @@ class NCacheManager(QtWidgets.QWidget):
 
         self.set_workspace(get_default_workspace())
 
-    def show(self, **kwargs):
-        super(NCacheManager, self).show(**kwargs)
-        self.apply_optionvars()
-        self.nodetable.show()
-        self.adjust_size()
+    # def show(self, **kwargs):
+    #     super(NCacheManager, self).show(**kwargs)
+    #     self.apply_optionvars()
+    #     self.nodetable.show()
+    #     self.adjust_size()
 
     def adjust_size(self, *unused_signals_args):
         self.adjustSize()
@@ -101,18 +103,25 @@ class NCacheManager(QtWidgets.QWidget):
         self.nodetable.update_layout()
 
     def selection_changed(self):
-        # update comparisons table
-        if not self.nodetable.selected_nodes:
-            return self.comparison.set_node_and_cacheversion(None, None)
         nodes = self.nodetable.selected_nodes
-        workspace = self.workspace_widget.workspace
-        cacheversions = list_available_cacheversions(workspace)
-        self.versions.set_nodes_and_cacheversions(nodes, cacheversions)
-        cacheversions = filter_connected_cacheversions(nodes[0], cacheversions)
-        if not cacheversions:
+        if not self.nodetable.selected_nodes:
+            self.versions.set_nodes_and_cacheversions(None, None)
             self.comparison.set_node_and_cacheversion(None, None)
             return
-        self.comparison.set_node_and_cacheversion(nodes[0], cacheversions[0])
+        workspace = self.workspace_widget.workspace
+        all_cacheversions = list_available_cacheversions(workspace)
+        available_cacheversions = filter_cacheversions_containing_nodes(
+            cmds.ls(type=DYNAMIC_NODES), all_cacheversions)
+
+        connected_cacheversions = filter_connected_cacheversions(
+            nodes, available_cacheversions)
+        if not connected_cacheversions:
+            self.comparison.set_node_and_cacheversion(None, None)
+            self.versions.set_nodes_and_cacheversions(nodes, available_cacheversions)
+            return
+
+        self.versions.set_nodes_and_cacheversions(nodes, available_cacheversions)
+        self.comparison.set_node_and_cacheversion(nodes[0], connected_cacheversions[0])
 
     def apply_optionvars(self):
         ensure_optionvars_exists()
