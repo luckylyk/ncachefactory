@@ -82,11 +82,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         self.set_workspace(get_default_workspace())
 
-    # def show(self, **kwargs):
-    #     super(NCacheManager, self).show(**kwargs)
-    #     self.apply_optionvars()
-    #     self.nodetable.show()
-    #     self.adjust_size()
+    def show(self, **kwargs):
+        super(NCacheManager, self).show(**kwargs)
+        self.apply_optionvars()
+        self.nodetable.show()
+        self.adjust_size()
 
     def adjust_size(self, *unused_signals_args):
         self.adjustSize()
