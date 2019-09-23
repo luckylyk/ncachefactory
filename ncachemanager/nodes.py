@@ -2,8 +2,10 @@ from maya import cmds
 import maya.api.OpenMaya as om2
 
 from ncachemanager.ncloth import (
-    get_clothnode_color, set_clothnode_color, switch_visibility,
-    find_input_mesh_dagpath, find_output_mesh_dagpath, is_mesh_visible)
+    find_input_mesh_dagpath, find_output_mesh_dagpath)
+from ncachemanager.mesh import (
+    set_mesh_color, get_mesh_color, is_mesh_visible,
+    switch_meshes_visibilities)
 from ncachemanager.attributes import (
     ensure_node_has_ncachemanager_tags, FILTERED_FOR_NCACHEMANAGER)
 
@@ -100,10 +102,13 @@ class ClothNode(DynamicNode):
         self._color = None
         self._in_mesh = None
         self._out_mesh = None
+        self._current_mesh = None
 
     def reset_connections(self):
         self._in_mesh = None
         self._out_mesh = None
+        self._current_mesh = None
+        self._color = None
 
     @property
     def in_mesh(self):
@@ -119,6 +124,16 @@ class ClothNode(DynamicNode):
             return self._in_mesh
         except:
             return None
+
+    @property
+    def current_mesh(self):
+        if self._current_mesh is not None:
+            return self._current_mesh
+        if is_mesh_visible(self.out_mesh.name()):
+            self._current_mesh = self.out_mesh
+        else:
+            self._current_mesh = self.in_mesh
+        return self._current_mesh
 
     @property
     def out_mesh(self):
@@ -138,11 +153,11 @@ class ClothNode(DynamicNode):
     @property
     def color(self):
         if self._color is None:
-            self._color = get_clothnode_color(self.name)
+            self._color = get_mesh_color(self.current_mesh.name())
         return self._color
 
     def set_color(self, red, green, blue):
-        set_clothnode_color(self.name, red, green, blue)
+        set_mesh_color(self.current_mesh.name(), red, green, blue)
         self._color = red, green, blue
 
     @property
@@ -156,7 +171,9 @@ class ClothNode(DynamicNode):
             return
         mesh_to_show = self.out_mesh if state else self.in_mesh
         mesh_to_hide = self.in_mesh if state else self.out_mesh
-        switch_visibility(mesh_to_show.name(), mesh_to_hide.name())
+        switch_meshes_visibilities(mesh_to_show.name(), mesh_to_hide.name())
+        self._current_mesh = None
+        self._color = None
 
 
 def list_dynamic_nodes():

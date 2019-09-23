@@ -26,6 +26,7 @@ CACHE_COMMAND_TEMPLATE = """
 doCreateNclothCache 5 {{ "0", "{start_frame}", "{end_frame}", "OneFile", "1",\
 "{output}", "1", "", "0", "replace", "1", "1", "1", "0", "1","mcc"}}"""
 
+
 def record_ncache(
         nodes=None, start_frame=0, end_frame=100, output=None, behavior=0):
     '''
@@ -57,11 +58,13 @@ def record_ncache(
 
     if behavior:
         reconnect_cachenodes(connections)
-
     return cache_nodes
 
 
-def append_ncache(nodes=None):
+def append_ncache(nodes=None, verbose=False):
+    if verbose is True:
+        callback = register_verbose_callback()
+
     nodes = nodes or cmds.ls(DYNAMIC_NODES)
     cmds.cacheFile(
         refresh=True,
@@ -71,6 +74,10 @@ def append_ncache(nodes=None):
         cacheableNode=nodes,
         startTime=cmds.currentTime(query=True),
         endTime=cmds.playbackOptions(max=True, query=True))
+
+    if verbose:
+        om2.MMessage.removeCallback(callback)
+
 
 
 def import_ncache(node, filename, behavior=0):
@@ -123,7 +130,6 @@ def reconnect_cachenodes(connections, nodetypes=None):
     this function reconnect the cache receveiving a dict with the connections
     setup before the cache.
     '''
-    print connections
     for cachenode, node in connections.iteritems():
         cachefile = get_connected_cachenode(node)
         if not cachefile:

@@ -155,8 +155,11 @@ def create_cacheversion(
             'timespent': timespent}
 
     infos = {
-        'name': name, 'comment': comment, 'nodes': nodes_infos,
-        'start_frame': 0, 'end_frame': 0}
+        'name': name,
+        'comment': comment,
+        'nodes': nodes_infos,
+        'start_frame': 0,
+        'end_frame': 0}
 
     infos_filepath = os.path.join(directory, INFOS_FILENAME)
     with open(infos_filepath, 'w') as infos_file:
@@ -193,7 +196,7 @@ def find_file_match(node, cacheversion, extention='mcc'):
         filename = cached_namespace + '_' + filename
     for cacheversion_filename in cacheversion.get_files():
         if filename == os.path.basename(cacheversion_filename):
-            return cacheversion_filename
+            return cacheversion_filename.replace("\\", "/")
 
 
 def filter_cacheversions_containing_nodes(nodes, cacheversions):

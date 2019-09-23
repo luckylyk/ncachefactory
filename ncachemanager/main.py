@@ -17,7 +17,7 @@ from ncachemanager.manager import (
 from ncachemanager.infos import WorkspaceCacheversionsExplorer
 from ncachemanager.versioning import (
     ensure_workspace_exists, list_available_cacheversions,
-    filter_cacheversions_containing_nodes)
+    filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachemanager.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
     VERSION_EXP_OPTIONVAR, ensure_optionvars_exists)
@@ -121,6 +121,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             return
 
         self.versions.set_nodes_and_cacheversions(nodes, available_cacheversions)
+        if not cacheversion_contains_node(nodes[0], connected_cacheversions[0]):
+            self.comparison.set_node_and_cacheversion(None, None)
+            return
         self.comparison.set_node_and_cacheversion(nodes[0], connected_cacheversions[0])
 
     def apply_optionvars(self):
@@ -158,7 +161,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=nodes,
-            behavior=self.cacheoptions.behavior)
+            behavior=self.cacheoptions.behavior,
+            verbose=self.cacheoptions.verbose)
         self.nodetable.set_workspace(workspace)
         self.nodetable.update_layout()
         self.selection_changed()
@@ -186,7 +190,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 start_frame=start_frame,
                 end_frame=end_frame,
                 nodes=nodes,
-                behavior=self.cacheoptions.behavior)
+                behavior=self.cacheoptions.behavior,
+                verbose=self.cacheoptions.verbose)
         self.nodetable.update_layout()
         self.selection_changed()
 
@@ -214,7 +219,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 message = "append cache on multiple version is not suppported."
                 return cmds.warning(message)
 
-        append_to_cacheversion(nodes=nodes, cacheversion=cacheversion)
+        append_to_cacheversion(
+            nodes=nodes,
+            cacheversion=cacheversion,
+            verbose=self.cacheoptions.verbose)
+
         self.nodetable.update_layout()
         self.selection_changed()
 

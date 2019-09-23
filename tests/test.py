@@ -52,21 +52,4 @@ def create_ncloth_test_scene():
     mel.eval('createNConstraint("pointToSurface", "")')
 
 
-workspace = home + "/ncachemanager_tests"
-if not os.path.exists(workspace):
-    os.makedirs(workspace)
-
 create_ncloth_test_scene()
-version = create_and_record_cacheversion(workspace, 1, 50)
-workspace = version.workspace
-
-# view = nodetable.DynamicNodesTableWidget(qtutils.get_maya_windows())
-# view.set_workspace(workspace)
-# view.show()
-
-# view2 = comparator.ComparisonWidget('nClothShape2', version)
-# view2.show()
-
-view = main.NCacheManager()
-view.set_workspace(workspace)
-view.show()

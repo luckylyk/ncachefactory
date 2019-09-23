@@ -5,7 +5,8 @@ from PySide2 import QtWidgets, QtCore
 from ncachemanager.versioning import (
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachemanager.manager import (
-    filter_connected_cacheversions, connect_cacheversion, apply_settings)
+    filter_connected_cacheversions, connect_cacheversion, apply_settings,
+    connect_cacheversion_to_inputshape, connect_cacheversion_to_restshape)
 from ncachemanager.qtutils import get_icon
 from ncachemanager.attributes import set_pervertex_maps
 
@@ -56,7 +57,9 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.connect_layout.addWidget(self.blend_cache)
 
         self.connect_input = QtWidgets.QPushButton("connect to input")
+        self.connect_input.released.connect(self._call_connect_input)
         self.connect_rest = QtWidgets.QPushButton("connect to restShape")
+        self.connect_rest.released.connect(self._call_connect_rest)
         self.connect_layout2 = QtWidgets.QHBoxLayout()
         self.connect_layout2.setContentsMargins(0, 0, 0, 0)
         self.connect_layout2.addWidget(self.connect_input)
@@ -133,6 +136,12 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
     def _call_apply_maps(self):
         set_pervertex_maps(self.nodes, self.cacheversion.directory)
+
+    def _call_connect_input(self):
+        connect_cacheversion_to_inputshape(self.cacheversion, self.nodes)
+
+    def _call_connect_rest(self):
+        connect_cacheversion_to_restshape(self.cacheversion, self.nodes)
 
 
 class CacheversionsListModel(QtCore.QAbstractListModel):
