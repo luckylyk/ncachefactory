@@ -61,10 +61,7 @@ def record_ncache(
     return cache_nodes
 
 
-def append_ncache(nodes=None, verbose=False):
-    if verbose is True:
-        callback = register_verbose_callback()
-
+def append_ncache(nodes=None):
     nodes = nodes or cmds.ls(DYNAMIC_NODES)
     cmds.cacheFile(
         refresh=True,
@@ -74,10 +71,6 @@ def append_ncache(nodes=None, verbose=False):
         cacheableNode=nodes,
         startTime=cmds.currentTime(query=True),
         endTime=cmds.playbackOptions(max=True, query=True))
-
-    if verbose:
-        om2.MMessage.removeCallback(callback)
-
 
 
 def import_ncache(node, filename, behavior=0):

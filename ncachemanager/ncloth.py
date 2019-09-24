@@ -20,8 +20,8 @@ def find_output_mesh_dagpath(clothnode_name):
     return om2.MFnDagNode(dependnode)
 
 
-def clean_inputmesh_connection(clothnode_name):
-    input_plug = clothnode_name + '.inputMesh'
+def clean_inputmesh_connection(clothnode_name, inattr):
+    input_plug = clothnode_name + '.' + inattr
     connections = cmds.listConnections(input_plug, plugs=True)
     if not connections:
         return

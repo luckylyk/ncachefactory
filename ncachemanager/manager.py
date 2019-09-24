@@ -122,45 +122,55 @@ def append_to_cacheversion(cacheversion, nodes=None, verbose=False):
         om2.MMessage.removeCallback(callback)
 
 
-def connect_cacheversion_to_inputshape(cacheversion, nodes=None):
-    if not cmds.objExists(ALTERNATE_INPUTSHAPE_GROUP):
-        cmds.group(name=ALTERNATE_INPUTSHAPE_GROUP, world=True, empty=True)
-    group_content = cmds.listRelatives(ALTERNATE_INPUTSHAPE_GROUP)
-    cmds.delete(group_content)
-    nodes = nodes or cmds.ls(type='nCloth')
-    new_input_meshes = []
-    for node in nodes:
-        if not cacheversion_contains_node(node, cacheversion):
-            continue
-        ensure_original_input_is_saved(node)
-        input_mesh = find_input_mesh_dagpath(node).name()
-        mesh = create_mesh_for_geo_cache(input_mesh, INPUTSHAPE_SUFFIX)
-        new_input_meshes.append(cmds.listRelatives(mesh, parent=True)[0])
-        xml_file = find_file_match(node, cacheversion, extention='xml')
-        attach_geo_cache(mesh, xml_file)
-        clean_inputmesh_connection(node)
-        cmds.connectAttr(mesh + '.outMesh', node + '.inputMesh')
-    cmds.parent(new_input_meshes, ALTERNATE_INPUTSHAPE_GROUP)
-
-
-def connect_cacheversion_to_restshape(cacheversion, nodes=None):
-    if not cmds.objExists(ALTERNATE_RESTSHAPE_GROUP):
-        cmds.group(name=ALTERNATE_RESTSHAPE_GROUP, world=True)
-    group_content = cmds.listRelatives(ALTERNATE_RESTSHAPE_GROUP)
-    cmds.delete(group_content)
+def plug_cacheversion(cacheversion, groupname, suffix, inattr, nodes=None):
+    if not cmds.objExists(groupname):
+        cmds.group(name=groupname, world=True, empty=True)
+    group_content = cmds.listRelatives(groupname)
+    group_content = cmds.ls(
+        group_content,
+        shapes=True,
+        dag=True,
+        noIntermediate=True)
 
     nodes = nodes or cmds.ls(type='nCloth')
     new_input_meshes = []
     for node in nodes:
         if not cacheversion_contains_node(node, cacheversion):
             continue
-        input_mesh = find_input_mesh_dagpath(node).name()
-        mesh = create_mesh_for_geo_cache(input_mesh, INPUTSHAPE_SUFFIX)
+        ensure_original_input_is_stored(node)
+        input_mesh = get_orignial_input_mesh(node)
+        mesh = create_mesh_for_geo_cache(input_mesh, suffix)
         new_input_meshes.append(cmds.listRelatives(mesh, parent=True)[0])
         xml_file = find_file_match(node, cacheversion, extention='xml')
         attach_geo_cache(mesh, xml_file)
-        cmds.connectAttr(mesh + '.outMesh', node + '.restShapeMesh')
-    cmds.parent(new_input_meshes, ALTERNATE_RESTSHAPE_GROUP)
+        clean_inputmesh_connection(node, inattr)
+        cmds.connectAttr(mesh + '.worldMesh[0]', node + '.' + inattr)
+    cmds.parent(new_input_meshes, groupname)
+    # Parse the original group content and clean all the shape which are
+    # not used anymore.
+    content_to_clean = [
+        cmds.listRelatives(node, parent=True)[0] for node in group_content
+        if not cmds.ls(cmds.listConnections(node, type='nCloth'))]
+    if content_to_clean:
+        cmds.delete(content_to_clean)
+
+
+def plug_cacheversion_to_inputmesh(cacheversion, nodes=None):
+    plug_cacheversion(
+        cacheversion=cacheversion,
+        groupname=ALTERNATE_INPUTSHAPE_GROUP,
+        suffix=INPUTSHAPE_SUFFIX,
+        inattr='inputMesh',
+        nodes=nodes)
+
+
+def plug_cacheversion_to_restshape(cacheversion, nodes=None):
+    plug_cacheversion(
+        cacheversion=cacheversion,
+        groupname=ALTERNATE_RESTSHAPE_GROUP,
+        suffix=RESTSHAPE_SUFFIX,
+        inattr='restShapeMesh',
+        nodes=nodes)
 
 
 def connect_cacheversion(cacheversion, nodes=None, behavior=0):
@@ -247,7 +257,7 @@ def register_verbose_callback():
     return om2.MEventMessage.addEventCallback('timeChanged', function)
 
 
-def ensure_original_input_is_saved(dynamicnode):
+def ensure_original_input_is_stored(dynamicnode):
     save_plug = dynamicnode + '.' + ORIGINAL_INPUTSHAPE_ATTRIBUTE
     if cmds.listConnections(save_plug):
         # original input already saved
@@ -257,6 +267,14 @@ def ensure_original_input_is_saved(dynamicnode):
     if not input_mesh_connections:
         raise ValueError("No input attract mesh found for " + dynamicnode)
     cmds.connectAttr(input_mesh_connections[0], save_plug)
+
+
+def get_orignial_input_mesh(dynamicnode):
+    save_plug = dynamicnode + '.' + ORIGINAL_INPUTSHAPE_ATTRIBUTE
+    connections = cmds.listConnections(save_plug, shapes=True)
+    if connections:
+        return connections[0]
+    return
 
 
 if __name__ == "__main__":

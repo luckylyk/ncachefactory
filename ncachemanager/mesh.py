@@ -51,7 +51,7 @@ def set_mesh_color(mesh, red, green, blue):
 
 
 def is_mesh_visible(mesh):
-    return (cmds.getAttr(mesh + ".intermediateObject") is False)
+    return cmds.getAttr(mesh + ".intermediateObject") is False
 
 
 def switch_meshes_visibilities(mesh_to_show, mesh_to_hide):
@@ -73,7 +73,12 @@ def create_mesh_for_geo_cache(mesh, suffix):
     cmds.disconnectAttr(mesh + ".outMesh", copy + ".inMesh")
     mesh_transform = cmds.listRelatives(mesh, parent=True)[0]
     copy_transform = cmds.listRelatives(copy, parent=True)[0]
-    copy_transform = cmds.rename(copy_transform, mesh_transform + suffix)
+    # create a unique name
+    name = mesh_transform + suffix + '_'
+    index = 0
+    while cmds.objExists(name + str(index).zfill(3)):
+        index += 1
+    copy_transform = cmds.rename(copy_transform, name + str(index).zfill(3))
 
     return dagnode.name()
 

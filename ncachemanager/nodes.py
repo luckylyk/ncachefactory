@@ -10,7 +10,6 @@ from ncachemanager.attributes import (
     ensure_node_has_ncachemanager_tags, FILTERED_FOR_NCACHEMANAGER)
 
 
-
 class DynamicNode(object):
     """this object is a model for the DynamicNodeTableView and his delegate.
     It's linked to a maya node and contain method and properties needed for
