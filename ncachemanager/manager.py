@@ -123,6 +123,11 @@ def append_to_cacheversion(cacheversion, nodes=None, verbose=False):
 
 
 def plug_cacheversion(cacheversion, groupname, suffix, inattr, nodes=None):
+    """ This function will plug a ncache to a given attribute.
+    Basically, it create a static mesh based on the dynamic node input.
+    Import the ncache as geo cache file and drive the created mesh with.
+    And finally connect it to the input attribute given.
+    """
     if not cmds.objExists(groupname):
         cmds.group(name=groupname, world=True, empty=True)
     group_content = cmds.listRelatives(groupname)

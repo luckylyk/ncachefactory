@@ -17,7 +17,7 @@ TAGS = [
     {
         'longName': ORIGINAL_INPUTSHAPE_ATTRIBUTE,
         'attributeType': 'message',
-    },
+    }
 ]
 
 PERVERTEX_FILE = 'pervertexmaps.json'

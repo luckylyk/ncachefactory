@@ -86,5 +86,4 @@ def create_mesh_for_geo_cache(mesh, suffix):
 def attach_geo_cache(mesh, xml_file):
     transform = cmds.listRelatives(mesh, parent=True)[0]
     command = CONNECT_GEO_CACHE_MEL_COMMAND.format(xml_file, transform)
-    print command
     mel.eval(command)
