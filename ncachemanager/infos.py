@@ -6,7 +6,8 @@ from ncachemanager.versioning import (
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachemanager.manager import (
     filter_connected_cacheversions, connect_cacheversion, apply_settings,
-    plug_cacheversion_to_inputmesh, plug_cacheversion_to_restshape)
+    plug_cacheversion_to_inputmesh, plug_cacheversion_to_restshape,
+    recover_original_inputmesh)
 from ncachemanager.qtutils import get_icon
 from ncachemanager.attributes import set_pervertex_maps
 
@@ -56,14 +57,18 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.connect_layout.addWidget(self.connect_cache)
         self.connect_layout.addWidget(self.blend_cache)
 
-        self.connect_input = QtWidgets.QPushButton("plug as input shape")
-        self.connect_input.released.connect(self._call_plug_input)
-        self.connect_rest = QtWidgets.QPushButton("plug as rest shape")
-        self.connect_rest.released.connect(self._call_plug_rest)
+        self.plug_input = QtWidgets.QPushButton("plug as input shape")
+        self.plug_input.released.connect(self._call_plug_input)
+        self.plug_rest = QtWidgets.QPushButton("plug as rest shape")
+        self.plug_rest.released.connect(self._call_plug_rest)
         self.connect_layout2 = QtWidgets.QHBoxLayout()
         self.connect_layout2.setContentsMargins(0, 0, 0, 0)
-        self.connect_layout2.addWidget(self.connect_input)
-        self.connect_layout2.addWidget(self.connect_rest)
+        self.connect_layout2.addWidget(self.plug_input)
+        self.connect_layout2.addWidget(self.plug_rest)
+
+        text = "recover original input"
+        self.recover_input = QtWidgets.QPushButton(text)
+        self.recover_input.released.connect(self._call_recover_input)
 
         self.apply_settings = QtWidgets.QPushButton("apply settings")
         self.apply_settings.released.connect(self._call_apply_settings)
@@ -86,6 +91,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.layout.addWidget(self.groupbox_infos)
         self.layout.addLayout(self.connect_layout)
         self.layout.addLayout(self.connect_layout2)
+        self.layout.addWidget(self.recover_input)
         self.layout.addLayout(self.attributes_layout)
         self.setEnabled(False)
 
@@ -131,20 +137,24 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         nodes = self.get_connectable_nodes()
         connect_cacheversion(self.cacheversion, nodes=nodes, behavior=2)
 
-    def _call_apply_settings(self):
-        apply_settings(self.cacheversion, self.nodes)
-
-    def _call_apply_maps(self):
-        set_pervertex_maps(self.nodes, self.cacheversion.directory)
-
     def _call_plug_input(self):
         plug_cacheversion_to_inputmesh(self.cacheversion, self.nodes)
 
     def _call_plug_rest(self):
         plug_cacheversion_to_restshape(self.cacheversion, self.nodes)
 
+    def _call_recover_input(self):
+        recover_original_inputmesh(self.nodes)
+
+    def _call_apply_settings(self):
+        apply_settings(self.cacheversion, self.nodes)
+
+    def _call_apply_maps(self):
+        set_pervertex_maps(self.nodes, self.cacheversion.directory)
+
 
 class CacheversionsListModel(QtCore.QAbstractListModel):
+
     def __init__(self, parent=None):
         super(CacheversionsListModel, self).__init__(parent)
         self.cacheversions = []
@@ -169,6 +179,7 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(CacheversionInfosWidget, self).__init__(parent)
+
         self.cacheversion = None
         self.name = QtWidgets.QLineEdit()
         self.name.setEnabled(False)

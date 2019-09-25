@@ -223,6 +223,32 @@ def compare_node_and_version(node, cacheversion):
     return differences
 
 
+def recover_original_inputmesh(nodes):
+    nodes_to_clean = []
+    for node in nodes:
+        store_plug = node + '.' + ORIGINAL_INPUTSHAPE_ATTRIBUTE
+        stored_input_plugs = cmds.listConnections(
+            store_plug,
+            plugs=True,
+            connections=True)
+        if not stored_input_plugs:
+            cmds.warning('no stored input for ' + node)
+            continue
+        inputmeshattr = node + '.inputMesh'
+        current_inputs = cmds.listConnections(
+            inputmeshattr,
+            plugs=True,
+            connections=True)
+        if current_inputs:
+            cmds.disconnectAttr(current_inputs[1], inputmeshattr)
+        cmds.connectAttr(stored_input_plugs[1], inputmeshattr)
+        disconnected_node = current_inputs[1].split('.')[0]
+        if not cmds.listConnections(disconnected_node, source=True):
+            nodes_to_clean.append(disconnected_node)
+    if nodes_to_clean:
+        cmds.delete(nodes_to_clean)
+
+
 def apply_settings(cacheversion, nodes):
     for node in nodes:
         filename = find_file_match(node, cacheversion, extention='xml')
@@ -235,6 +261,15 @@ def apply_settings(cacheversion, nodes):
                 cmds.setAttr(attribute, value, type=atype)
 
 
+def verbose_callback(times, *useless_callback_args):
+    times[0] = times[1]
+    times[1] = datetime.now()
+    timespent = str(times[1] - times[0])
+    frame = cmds.currentTime(query=True)
+    print "INFO ncache: frame {} cached, timespent {}".format(
+        frame, timespent)
+
+
 def register_verbose_callback():
     """ This function register a callback which print current frame and time
     spent on every frame cached. That mainly interesting to know the progress
@@ -244,34 +279,25 @@ def register_verbose_callback():
     # directly edit the list which allow to compare the times between to frame
     # and compute the time spent per frame simulated.
     times = [None, datetime.now()]
-
-    def verbose_callback(times, *useless_callback_args):
-        times[0] = times[1]
-        times[1] = datetime.now()
-        timespent = str(times[1] - times[0])
-        frame = cmds.currentTime(query=True)
-        print "INFO ncache: frame {} cached, timespent {}".format(
-            frame, timespent)
-
     function = partial(verbose_callback, times)
     return om2.MEventMessage.addEventCallback('timeChanged', function)
 
 
 def ensure_original_input_is_stored(dynamicnode):
-    save_plug = dynamicnode + '.' + ORIGINAL_INPUTSHAPE_ATTRIBUTE
-    if cmds.listConnections(save_plug):
+    store_plug = dynamicnode + '.' + ORIGINAL_INPUTSHAPE_ATTRIBUTE
+    if cmds.listConnections(store_plug):
         # original input already saved
         return
     input_plug = dynamicnode + '.inputMesh'
     input_mesh_connections = cmds.listConnections(input_plug, plugs=True)
     if not input_mesh_connections:
         raise ValueError("No input attract mesh found for " + dynamicnode)
-    cmds.connectAttr(input_mesh_connections[0], save_plug)
+    cmds.connectAttr(input_mesh_connections[0], store_plug)
 
 
 def get_orignial_input_mesh(dynamicnode):
-    save_plug = dynamicnode + '.' + ORIGINAL_INPUTSHAPE_ATTRIBUTE
-    connections = cmds.listConnections(save_plug, shapes=True)
+    store_plug = dynamicnode + '.' + ORIGINAL_INPUTSHAPE_ATTRIBUTE
+    connections = cmds.listConnections(store_plug, shapes=True)
     if connections:
         return connections[0]
     return

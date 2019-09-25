@@ -8,7 +8,6 @@ from ncachemanager.ncache import DYNAMIC_NODES
 
 FILTERED_FOR_NCACHEMANAGER = 'isFilteredForNCacheManager'
 ORIGINAL_INPUTSHAPE_ATTRIBUTE = 'originalInputShape'
-ORIGINAL_RESTSHAPE_ATTRIBUTE = 'originalRestShape'
 TAGS = [
     {
         'longName': FILTERED_FOR_NCACHEMANAGER,
@@ -19,10 +18,6 @@ TAGS = [
         'longName': ORIGINAL_INPUTSHAPE_ATTRIBUTE,
         'attributeType': 'message',
     },
-    {
-        'longName': ORIGINAL_RESTSHAPE_ATTRIBUTE,
-        'attributeType': 'message',
-    }
 ]
 
 PERVERTEX_FILE = 'pervertexmaps.json'
