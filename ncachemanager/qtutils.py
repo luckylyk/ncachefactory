@@ -1,8 +1,15 @@
 
 import os
-import shiboken2
-from PySide2 import QtWidgets, QtGui
+from shiboken2 import wrapInstance
+from PySide2 import QtWidgets, QtGui, QtWidgets, QtTest, QtCore
 import maya.OpenMayaUI as omui
+
+
+ICONPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
+
+
+def get_icon(filename):
+    return QtGui.QIcon(os.path.join(ICONPATH, filename))
 
 
 def get_maya_windows():
@@ -12,11 +19,24 @@ def get_maya_windows():
     """
     main_window = omui.MQtUtil.mainWindow()
     if main_window is not None:
-        return shiboken2.wrapInstance(long(main_window), QtWidgets.QWidget)
+        return wrapInstance(long(main_window), QtWidgets.QWidget)
 
 
-ICONPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'icons')
+def mayaui_to_qwidget(name):
+    ptr = omui.MQtUtil.findControl(name)
+    if ptr is None:
+        ptr = omui.MQtUtil.findLayout(name)
+    if ptr is None:
+        ptr = omui.MQtUtil.findMenuItem(name)
+    if ptr is not None:
+        return wrapInstance(long(ptr), QtWidgets.QWidget)
 
 
-def get_icon(filename):
-    return QtGui.QIcon(os.path.join(ICONPATH, filename))
+def simulate_escape_key_pressed():
+    QtTest.QTest.keyClick(get_maya_windows(), QtCore.Qt.Key_Escape)
+
+
+def shoot(destination, mayaui_element_name):
+    widget = mayaui_to_qwidget(mayaui_element_name)
+    pixmap = QtGui.QPixmap.grabWindow(widget.winId())
+    pixmap.save(destination, 'jpg')

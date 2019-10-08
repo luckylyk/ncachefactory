@@ -13,6 +13,7 @@ example of an infos.json structure
 DEFAULT_INFOS = {
     'name': 'cache manager cache',
     'comment': 'comme ci comme ca',
+    'playblasts': [],
     'nodes': {
         'nodename_1': {
             'range': (100, 150)}},
@@ -25,6 +26,7 @@ import json
 import shutil
 
 INFOS_FILENAME = 'infos.json'
+PLAYBLAST_FILENAME = 'playblast_{}.mp4'
 VERSION_FOLDERNAME = 'version_{}'
 WORKSPACE_FOLDERNAME = 'ncaches'
 
@@ -44,6 +46,9 @@ class CacheVersion(object):
         return [
             os.path.join(self.directory, f) for f in os.listdir(self.directory)
             if extention_filter is None or f.endswith('.' + extention_filter)]
+
+    def get_available_playblast_filename(self):
+        return get_available_playblast_filename(self.directory)
 
     def set_range(self, nodes=None, start_frame=None, end_frame=None):
         assert start_frame or end_frame
@@ -65,6 +70,10 @@ class CacheVersion(object):
             for node in nodes:
                 _, node = split_namespace_nodename(node)
                 self.infos['nodes'][node]['timespent'] = seconds
+        self.save_infos()
+
+    def add_playblast(self, playblast_filename):
+        self.infos['playblasts'].append(playblast_filename)
         self.save_infos()
 
     def set_comment(self, comment):
@@ -159,7 +168,8 @@ def create_cacheversion(
         'comment': comment,
         'nodes': nodes_infos,
         'start_frame': 0,
-        'end_frame': 0}
+        'end_frame': 0,
+        'playblasts': []}
 
     infos_filepath = os.path.join(directory, INFOS_FILENAME)
     with open(infos_filepath, 'w') as infos_file:
@@ -228,6 +238,21 @@ def is_workspace_folder(directory):
 
 def clear_cacheversion_content(cacheversion):
     shutil.rmtree(cacheversion.directory)
+
+
+def get_available_playblast_filename(directory):
+    i = 0
+    filename = PLAYBLAST_FILENAME.format(str(i).zfill(4))
+    while os.path.exists(os.path.join(directory, filename)):
+        i += 1
+        filename = PLAYBLAST_FILENAME.format(str(i).zfill(4))
+    return os.path.join(directory, filename)
+
+
+def move_playblast_to_cacheversion(path, cacheversion):
+    destination = cacheversion.get_available_playblast_filename()
+    os.rename(path, destination)
+    cacheversion.add_playblast(destination)
 
 
 if __name__ == "__main__":

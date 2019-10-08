@@ -4,7 +4,7 @@ from maya import cmds
 from PySide2 import QtWidgets, QtCore
 from ncachemanager.versioning import (
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
-from ncachemanager.manager import (
+from ncachemanager.api import (
     filter_connected_cacheversions, connect_cacheversion, apply_settings,
     plug_cacheversion_to_inputmesh, plug_cacheversion_to_restshape,
     recover_original_inputmesh)

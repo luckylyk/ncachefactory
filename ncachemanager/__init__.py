@@ -12,4 +12,3 @@ def launch():
     if _ncachemanager_window is None:
         _ncachemanager_window = NCacheManager()
     _ncachemanager_window.show(dockable=True)
-

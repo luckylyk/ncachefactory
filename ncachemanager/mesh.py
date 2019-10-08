@@ -87,3 +87,25 @@ def attach_geo_cache(mesh, xml_file):
     transform = cmds.listRelatives(mesh, parent=True)[0]
     command = CONNECT_GEO_CACHE_MEL_COMMAND.format(xml_file, transform)
     mel.eval(command)
+
+
+def is_deformed_mesh_too_stretched(
+        deformed_mesh, reference_mesh, tolerence_factor=2):
+    """ This function compare a deformed mesh to a reference mesh and query if
+    some edges seems too stretched. The algorytm is simple, is parse the two
+    meshes, compare edge per edge. If mesh deformed edge is longer than the
+    reference mesh one multiplied by the tolerence factor, the function return
+    False, else it return True.
+    """
+    selection_list = om2.MSelectionList()
+    selection_list.add(deformed_mesh)
+    selection_list.add(reference_mesh)
+    deformed_edge_iterator = om2.MItMeshEdge(selection_list.getDagPath(0))
+    reference_edge_iterator = om2.MItMeshEdge(selection_list.getDagPath(1))
+    while not reference_edge_iterator.isDone():
+        limit = tolerence_factor * reference_edge_iterator.length()
+        if deformed_edge_iterator.length() > limit:
+            return True
+        reference_edge_iterator.next()
+        deformed_edge_iterator.next()
+    return False

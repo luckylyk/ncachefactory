@@ -4,7 +4,7 @@ import maya.OpenMaya as om
 
 from ncachemanager.qtutils import get_icon
 from ncachemanager.nodes import filtered_dynamic_nodes, create_dynamic_node
-from ncachemanager.manager import filter_connected_cacheversions
+from ncachemanager.api import filter_connected_cacheversions
 from ncachemanager.versioning import (
     list_available_cacheversions, split_namespace_nodename)
 from ncachemanager.ncache import (
@@ -82,10 +82,12 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
         self.table_model.set_cacheversions(cacheversions)
 
     def register_callbacks(self):
+        if self._callbacks:
+            self.unregister_callbacks()
+
         function = self._preconnection_made_callback
         cb = om.MDGMessage.addPreConnectionCallback(function)
         self._callbacks.append(cb)
-
         for nodetype in DYNAMIC_NODES:
             function = self._remove_node_callback
             cb = om.MDGMessage.addNodeRemovedCallback(function, nodetype)
@@ -452,7 +454,6 @@ class CachedRangeDelegate(QtWidgets.QStyledItemDelegate):
     It draws a bar who represents the current maya timeline. The green part
     represent the cached frames. The red line is the current time.
     """
-
     def __init__(self, table):
         super(CachedRangeDelegate, self).__init__(table)
         self._model = table.model()

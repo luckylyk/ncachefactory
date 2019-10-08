@@ -1,28 +1,38 @@
 """
 This module is on top of ncache and versioning
 It combine both to work in a defined workspace
+This is the main api used by the ui and can be useb from external script as
+well.
 """
 
 import os
+import shutil
 from datetime import datetime
 from functools import partial
 
 from maya import cmds
 import maya.api.OpenMaya as om2
 
+from ncachemanager.qtutils import simulate_escape_key_pressed
 from ncachemanager.versioning import (
     create_cacheversion, ensure_workspace_exists, find_file_match,
-    clear_cacheversion_content, cacheversion_contains_node)
-from ncachemanager.mesh import create_mesh_for_geo_cache, attach_geo_cache
+    clear_cacheversion_content, cacheversion_contains_node,
+    move_playblast_to_cacheversion)
+from ncachemanager.mesh import (
+    create_mesh_for_geo_cache, attach_geo_cache,
+    is_deformed_mesh_too_stretched)
 from ncachemanager.ncloth import (
-    find_input_mesh_dagpath, clean_inputmesh_connection)
+    find_input_mesh_dagpath, clean_inputmesh_connection,
+    find_output_mesh_dagpath)
 from ncachemanager.ncache import (
     import_ncache, record_ncache, DYNAMIC_NODES, clear_cachenodes,
     list_connected_cachefiles, list_connected_cacheblends, append_ncache)
-
+from ncachemanager.playblast import (
+    start_playblast_record, stop_playblast_record)
 from ncachemanager.attributes import (
     save_pervertex_maps, extract_xml_attributes, list_node_attributes_values,
     clean_namespaces_in_attributes_dict, ORIGINAL_INPUTSHAPE_ATTRIBUTE)
+from ncachemanager.callbacks import register_simulation_callbacks
 
 
 ALTERNATE_INPUTSHAPE_GROUP = "alternative_inputshapes"
@@ -32,10 +42,21 @@ RESTSHAPE_SUFFIX = "_alternate_restshapes"
 
 
 def create_and_record_cacheversion(
-        workspace, start_frame, end_frame, comment=None, name=None, nodes=None,
-        behavior=0, verbose=False):
-    if verbose is True:
-        callback = register_verbose_callback()
+        workspace, start_frame, end_frame, comment=None, name=None,
+        nodes=None, behavior=0, verbose=False, timelimit=0,
+        explosion_detection_tolerance=0, playblast=False,
+        playblast_viewport_options=None):
+
+    if cmds.about(batch=True):
+        if playblast is True:
+            cmds.warning("Playblast flag is not supported in batch mode")
+            playblast = False
+
+    cloth_nodes = cmds.ls(nodes, type="nCloth")
+    callbacks = register_simulation_callbacks(
+        cloth_nodes, verbose, timelimit, explosion_detection_tolerance)
+    if playblast is True:
+        playblast_id = start_playblast_record(**playblast_viewport_options)
 
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     workspace = ensure_workspace_exists(workspace)
@@ -47,8 +68,6 @@ def create_and_record_cacheversion(
         start_frame=start_frame,
         end_frame=end_frame,
         timespent=None)
-    # hairSystems doesn't contains vertex maps
-    cloth_nodes = cmds.ls(nodes, type="nCloth")
     save_pervertex_maps(nodes=cloth_nodes, directory=cacheversion.directory)
     start_time = datetime.now()
     record_ncache(
@@ -63,20 +82,31 @@ def create_and_record_cacheversion(
     cacheversion.set_range(nodes, start_frame=start_frame, end_frame=time)
     cacheversion.set_timespent(nodes=nodes, seconds=timespent)
 
-    if verbose is True:
+    for callback in callbacks:
         om2.MMessage.removeCallback(callback)
+    if playblast is True and playblast_id is not None:
+        temp_playblast_path = stop_playblast_record(playblast_id)
+        move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
     return cacheversion
 
 
 def record_in_existing_cacheversion(
         cacheversion, start_frame, end_frame, nodes=None, behavior=0,
-        verbose=False):
-    if verbose is True:
-        callback = register_verbose_callback()
+        verbose=False, timelimit=0, explosion_detection_tolerance=0,
+        playblast=False, playblast_viewport_options=None):
+
+    if cmds.about(batch=True):
+        if playblast is True:
+            cmds.warning("Playblast flag is not supported in batch mode")
+            playblast = False
+
+    cloth_nodes = cmds.ls(nodes, type="nCloth")
+    callbacks = register_simulation_callbacks(
+        cloth_nodes, verbose, timelimit, explosion_detection_tolerance)
+    if playblast is True:
+        playblast_id = start_playblast_record(**playblast_viewport_options)
 
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
-    # hairSystems doesn't contains vertex maps
-    cloth_nodes = cmds.ls(nodes, type="nCloth")
     save_pervertex_maps(nodes=cloth_nodes, directory=cacheversion.directory)
     start_time = datetime.now()
     record_ncache(
@@ -91,13 +121,28 @@ def record_in_existing_cacheversion(
     cacheversion.set_range(nodes, start_frame=start_frame, end_frame=time)
     cacheversion.set_timespent(nodes=nodes, seconds=timespent)
 
-    if verbose is True:
+    for callback in callbacks:
         om2.MMessage.removeCallback(callback)
+    if playblast is True and playblast_id is not None:
+        temp_playblast_path = stop_playblast_record(playblast_id)
+        move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
 
 
-def append_to_cacheversion(cacheversion, nodes=None, verbose=False):
-    if verbose is True:
-        callback = register_verbose_callback()
+def append_to_cacheversion(
+        cacheversion, nodes=None, verbose=False, timelimit=0,
+        explosion_detection_tolerance=0, playblast=False,
+        playblast_viewport_options=None):
+
+    if cmds.about(batch=True):
+        if playblast is True:
+            cmds.warning("Playblast flag is not supported in batch mode")
+            playblast = False
+
+    cloth_nodes = cmds.ls(nodes, type="nCloth")
+    callbacks = register_simulation_callbacks(
+        cloth_nodes, verbose, timelimit, explosion_detection_tolerance)
+    if playblast is True:
+        playblast_id = start_playblast_record(**playblast_viewport_options)
 
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     start_time = datetime.now()
@@ -118,8 +163,11 @@ def append_to_cacheversion(cacheversion, nodes=None, verbose=False):
     if time > end_frame:
         cacheversion.set_range(nodes=nodes, end_frame=time)
 
-    if verbose is True:
+    for callback in callbacks:
         om2.MMessage.removeCallback(callback)
+    if playblast is True and playblast_id is not None:
+        temp_playblast_path = stop_playblast_record(playblast_id)
+        move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
 
 
 def plug_cacheversion(cacheversion, groupname, suffix, inattr, nodes=None):
@@ -229,6 +277,8 @@ def compare_node_and_version(node, cacheversion):
 
 
 def recover_original_inputmesh(nodes):
+    """ this function replug the original input in a cloth node if this one as
+    an alternate input connected. As an other simulation mesh """
     nodes_to_clean = []
     for node in nodes:
         store_plug = node + '.' + ORIGINAL_INPUTSHAPE_ATTRIBUTE
@@ -264,28 +314,6 @@ def apply_settings(cacheversion, nodes):
             for attribute in attributes:
                 atype = cmds.getAttr(attribute, type=True)
                 cmds.setAttr(attribute, value, type=atype)
-
-
-def verbose_callback(times, *useless_callback_args):
-    times[0] = times[1]
-    times[1] = datetime.now()
-    timespent = str(times[1] - times[0])
-    frame = cmds.currentTime(query=True)
-    print "INFO ncache: frame {} cached, timespent {}".format(
-        frame, timespent)
-
-
-def register_verbose_callback():
-    """ This function register a callback which print current frame and time
-    spent on every frame cached. That mainly interesting to know the progress
-    during a batch job.
-    """
-    # the list is created and passed to the verbose callback the function
-    # directly edit the list which allow to compare the times between to frame
-    # and compute the time spent per frame simulated.
-    times = [None, datetime.now()]
-    function = partial(verbose_callback, times)
-    return om2.MEventMessage.addEventCallback('timeChanged', function)
 
 
 def ensure_original_input_is_stored(dynamicnode):

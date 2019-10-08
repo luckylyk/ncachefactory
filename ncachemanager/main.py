@@ -11,7 +11,9 @@ from ncachemanager.comparator import ComparisonWidget
 from ncachemanager.ncache import DYNAMIC_NODES
 from ncachemanager.cacheoptions import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
-from ncachemanager.manager import (
+from ncachemanager.playblastoptions import PlayblastOptions
+from ncachemanager.callbackoptions import CallbackOptions
+from ncachemanager.api import (
     filter_connected_cacheversions, create_and_record_cacheversion,
     record_in_existing_cacheversion, append_to_cacheversion)
 from ncachemanager.infos import WorkspaceCacheversionsExplorer
@@ -20,7 +22,8 @@ from ncachemanager.versioning import (
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachemanager.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
-    VERSION_EXP_OPTIONVAR, ensure_optionvars_exists)
+    VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, CALLBACKS_EXP_OPTIONVAR,
+     ensure_optionvars_exists)
 
 
 WINDOW_TITLE = "NCache Manager"
@@ -50,6 +53,13 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.cacheoptions = CacheOptions()
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
         self.cacheoptions_expander.clicked.connect(self.adjust_size)
+        self.callbacks = CallbackOptions()
+        name = "Simulation Callbacks"
+        self.callbacks_expander = Expander(name, self.callbacks)
+        self.callbacks_expander.clicked.connect(self.adjust_size)
+        self.playblast = PlayblastOptions()
+        self.playblast_expander = Expander("Playblast", self.playblast)
+        self.playblast_expander.clicked.connect(self.adjust_size)
         self.comparison = ComparisonWidget()
         self.comparison.setFixedHeight(250)
         self.comparison_expander = Expander("Comparisons", self.comparison)
@@ -73,6 +83,12 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.layout.addSpacing(8)
         self.layout.addWidget(self.cacheoptions_expander)
         self.layout.addWidget(self.cacheoptions)
+        self.layout.addSpacing(0)
+        self.layout.addWidget(self.playblast_expander)
+        self.layout.addWidget(self.playblast)
+        self.layout.addSpacing(0)
+        self.layout.addWidget(self.callbacks_expander)
+        self.layout.addWidget(self.callbacks)
         self.layout.addSpacing(0)
         self.layout.addWidget(self.comparison_expander)
         self.layout.addWidget(self.comparison)
@@ -130,6 +146,10 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         ensure_optionvars_exists()
         state = cmds.optionVar(query=CACHEOPTIONS_EXP_OPTIONVAR)
         self.cacheoptions_expander.set_state(state)
+        state = cmds.optionVar(query=PLAYBLAST_EXP_OPTIONVAR)
+        self.playblast_expander.set_state(state)
+        state = cmds.optionVar(query=CALLBACKS_EXP_OPTIONVAR)
+        self.callbacks_expander.set_state(state)
         state = cmds.optionVar(query=COMPARISON_EXP_OPTIONVAR)
         self.comparison_expander.set_state(state)
         state = cmds.optionVar(query=VERSION_EXP_OPTIONVAR)
@@ -138,7 +158,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def save_optionvars(self):
         value = self.cacheoptions_expander.state
         cmds.optionVar(intValue=[CACHEOPTIONS_EXP_OPTIONVAR, value])
+        value = self.playblast_expander.state
+        cmds.optionVar(intValue=[PLAYBLAST_EXP_OPTIONVAR, value])
         value = self.comparison_expander.state
+        cmds.optionVar(intValue=[CALLBACKS_EXP_OPTIONVAR, value])
+        value = self.callbacks_expander.state
         cmds.optionVar(intValue=[COMPARISON_EXP_OPTIONVAR, value])
         value = self.versions_expander.state
         cmds.optionVar(intValue=[VERSION_EXP_OPTIONVAR, value])
@@ -155,6 +179,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             nodes = self.nodetable.selected_nodes or []
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
+        tolerance = self.callbacks.explosion_detection_tolerance
 
         create_and_record_cacheversion(
             workspace=workspace,
@@ -162,7 +187,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             end_frame=end_frame,
             nodes=nodes,
             behavior=self.cacheoptions.behavior,
-            verbose=self.cacheoptions.verbose)
+            verbose=self.callbacks.verbose,
+            timelimit=self.callbacks.timelimit,
+            playblast=self.playblast.record_playblast,
+            playblast_viewport_options=self.playblast.viewport_options,
+            explosion_detection_tolerance=tolerance)
         self.nodetable.set_workspace(workspace)
         self.nodetable.update_layout()
         self.selection_changed()
@@ -184,14 +213,20 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 'no valid cache version or more than one cacheversion are '
                 'connected to the selected dynamic nodes')
             self.create_cache(selection=selection)
-        else:
-            record_in_existing_cacheversion(
-                cacheversion=cacheversions[0],
-                start_frame=start_frame,
-                end_frame=end_frame,
-                nodes=nodes,
-                behavior=self.cacheoptions.behavior,
-                verbose=self.cacheoptions.verbose)
+            return
+
+        tolerance = self.callbacks.explosion_detection_tolerance
+        record_in_existing_cacheversion(
+            cacheversion=cacheversions[0],
+            start_frame=start_frame,
+            end_frame=end_frame,
+            nodes=nodes,
+            behavior=self.cacheoptions.behavior,
+            verbose=self.callbacks.verbose,
+            timelimit=self.callbacks.timelimit,
+            playblast=self.playblast.record_playblast,
+            playblast_viewport_options=self.playblast.viewport_options,
+            explosion_detection_tolerance=tolerance)
         self.nodetable.update_layout()
         self.selection_changed()
 
@@ -219,11 +254,15 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 message = "append cache on multiple version is not suppported."
                 return cmds.warning(message)
 
+        tolerance = self.callbacks.explosion_detection_tolerance
         append_to_cacheversion(
             nodes=nodes,
             cacheversion=cacheversion,
-            verbose=self.cacheoptions.verbose)
-
+            verbose=self.callbacks.verbose,
+            timelimit=self.callbacks.timelimit,
+            playblast=self.playblast.record_playblast,
+            playblast_viewport_options=self.playblast.viewport_options,
+            explosion_detection_tolerance=tolerance)
         self.nodetable.update_layout()
         self.selection_changed()
 

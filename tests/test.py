@@ -10,12 +10,6 @@ for key in sys.modules.keys():
         print key
         del sys.modules[key]
 
-from maya import cmds, mel
-from PySide2 import QtCore
-from ncachemanager import nodetable, qtutils, comparator, main
-from ncachemanager.versioning import list_available_cacheversions
-from ncachemanager.manager import create_and_record_cacheversion
-
 
 def create_ncloth_test_scene():
     cmds.file(new=True, force=True)
@@ -53,3 +47,7 @@ def create_ncloth_test_scene():
 
 
 create_ncloth_test_scene()
+
+
+import ncachemanager
+ncachemanager.launch()
