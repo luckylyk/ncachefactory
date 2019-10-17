@@ -180,7 +180,6 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
         tolerance = self.callbacks.explosion_detection_tolerance
-
         create_and_record_cacheversion(
             workspace=workspace,
             start_frame=start_frame,

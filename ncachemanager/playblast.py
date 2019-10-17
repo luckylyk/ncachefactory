@@ -8,100 +8,137 @@ import subprocess
 
 import maya.api.OpenMaya as om2
 from maya import cmds
+# PyMel this exceptionnaly used for attribute.get() facilities
+import pymel.core as pm
 from ncachemanager.qtutils import shoot
 from ncachemanager.optionvars import FFMPEG_PATH_OPTIONVAR
 
 
 FFMPEG_COMMAND = "{ffmpeg} -framerate 24 -i {images_expression} -codec copy {output}.mp4"
-TEMP_FILENAME_NAME = 'tmp_playblast_{id}_{scenename}_{frame}.jpg'
+TEMP_FILENAME_NAME = 'tmp_playblast_{id}_{scenename}'
 DEFAULT_SCENE_NAME = 'untitled'
-PLAYBLAST_TEAROFF_NAME = "NCacheManagerPlayblast"
-PLAYBLAST_PANEL_NAME = "NCacheManagerPanel"
-PLAYBLAST_ID_CAMERA_ATTRIBUTE = "ncachemanager_playblast_id"
-PLAYBLAST_CALLBACKS = []
-PLAYBLAST_STORE = {}  # place where are stored all the temp playblast images
 FFMPEG_PATH_NOT_SET_WARNING = (
     'No valid FFMPEG path set for the ncache manager. Playblast flag skip !')
-MODELEDITOR_OPTIONS = {
-    "displayAppearance": "smoothShaded",
-    "displayLights": "default",
-    "activeView": True,
-    "backfaceCulling": True,
-    "camera": False,
-    "displayTextures": True,
-    "dynamicConstraints": False,
-    "dynamics": True,
-    "fluids": True,
-    "follicles": False,
-    "grid": False,
-    "hairSystems": True,
-    "handles": False,
-    "headsUpDisplay": True,
-    "hulls": True,
-    "ikHandles": False,
-    "joints": False,
-    "lights": False,
-    "locators": False,
-    "lowQualityLighting": False,
-    "manipulators": False,
-    "nCloths": False,
-    "nRigids": False,
-    "nurbsCurves": True,
-    "nurbsSurfaces": True,
-    "occlusionCulling": True,
-    "pivots": False,
-    "planes": True,
-    "polymeshes": True,
-    "selectionHiliteDisplay": False,
-    "shadows": False,
-    "smoothWireframe": False,
-    "sortTransparent": True,
-    "strokes": False,
-    "subdivSurfaces": False,
-    "textures": True,
-    "transpInShadows": True,
-    "twoSidedLighting": True,
-    "useDefaultMaterial": False,
-    "wireframeOnShaded": False}
+RENDER_GLOBALS_FILTERVALUES = "hardwareRenderingGlobals.objectTypeFilterValueArray"
+RENDER_GLOBALS_FILTERNAMES = "hardwareRenderingGlobals.objectTypeFilterNameArray"
+
+# place where are stored all the temp playblast images.
+# this store should never contain more than one key.
+PLAYBLAST_STORE = {}
+PLAYBLAST_CALLBACKS = []
+BACKUPED_RENDER_SETTINGS = {}
 
 
 def start_playblast_record(
-        camera='perspShape', width=1024, height=748, **model_editor_kwargs):
+        camera='perspShape', width=1024, height=748,
+        viewport_display_values=None):
+    """ This function is triggered at the beginning of a cache. That register a
+    callback stick to the timeChanged event. It render the frame with maya
+    hardware 2.0 renderer. Store every frame in the global dictionnary:
+    PLAYBLAST_STORE. Ok I know, that's a bit weak design, but that the simplest
+    I found. When the playblast is done, FFMPEG encode the temporary files to a
+    non compressed jpg mp4 assembly.
+    """
+
     if not is_ffmpeg_path_valid():
         cmds.warning(FFMPEG_PATH_NOT_SET_WARNING)
         return None
 
-    ensure_playblast_id_attribute_exists(camera)
+    # the current global render settings are backup to be reset at the end of
+    # the record. That's saved in the global dict BACKUPED_RENDER_SETTINGS
+    # which is cleaned at the end. Ok global variables are evil, but there the
+    # simplest solution found and I don't see case where this function will be
+    # called two time before a stop_record_playblast call
+    backup_current_render_settings()
+    # A random id is given to the playblast. This id is used in the temporary
+    # filename to prevent that two different maya are caching in the same time
+    # has a render name clash.
     playblast_id = random.randrange(1000)
-    cmds.setAttr(camera + '.' + PLAYBLAST_ID_CAMERA_ATTRIBUTE, playblast_id)
-    options = MODELEDITOR_OPTIONS.copy()
-    options.update(model_editor_kwargs)
-    model_editor = create_playblast_tearoff(camera, width, height, **options)
-    function = partial(playblast_callback, playblast_id, model_editor)
+    # change the maya settings for the playblast
+    # set the camera background to grey, that black by default
+    attribute = "{}.backgroundColor".format(camera)
+    cmds.setAttr(attribute, 0.375, 0.375, 0.375, type="double3")
+    cmds.workspace(fileRule=['images', tempfile.gettempdir()])
+    set_render_settings_for_playblast(playblast_id, viewport_display_values)
+
+    function = partial(playblast_callback, playblast_id, camera, width, height)
     callback = om2.MEventMessage.addEventCallback('timeChanged', function)
     PLAYBLAST_CALLBACKS.append(callback)
     return playblast_id
 
 
+def set_render_settings_for_playblast(playblast_id, viewport_display_values):
+    cmds.setAttr("defaultRenderGlobals.extensionPadding", 6)
+    attribute = "defaultRenderGlobals.currentRenderer"
+    cmds.setAttr(attribute, "mayaHardware2", type="string")
+    cmds.setAttr("defaultRenderGlobals.imageFormat", 8)
+    attribute = "defaultRenderGlobals.imageFilePrefix"
+    filename = build_output_filename(playblast_id)
+    cmds.setAttr(attribute, filename, type="string")
+    cmds.setAttr("defaultRenderGlobals.animation", True)
+    cmds.setAttr("defaultRenderGlobals.putFrameBeforeExt", True)
+    cmds.setAttr("defaultRenderGlobals.outFormatControl", 0)
+    cmds.setAttr(RENDER_GLOBALS_FILTERVALUES, viewport_display_values, type="Int32Array")
+
+
 def stop_playblast_record(playblast_id):
+    """ this function close the recording context. That unregister the callback
+    who render every frame, compile a movie using ffmpeg and remove all the
+    temporary jpg generated. That clean the playblast store from the given
+    playblast id.
+    """
     if playblast_id is None:
-        clean_playblack_callbacks()
         return
-    if PLAYBLAST_TEAROFF_NAME in cmds.lsUI(windows=True):
-        cmds.deleteUI(PLAYBLAST_TEAROFF_NAME)
+
     images = PLAYBLAST_STORE[playblast_id]
     destination = compile_movie(images)
+
     for image in images:
         os.remove(image)
     del PLAYBLAST_STORE[playblast_id]
     clean_playblack_callbacks()
+    gather_backuped_render_settings()
     return destination
+
+
+def backup_current_render_settings():
+    # clean existing backup
+    for key in BACKUPED_RENDER_SETTINGS.keys():
+        del BACKUPED_RENDER_SETTINGS[key]
+
+    settings = {}
+    settings['viewport_filters'] = list_render_filter_options()
+    node = pm.PyNode('defaultRenderGlobals')
+    settings['rendersettings'] = {a: a.get() for a in node.listAttr()}
+    BACKUPED_RENDER_SETTINGS.update(settings)
+
+
+def gather_backuped_render_settings():
+    values = [s[1] for s in  BACKUPED_RENDER_SETTINGS['viewport_filters']]
+    cmds.setAttr(RENDER_GLOBALS_FILTERVALUES, values, type="Int32Array")
+    for attribute, value in BACKUPED_RENDER_SETTINGS['rendersettings'].items():
+        try:
+            attribute.set(value)
+        except:
+            pass
+
+
+def list_render_filter_options():
+    """ this function list the object type displayed by the maya hardware 2.0
+    renderer. e.i. Nurbs Curves, Camera, etc ...
+    The function return a list of tuple: [("camera", True), ("mesh", True), ..]
+    """
+    keys = cmds.getAttr(RENDER_GLOBALS_FILTERNAMES)
+    values = cmds.getAttr(RENDER_GLOBALS_FILTERVALUES)
+    return zip(keys, values)
 
 
 def compile_movie(images):
     ffmpeg = cmds.optionVar(query=FFMPEG_PATH_OPTIONVAR)
-    output = images[0][:-4]
-    images_expression = re.sub(r"_\d\d\d\d\d.jpg", "_%5d.jpg", (images[0]))
+    output = images[0][:-11]
+    # this line analyse the filename given and build a filename expression
+    # understood by FFMMPEG. %6d mean 6 digit frame number.
+    images_expression = re.sub(r".\d\d\d\d\d\d.jpg", ".%6d.jpg", (images[0]))
     command = FFMPEG_COMMAND.format(
         ffmpeg=ffmpeg,
         images_expression=images_expression,
@@ -112,23 +149,7 @@ def compile_movie(images):
     return output + ".mp4"
 
 
-def create_playblast_tearoff(cam, width, height, **model_editor_kwargs):
-    cmds.window(PLAYBLAST_TEAROFF_NAME, widthHeight=[1024, 748])
-    cmds.frameLayout(labelVisible=False)
-    panel = cmds.modelPanel(
-        label=PLAYBLAST_PANEL_NAME,
-        menuBarVisible=False,
-        barLayout=False,
-        modelEditor=False,
-        camera=cam)
-
-    model_editor = cmds.modelPanel(panel, query=True, modelEditor=True)
-    cmds.modelEditor(model_editor, edit=True, **model_editor_kwargs)
-    cmds.showWindow()
-    return model_editor
-
-
-def get_temp_jpeg_destination(playblast_id):
+def build_output_filename(playblast_id):
     """ The playblast_id ensure unique filename.
     That's generated when the callback is registered.
     """
@@ -137,15 +158,12 @@ def get_temp_jpeg_destination(playblast_id):
         scenename = os.path.basename(scenename)[:-3]
     else:
         scenename = DEFAULT_SCENE_NAME
-    frame = str(int(cmds.currentTime(query=True))).zfill(5)
-    filename = TEMP_FILENAME_NAME.format(
-        id=playblast_id, scenename=scenename, frame=frame)
-    return os.path.join(tempfile.gettempdir(), filename)
+    return TEMP_FILENAME_NAME.format(id=playblast_id, scenename=scenename)
 
 
-def playblast_callback(playblast_id, model_editor, *unused_callback_kwargs):
-    destination = get_temp_jpeg_destination(playblast_id)
-    shoot(destination, model_editor)
+def playblast_callback(playblast_id, camera, width, height, *unused_callback_kwargs):
+    destination = cmds.render(camera, xresolution=width, yresolution=height)
+    # record render in the store
     if PLAYBLAST_STORE.get(playblast_id) is None:
         PLAYBLAST_STORE[playblast_id] = []
     PLAYBLAST_STORE[playblast_id].append(destination)
@@ -160,12 +178,3 @@ def clean_playblack_callbacks():
     for callback in PLAYBLAST_CALLBACKS:
         om2.MMessage.removeCallback(callback)
         PLAYBLAST_CALLBACKS.remove(callback)
-
-
-def ensure_playblast_id_attribute_exists(camera):
-    if cmds.objExists(camera + '.' + PLAYBLAST_ID_CAMERA_ATTRIBUTE):
-        return
-    cmds.addAttr(
-        camera,
-        longName=PLAYBLAST_ID_CAMERA_ATTRIBUTE,
-        attributeType='long')

@@ -2,7 +2,7 @@ from functools import partial
 from PySide2 import QtCore, QtWidgets, QtGui
 from maya import cmds
 from ncachemanager.qtutils import get_icon
-from ncachemanager.playblast import MODELEDITOR_OPTIONS
+from ncachemanager.playblast import list_render_filter_options
 from ncachemanager.optionvars import (
     RECORD_PLAYBLAST_OPTIONVAR, PLAYBLAST_RESOLUTION_OPTIONVAR,
     FFMPEG_PATH_OPTIONVAR)
@@ -54,7 +54,7 @@ class PlayblastOptions(QtWidgets.QWidget):
         self._ffmpeg_layout.addWidget(self._ffmpeg_browse)
 
         self._resolution = ResolutionSelecter()
-        self._viewport_options = ViewportOptions()
+        self._viewport_options = DisplayOptions()
         self._viewport_optios_scroll_area = QtWidgets.QScrollArea()
         self._viewport_optios_scroll_area.setWidget(self._viewport_options)
         self.layout = QtWidgets.QFormLayout(self)
@@ -100,10 +100,10 @@ class PlayblastOptions(QtWidgets.QWidget):
 
     @property
     def viewport_options(self):
-        options = self._viewport_options.options
-        options['width'] = self._resolution.resolution[0]
-        options['height'] = self._resolution.resolution[1]
-        return options
+        return {
+            'viewport_display_values': self._viewport_options.values,
+            'width': self._resolution.resolution[0],
+            'height': self._resolution.resolution[1]}
 
     @property
     def record_playblast(self):
@@ -152,24 +152,21 @@ class ResolutionSelecter(QtWidgets.QWidget):
         return int(self.width.text()), int(self.height.text())
 
 
-class ViewportOptions(QtWidgets.QWidget):
+class DisplayOptions(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        super(ViewportOptions, self).__init__(parent=parent)
+        super(DisplayOptions, self).__init__(parent=parent)
         self.layout = QtWidgets.QVBoxLayout(self)
         self.checkboxes = []
-        for option, state in MODELEDITOR_OPTIONS.items():
-            if not isinstance(state, bool):
-                return
-            nicename = "".join([l if l.lower() else " " + l for l in option])
-            checkbox = QtWidgets.QCheckBox(nicename)
+        for option, state in list_render_filter_options():
+            checkbox = QtWidgets.QCheckBox(option)
             checkbox.option = option
-            checkbox.setChecked(state)
+            checkbox.setChecked(bool(state))
             self.checkboxes.append(checkbox)
             self.layout.addWidget(checkbox)
 
     @property
-    def options(self):
-        return {cb.option: cb.isChecked() for cb in self.checkboxes}
+    def values(self):
+        return [cb.isChecked() for cb in self.checkboxes]
 
 
 class ResolutionPresetsMenu(QtWidgets.QMenu):
