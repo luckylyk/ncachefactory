@@ -10,7 +10,6 @@ import maya.api.OpenMaya as om2
 from maya import cmds
 # PyMel this exceptionnaly used for attribute.get() facilities
 import pymel.core as pm
-from ncachemanager.qtutils import shoot
 from ncachemanager.optionvars import FFMPEG_PATH_OPTIONVAR
 
 
@@ -27,6 +26,15 @@ RENDER_GLOBALS_FILTERNAMES = "hardwareRenderingGlobals.objectTypeFilterNameArray
 PLAYBLAST_STORE = {}
 PLAYBLAST_CALLBACKS = []
 BACKUPED_RENDER_SETTINGS = {}
+# This is a global variable used for batch rendering.
+# the cmds.render command behave differently with a batch maya than ui maya.
+# In batch mode, the command render, kick automatically a range. That use the
+# defaultRenderGlobals startFrame and endFrame attribute. Which change
+# change the frames automatically two times. As the playblast render is
+# triggered by the timeChanged event, the render goes in infinite loop using
+# using batch mode. This global variable is a check to disable the callback
+# if that's triggered during the cmds.render command.
+PLAYBLAST_DISABLE_CALLBACK = False
 
 
 def start_playblast_record(
@@ -38,6 +46,29 @@ def start_playblast_record(
     PLAYBLAST_STORE. Ok I know, that's a bit weak design, but that the simplest
     I found. When the playblast is done, FFMPEG encode the temporary files to a
     non compressed jpg mp4 assembly.
+    viewport_display_values is a dict, here the available keys:
+        'NURBS Curves': False,
+        'NURBS Surfaces': True,
+        'Polygons': True,
+        'Subdiv Surface': True,
+        'Particles': True,
+        'Particle Instance': True,
+        'Fluids': True,
+        'Strokes': True,
+        'Image Planes': True,
+        'UI': False,
+        'Lights': False,
+        'Cameras': False,
+        'Locators': False,
+        'Joints': False,
+        'IK Handles': False,
+        'Deformers': False,
+        'Motion Trails': False,
+        'Components': False,
+        'Hair Systems': False,
+        'Follicles': False,
+        'Misc. UI': False,
+        'Ornaments': False,
     """
 
     if not is_ffmpeg_path_valid():
@@ -78,6 +109,8 @@ def set_render_settings_for_playblast(playblast_id, viewport_display_values):
     cmds.setAttr("defaultRenderGlobals.animation", True)
     cmds.setAttr("defaultRenderGlobals.putFrameBeforeExt", True)
     cmds.setAttr("defaultRenderGlobals.outFormatControl", 0)
+    if not viewport_display_values:
+        return
     cmds.setAttr(RENDER_GLOBALS_FILTERVALUES, viewport_display_values, type="Int32Array")
 
 
@@ -150,7 +183,7 @@ def compile_movie(images):
 
 
 def build_output_filename(playblast_id):
-    """ The playblast_id ensure unique filename.
+    """ the playblast_id ensure unique filename.
     That's generated when the callback is registered.
     """
     scenename = cmds.file(query=True, sceneName=True)
@@ -161,12 +194,24 @@ def build_output_filename(playblast_id):
     return TEMP_FILENAME_NAME.format(id=playblast_id, scenename=scenename)
 
 
-def playblast_callback(playblast_id, camera, width, height, *unused_callback_kwargs):
+def playblast_callback(
+        playblast_id, camera, width, height, *unused_callback_kwargs):
+    """ this function is the callback sticked to the "timeChanged" event.
+    This callback shoot a render and store the result in the store.
+    """
+    global PLAYBLAST_DISABLE_CALLBACK
+    if PLAYBLAST_DISABLE_CALLBACK is True:
+        return
+    PLAYBLAST_DISABLE_CALLBACK = True
+    frame = cmds.currentTime(query=True)
+    cmds.setAttr("defaultRenderGlobals.startFrame", frame)
+    cmds.setAttr("defaultRenderGlobals.endFrame", frame)
     destination = cmds.render(camera, xresolution=width, yresolution=height)
     # record render in the store
     if PLAYBLAST_STORE.get(playblast_id) is None:
         PLAYBLAST_STORE[playblast_id] = []
     PLAYBLAST_STORE[playblast_id].append(destination)
+    PLAYBLAST_DISABLE_CALLBACK = False
 
 
 def is_ffmpeg_path_valid():

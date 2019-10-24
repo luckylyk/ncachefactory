@@ -6,9 +6,9 @@ from ncachemanager.optionvars import (
     TIMELIMIT_OPTIONVAR, ensure_optionvars_exists)
 
 
-class CallbackOptions(QtWidgets.QWidget):
+class WarningOptions(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        super(CallbackOptions, self).__init__(parent)
+        super(WarningOptions, self).__init__(parent)
 
         self._verbose = QtWidgets.QCheckBox('verbose')
         text = 'detect edge to streched (cloth only)'

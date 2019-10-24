@@ -3,8 +3,8 @@
 import sys
 import os
 home = os.path.expanduser("~")
-sys.path.append(os.path.realpath('{}/DEV/ncachemanager'.format(home)))
-
+sys.path.append(r"D:\Works\Python\GitHub\ncachemanager")
+from maya import cmds, mel
 for key in sys.modules.keys():
     if 'ncachemanager' in key:
         print key

@@ -12,7 +12,7 @@ from ncachemanager.ncache import DYNAMIC_NODES
 from ncachemanager.cacheoptions import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
 from ncachemanager.playblastoptions import PlayblastOptions
-from ncachemanager.callbackoptions import CallbackOptions
+from ncachemanager.warningoptions import WarningOptions
 from ncachemanager.api import (
     filter_connected_cacheversions, create_and_record_cacheversion,
     record_in_existing_cacheversion, append_to_cacheversion)
@@ -23,7 +23,9 @@ from ncachemanager.versioning import (
 from ncachemanager.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
     VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, CALLBACKS_EXP_OPTIONVAR,
-     ensure_optionvars_exists)
+    FFMPEG_PATH_OPTIONVAR, MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
+    MULTICACHE_EXP_OPTIONVAR, ensure_optionvars_exists)
+from ncachemanager.multincacher import MultiCacher, send_batch_ncache_jobs
 
 
 WINDOW_TITLE = "NCache Manager"
@@ -33,6 +35,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(NCacheManager, self).__init__(parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
+        self.workspace = None
+
+        self.pathoptions = PathOptions(self)
         self.workspace_widget = WorkspaceWidget()
         self.nodetable = DynamicNodesTableWidget()
 
@@ -53,10 +58,14 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.cacheoptions = CacheOptions()
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
         self.cacheoptions_expander.clicked.connect(self.adjust_size)
-        self.callbacks = CallbackOptions()
-        name = "Simulation Callbacks"
-        self.callbacks_expander = Expander(name, self.callbacks)
-        self.callbacks_expander.clicked.connect(self.adjust_size)
+        self.multicacher = MultiCacher()
+        self.multicacher.sendMultiCacheRequested.connect(self.send_multi_cache)
+        self.multicacher_expander = Expander('Multi Cacher', self.multicacher)
+        self.multicacher_expander.clicked.connect(self.adjust_size)
+        self.warnings = WarningOptions()
+        name = "Simulation Warnings"
+        self.warnings_expander = Expander(name, self.warnings)
+        self.warnings_expander.clicked.connect(self.adjust_size)
         self.playblast = PlayblastOptions()
         self.playblast_expander = Expander("Playblast", self.playblast)
         self.playblast_expander.clicked.connect(self.adjust_size)
@@ -81,20 +90,31 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.layout.addWidget(self.nodetable)
         self.layout.addWidget(self.senders)
         self.layout.addSpacing(8)
+        self.layout.addWidget(self.multicacher_expander)
+        self.layout.addWidget(self.multicacher)
+        self.layout.addSpacing(0)
         self.layout.addWidget(self.cacheoptions_expander)
         self.layout.addWidget(self.cacheoptions)
         self.layout.addSpacing(0)
         self.layout.addWidget(self.playblast_expander)
         self.layout.addWidget(self.playblast)
         self.layout.addSpacing(0)
-        self.layout.addWidget(self.callbacks_expander)
-        self.layout.addWidget(self.callbacks)
+        self.layout.addWidget(self.warnings_expander)
+        self.layout.addWidget(self.warnings)
         self.layout.addSpacing(0)
         self.layout.addWidget(self.comparison_expander)
         self.layout.addWidget(self.comparison)
         self.layout.addSpacing(0)
         self.layout.addWidget(self.versions_expander)
         self.layout.addWidget(self.versions)
+
+        self.menubar = QtWidgets.QMenuBar(self)
+        self.menufile = QtWidgets.QMenu('edit', self.menubar)
+        self.menubar.addMenu(self.menufile)
+        self.editpath = QtWidgets.QAction('edit external path', self.menufile)
+        self.menufile.addAction(self.editpath)
+        self.editpath.triggered.connect(self.pathoptions.show)
+        self.layout.setMenuBar(self.menubar)
 
         self.set_workspace(get_default_workspace())
 
@@ -114,7 +134,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.save_optionvars()
 
     def set_workspace(self, workspace):
+        self.workspace = workspace
         self.nodetable.set_workspace(workspace)
+        self.multicacher.set_workspace(workspace)
         self.workspace_widget.set_workspace(workspace)
         self.nodetable.update_layout()
 
@@ -144,25 +166,29 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def apply_optionvars(self):
         ensure_optionvars_exists()
+        state = cmds.optionVar(query=MULTICACHE_EXP_OPTIONVAR)
+        self.multicacher_expander.set_state(state)
         state = cmds.optionVar(query=CACHEOPTIONS_EXP_OPTIONVAR)
         self.cacheoptions_expander.set_state(state)
         state = cmds.optionVar(query=PLAYBLAST_EXP_OPTIONVAR)
         self.playblast_expander.set_state(state)
         state = cmds.optionVar(query=CALLBACKS_EXP_OPTIONVAR)
-        self.callbacks_expander.set_state(state)
+        self.warnings_expander.set_state(state)
         state = cmds.optionVar(query=COMPARISON_EXP_OPTIONVAR)
         self.comparison_expander.set_state(state)
         state = cmds.optionVar(query=VERSION_EXP_OPTIONVAR)
         self.versions_expander.set_state(state)
 
     def save_optionvars(self):
+        value = self.multicacher_expander.state
+        cmds.optionVar(intValue=[MULTICACHE_EXP_OPTIONVAR, value])
         value = self.cacheoptions_expander.state
         cmds.optionVar(intValue=[CACHEOPTIONS_EXP_OPTIONVAR, value])
         value = self.playblast_expander.state
         cmds.optionVar(intValue=[PLAYBLAST_EXP_OPTIONVAR, value])
         value = self.comparison_expander.state
         cmds.optionVar(intValue=[CALLBACKS_EXP_OPTIONVAR, value])
-        value = self.callbacks_expander.state
+        value = self.warnings_expander.state
         cmds.optionVar(intValue=[COMPARISON_EXP_OPTIONVAR, value])
         value = self.versions_expander.state
         cmds.optionVar(intValue=[VERSION_EXP_OPTIONVAR, value])
@@ -179,15 +205,15 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             nodes = self.nodetable.selected_nodes or []
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
-        tolerance = self.callbacks.explosion_detection_tolerance
+        tolerance = self.warnings.explosion_detection_tolerance
         create_and_record_cacheversion(
             workspace=workspace,
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=nodes,
             behavior=self.cacheoptions.behavior,
-            verbose=self.callbacks.verbose,
-            timelimit=self.callbacks.timelimit,
+            verbose=self.warnings.verbose,
+            timelimit=self.warnings.timelimit,
             playblast=self.playblast.record_playblast,
             playblast_viewport_options=self.playblast.viewport_options,
             explosion_detection_tolerance=tolerance)
@@ -214,15 +240,15 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.create_cache(selection=selection)
             return
 
-        tolerance = self.callbacks.explosion_detection_tolerance
+        tolerance = self.warnings.explosion_detection_tolerance
         record_in_existing_cacheversion(
             cacheversion=cacheversions[0],
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=nodes,
             behavior=self.cacheoptions.behavior,
-            verbose=self.callbacks.verbose,
-            timelimit=self.callbacks.timelimit,
+            verbose=self.warnings.verbose,
+            timelimit=self.warnings.timelimit,
             playblast=self.playblast.record_playblast,
             playblast_viewport_options=self.playblast.viewport_options,
             explosion_detection_tolerance=tolerance)
@@ -253,17 +279,29 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 message = "append cache on multiple version is not suppported."
                 return cmds.warning(message)
 
-        tolerance = self.callbacks.explosion_detection_tolerance
+        tolerance = self.warnings.explosion_detection_tolerance
         append_to_cacheversion(
             nodes=nodes,
             cacheversion=cacheversion,
-            verbose=self.callbacks.verbose,
-            timelimit=self.callbacks.timelimit,
+            verbose=self.warnings.verbose,
+            timelimit=self.warnings.timelimit,
             playblast=self.playblast.record_playblast,
             playblast_viewport_options=self.playblast.viewport_options,
             explosion_detection_tolerance=tolerance)
         self.nodetable.update_layout()
         self.selection_changed()
+
+    def send_multi_cache(self):
+        if self.workspace is None:
+            None
+        start_frame, end_frame = self.cacheoptions.range
+        self.processes = send_batch_ncache_jobs(
+            workspace=self.workspace,
+            jobs=self.multicacher.jobs,
+            start_frame=start_frame,
+            end_frame=end_frame,
+            nodes=cmds.ls(type=DYNAMIC_NODES),
+            playblast_viewport_options=self.playblast.viewport_options)
 
 
 class Expander(QtWidgets.QPushButton):
@@ -367,6 +405,45 @@ class CacheSendersWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.append_cache)
         self.layout.addSpacing(1)
         self.layout.addWidget(self.append_cache_all)
+
+
+class PathOptions(QtWidgets.QWidget):
+    def __init__(self, parent=None):
+        super(PathOptions, self).__init__(parent, QtCore.Qt.Tool)
+        self.setWindowTitle("Set external applications paths")
+        self.ffmpeg = QtWidgets.QLineEdit()
+        self.ffmpeg.textEdited.connect(self.save_options)
+        self.mayapy = QtWidgets.QLineEdit()
+        self.mayapy.textEdited.connect(self.save_options)
+        self.mediaplayer = QtWidgets.QLineEdit()
+        self.mediaplayer.textEdited.connect(self.save_options)
+        self.ok = QtWidgets.QPushButton("ok")
+        self.ok.released.connect(self.hide)
+        self.ok_layout = QtWidgets.QHBoxLayout()
+        self.ok_layout.addStretch(1)
+        self.ok_layout.addWidget(self.ok)
+        self.form_layout = QtWidgets.QFormLayout()
+        self.form_layout.addRow("FFMPEG:", self.ffmpeg)
+        self.form_layout.addRow("mayapy", self.mayapy)
+        self.form_layout.addRow("media player", self.mediaplayer)
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.addLayout(self.form_layout)
+        self.layout.addLayout(self.ok_layout)
+        self.set_ui_states()
+
+    def set_ui_states(self):
+        text = cmds.optionVar(query=FFMPEG_PATH_OPTIONVAR)
+        self.ffmpeg.setText(text)
+        text = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
+        self.mayapy.setText(text)
+        text = cmds.optionVar(query=MEDIAPLAYER_PATH_OPTIONVAR)
+        self.mediaplayer.setText(text)
+
+    def save_options(self, *useless_signal_args):
+        cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, self.ffmpeg.text()])
+        cmds.optionVar(stringValue=[MAYAPY_PATH_OPTIONVAR, self.mayapy.text()])
+        text = self.mediaplayer.text()
+        cmds.optionVar(stringValue=[MEDIAPLAYER_PATH_OPTIONVAR, text])
 
 
 def get_default_workspace():

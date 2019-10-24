@@ -13,7 +13,6 @@ from functools import partial
 from maya import cmds
 import maya.api.OpenMaya as om2
 
-from ncachemanager.qtutils import simulate_escape_key_pressed
 from ncachemanager.versioning import (
     create_cacheversion, ensure_workspace_exists, find_file_match,
     clear_cacheversion_content, cacheversion_contains_node,
@@ -32,7 +31,7 @@ from ncachemanager.playblast import (
 from ncachemanager.attributes import (
     save_pervertex_maps, extract_xml_attributes, list_node_attributes_values,
     clean_namespaces_in_attributes_dict, ORIGINAL_INPUTSHAPE_ATTRIBUTE)
-from ncachemanager.callbacks import register_simulation_callbacks
+from ncachemanager.warnings import register_simulation_callbacks
 
 
 ALTERNATE_INPUTSHAPE_GROUP = "alternative_inputshapes"
@@ -46,11 +45,6 @@ def create_and_record_cacheversion(
         nodes=None, behavior=0, verbose=False, timelimit=0,
         explosion_detection_tolerance=0, playblast=False,
         playblast_viewport_options=None):
-
-    if cmds.about(batch=True):
-        if playblast is True:
-            cmds.warning("Playblast flag is not supported in batch mode")
-            playblast = False
 
     cloth_nodes = cmds.ls(nodes, type="nCloth")
     callbacks = register_simulation_callbacks(
@@ -95,11 +89,6 @@ def record_in_existing_cacheversion(
         verbose=False, timelimit=0, explosion_detection_tolerance=0,
         playblast=False, playblast_viewport_options=None):
 
-    if cmds.about(batch=True):
-        if playblast is True:
-            cmds.warning("Playblast flag is not supported in batch mode")
-            playblast = False
-
     cloth_nodes = cmds.ls(nodes, type="nCloth")
     callbacks = register_simulation_callbacks(
         cloth_nodes, verbose, timelimit, explosion_detection_tolerance)
@@ -132,11 +121,6 @@ def append_to_cacheversion(
         cacheversion, nodes=None, verbose=False, timelimit=0,
         explosion_detection_tolerance=0, playblast=False,
         playblast_viewport_options=None):
-
-    if cmds.about(batch=True):
-        if playblast is True:
-            cmds.warning("Playblast flag is not supported in batch mode")
-            playblast = False
 
     cloth_nodes = cmds.ls(nodes, type="nCloth")
     callbacks = register_simulation_callbacks(

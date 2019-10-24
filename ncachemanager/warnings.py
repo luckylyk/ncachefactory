@@ -9,9 +9,7 @@ from functools import partial
 from datetime import datetime
 import maya.api.OpenMaya as om2
 from maya import cmds
-from ncachemanager.qtutils import simulate_escape_key_pressed
 from ncachemanager.mesh import is_deformed_mesh_too_stretched
-from ncachemanager.ncache import kill_current_simulation
 from ncachemanager.ncloth import (
     find_input_mesh_dagpath, find_output_mesh_dagpath)
 
@@ -43,8 +41,6 @@ def explosion_detection_callback(
         print ROOT_MESSAGE.format(
             frame_number=cmds.currentTime(query=True),
             body=EXPLOSION_BODY.format(mesh=deformed_mesh))
-        # dirty wait to stop simulation. Probably not possible in batch
-        kill_current_simulation()
 
 
 def register_explosion_detection_callbacks(nodes, tolerance):
@@ -68,15 +64,13 @@ def timecheck_callback(times, verbose, timelimit, *useless_callback_args):
     times[1] = datetime.now()
     timespent = (times[1] - times[0])
     frame = cmds.currentTime(query=True)
-    # Time limit to 0 means no limit
-    if 0 < timelimit < timespent.total_seconds():
-        print ROOT_MESSAGE.format(frame_number=frame, body=TIMELIMIT_BODY)
-        # dirty wait to stop simulation. Probably not possible in batch
-        kill_current_simulation()
     if verbose is True:
         print ROOT_MESSAGE.format(
             frame_number=frame,
             body=TIMESPENT_BODY.format(timespent=timespent))
+    # Time limit to 0 means no limit
+    if 0 < timelimit < timespent.total_seconds():
+        print ROOT_MESSAGE.format(frame_number=frame, body=TIMELIMIT_BODY)
 
 
 def register_timecheck_callback(verbose=False, timelimit=0):

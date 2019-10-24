@@ -4,9 +4,7 @@ from maya import cmds
 from ncachemanager.qtutils import get_icon
 from ncachemanager.playblast import list_render_filter_options
 from ncachemanager.optionvars import (
-    RECORD_PLAYBLAST_OPTIONVAR, PLAYBLAST_RESOLUTION_OPTIONVAR,
-    FFMPEG_PATH_OPTIONVAR)
-
+    RECORD_PLAYBLAST_OPTIONVAR, PLAYBLAST_RESOLUTION_OPTIONVAR)
 
 RESOLUTION_PRESETS = {
     "VGA 4:3": (640,480),
@@ -43,16 +41,6 @@ class PlayblastOptions(QtWidgets.QWidget):
         super(PlayblastOptions, self).__init__(parent=parent)
         self._record_playblast = QtWidgets.QCheckBox('record playblast')
 
-        self._ffmpeg_widget = QtWidgets.QWidget()
-        self._ffmpeg_path = QtWidgets.QLineEdit()
-        self._ffmpeg_browse = QtWidgets.QPushButton(get_icon("folder.png"), "")
-        self._ffmpeg_browse.setFixedSize(22, 22)
-        self._ffmpeg_browse.released.connect(self.select_ffmpeg_path)
-        self._ffmpeg_layout = QtWidgets.QHBoxLayout(self._ffmpeg_widget)
-        self._ffmpeg_layout.setContentsMargins(0, 0, 0, 0)
-        self._ffmpeg_layout.addWidget(self._ffmpeg_path)
-        self._ffmpeg_layout.addWidget(self._ffmpeg_browse)
-
         self._resolution = ResolutionSelecter()
         self._viewport_options = DisplayOptions()
         self._viewport_optios_scroll_area = QtWidgets.QScrollArea()
@@ -60,8 +48,6 @@ class PlayblastOptions(QtWidgets.QWidget):
         self.layout = QtWidgets.QFormLayout(self)
         self.layout.setSpacing(0)
         self.layout.addRow('', self._record_playblast)
-        self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
-        self.layout.addRow('ffmpeg path: ', self._ffmpeg_widget)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
         self.layout.addRow('resolution: ', self._resolution)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
@@ -72,13 +58,11 @@ class PlayblastOptions(QtWidgets.QWidget):
         self._record_playblast.stateChanged.connect(self.save_states)
         self._resolution.width.textEdited.connect(self.save_states)
         self._resolution.height.textEdited.connect(self.save_states)
-        self._ffmpeg_path.textChanged.connect(self.save_states)
 
     def set_states(self):
         state = cmds.optionVar(query=RECORD_PLAYBLAST_OPTIONVAR)
         self._record_playblast.setChecked(state)
-        text = cmds.optionVar(query=FFMPEG_PATH_OPTIONVAR)
-        self._ffmpeg_path.setText(text)
+
         resolution = cmds.optionVar(query=PLAYBLAST_RESOLUTION_OPTIONVAR)
         width, height = map(int, resolution.split('x'))
         self._resolution.set_resolution(width, height)
@@ -86,8 +70,7 @@ class PlayblastOptions(QtWidgets.QWidget):
     def save_states(self):
         state = self._record_playblast.isChecked()
         cmds.optionVar(intValue=[RECORD_PLAYBLAST_OPTIONVAR, state])
-        text = self._ffmpeg_path.text()
-        cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, text])
+
         resolution = "x".join(map(str, self._resolution.resolution))
         cmds.optionVar(stringValue=[PLAYBLAST_RESOLUTION_OPTIONVAR, resolution])
 

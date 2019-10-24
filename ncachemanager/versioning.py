@@ -167,8 +167,8 @@ def create_cacheversion(
         'name': name,
         'comment': comment,
         'nodes': nodes_infos,
-        'start_frame': 0,
-        'end_frame': 0,
+        'start_frame': start_frame,
+        'end_frame': end_frame,
         'playblasts': []}
 
     infos_filepath = os.path.join(directory, INFOS_FILENAME)

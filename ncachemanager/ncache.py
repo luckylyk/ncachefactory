@@ -18,15 +18,14 @@ The module respect a nomenclature:
     cachenodes = represent maya 'cacheFile' and 'cacheBlend' nodes
 
 """
-import os
-import tempfile
 from maya import cmds, mel
 
 
 DYNAMIC_NODES = 'nCloth', 'hairSystem'
 CACHE_COMMAND_TEMPLATE = """
-doCreateNclothCache 5 {{ "0", "{start_frame}", "{end_frame}", "OneFile", "1",\
-"{output}", "1", "", "0", "replace", "1", "1", "1", "0", "1","mcc"}}"""
+doCreateNclothCache 5 {{ "0", "{start_frame}", "{end_frame}", \
+"OneFilePerFrame", "1", "{output}", "1", "", "0", "replace", "1", "1", "1", \
+"0", "1","mcc"}}"""
 
 
 def record_ncache(
@@ -297,32 +296,6 @@ def clear_cachenodes(nodes=None, cachenames=None, workspace=None):
         if cmds.getAttr(cachenode + '.cacheName') in cachenames:
             cmds.delete(cachenode)
 
-
-def kill_current_simulation():
-    """ This function can be hooked to a timechange callback during ncache
-    process. That kill the current simulation process
-    """
-    # HACK As far as I know, no command seems available to deeply and cleanly
-    # kill the simulation process in maya. The only way found is to launch a
-    # a dummy simulation to kill the current one.
-    # As we don't want to affect the cached mesh, this function create a
-    # temporary cloth setup and cache 1 frame. This temp setup is deleted when
-    # maya has done is process.
-    cube = cmds.polyCube()[0]
-    cmds.select(cube)
-    cloth = mel.eval('createNCloth 0')
-    nucleus = cmds.ls(cmds.listConnections(cloth), type='nucleus')[0]
-    start_frame = cmds.getAttr(nucleus + '.startFrame')
-    temp_dir = tempfile.mkdtemp()
-    output = os.path.join(temp_dir, "tmp_cache").replace("\\", '/')
-    cmds.select(cloth)
-    command = CACHE_COMMAND_TEMPLATE.format(
-        start_frame=start_frame,
-        end_frame=start_frame + 1,
-        output=output)
-    mel.eval(command)
-    cmds.delete(cube)
-    os.rmdir(temp_dir)
 
 
 if __name__ == "__main__":

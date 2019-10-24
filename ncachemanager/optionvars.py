@@ -15,7 +15,10 @@ EXPLOSION_TOLERENCE_OPTIONVAR = 'ncachemanager_explosion_tolerence'
 TIMELIMIT_ENABLED_OPTIONVAR = 'ncachemanager_timelimit_enabled'
 TIMELIMIT_OPTIONVAR = 'ncachemanager_timelimit'
 FFMPEG_PATH_OPTIONVAR = 'ncachemanager_ffmpeg_path'
+MEDIAPLAYER_PATH_OPTIONVAR = 'ncachemanager_mediaplayer_path'
+MAYAPY_PATH_OPTIONVAR = 'ncachemanager_mayapy_path'
 
+MULTICACHE_EXP_OPTIONVAR = 'ncachemanager_multicache_expanded'
 CACHEOPTIONS_EXP_OPTIONVAR = 'ncachemanager_cacheoptions_expanded'
 PLAYBLAST_EXP_OPTIONVAR = 'ncachemanager_playblast_expanded'
 CALLBACKS_EXP_OPTIONVAR = 'ncachemanager_callbacks_expanded'
@@ -35,6 +38,9 @@ OPTIONVARS = {
     TIMELIMIT_ENABLED_OPTIONVAR: 0,
     TIMELIMIT_OPTIONVAR: 1,
     FFMPEG_PATH_OPTIONVAR: '',
+    MEDIAPLAYER_PATH_OPTIONVAR: '',
+    MAYAPY_PATH_OPTIONVAR: "C:/Program Files/Autodesk/Maya2019/bin/mayapy.exe",
+    MULTICACHE_EXP_OPTIONVAR: 0,
     CACHEOPTIONS_EXP_OPTIONVAR: 0,
     COMPARISON_EXP_OPTIONVAR: 0,
     CALLBACKS_EXP_OPTIONVAR: 0,
