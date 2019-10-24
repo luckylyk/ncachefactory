@@ -432,6 +432,7 @@ class PathOptions(QtWidgets.QWidget):
         self.set_ui_states()
 
     def set_ui_states(self):
+        ensure_optionvars_exists()
         text = cmds.optionVar(query=FFMPEG_PATH_OPTIONVAR)
         self.ffmpeg.setText(text)
         text = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
