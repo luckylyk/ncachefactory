@@ -16,6 +16,8 @@ Feature:
   - Realtime values table analyse and comparison between scene values and connected cache
   - Save comment for every version
   - Support different namespace
+  - Playblast during simulation
+  - Cache on batch with playblast
 
 Basically, maya is not really really to manage a versioning ncache. But during asset researchs or productions, that really important for artist to be able the doesn't take care so much about his versioning. Here versions are easy to manage, no more manual work. The settings and maps are saved for every version and easy to gather. So try it, rage quit cause of bugs, wait a fix and love it :).
 
