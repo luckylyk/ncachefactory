@@ -2,8 +2,8 @@
 import os
 from PySide2 import QtWidgets, QtCore
 from ncachemanager.batch import (
-    clean_batch_temp_folder, flash_current_scene,
-    send_batch_ncache_jobs)
+    clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
+    send_batch_ncache_jobs, is_temp_folder_empty)
 
 
 class MultiCacher(QtWidgets.QWidget):
@@ -41,8 +41,18 @@ class MultiCacher(QtWidgets.QWidget):
     def set_workspace(self, workspace):
         self.workspace = workspace
         if self.model and self.model.jobs:
-            clean_batch_temp_folder(workspace)
             self.model.clear_jobs()
+        if is_temp_folder_empty(self.workspace):
+            return
+        if get_clean_tempfile_confirmation_dialog() is True:
+            clean_batch_temp_folder(workspace)
+            return
+        for scene in list_flashed_scenes(self.workspace):
+            job = {'name': 'flashed scene', 'comment': '', 'scene': scene}
+            self.model.add_job(job)
+
+    def clear(self):
+        self.model.clear_jobs()
 
     @property
     def jobs(self):
@@ -156,3 +166,17 @@ class MultiCacheTableModel(QtCore.QAbstractTableModel):
         row, column = index.row(), index.column()
         if role in (QtCore.Qt.DisplayRole, QtCore.Qt.EditRole):
             return self.jobs[row][self.KEYS[column]]
+
+
+def get_clean_tempfile_confirmation_dialog():
+    message = (
+        "Some flashed scenes already exists.\n"
+        "Do you want to fush them ?")
+    buttons = QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+    result = QtWidgets.QMessageBox.question(
+        None,
+        'Exist flashed scene',
+        message,
+        buttons,
+        QtWidgets.QMessageBox.Yes)
+    return result == QtWidgets.QMessageBox.Yes

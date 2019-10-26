@@ -36,6 +36,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         super(NCacheManager, self).__init__(parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
         self.workspace = None
+        self.processes = []
 
         self.pathoptions = PathOptions(self)
         self.workspace_widget = WorkspaceWidget()
@@ -302,6 +303,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             end_frame=end_frame,
             nodes=cmds.ls(type=DYNAMIC_NODES),
             playblast_viewport_options=self.playblast.viewport_options)
+        self.multicacher.clear()
 
 
 class Expander(QtWidgets.QPushButton):
@@ -334,22 +336,22 @@ class WorkspaceWidget(QtWidgets.QWidget):
         super(WorkspaceWidget, self).__init__(parent)
         self.workspace = None
         self.label = QtWidgets.QLabel("Workspace")
-        self.edit = QtWidgets.QLineEdit()
-        self.edit.returnPressed.connect(self._call_set_workspace)
-        self.browse = QtWidgets.QPushButton(get_icon("folder.png"), "")
-        self.browse.setFixedSize(22, 22)
-        self.browse.released.connect(self.get_directory)
+        self.browse = BrowserLine()
+        self.browse.button.released.connect(self.get_directory)
+        self.browse.text.returnPressed.connect(self._call_set_workspace)
 
         self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
         self.layout.addWidget(self.label)
         self.layout.addSpacing(8)
-        self.layout.addWidget(self.edit)
         self.layout.addWidget(self.browse)
 
     def get_directory(self):
-        workspace = QtWidgets.QFileDialog.getExistingDirectory()
+        directory = self.directory
+        workspace = QtWidgets.QFileDialog.getExistingDirectory(dir=directory)
+        if not workspace:
+            return
         self.set_workspace(workspace)
 
     @property
@@ -357,12 +359,12 @@ class WorkspaceWidget(QtWidgets.QWidget):
         return self.workspace
 
     def set_wrong(self):
-        self.edit.setStyleSheet('background-color: #DD5555')
+        self.browse.text.setStyleSheet('background-color: #DD5555')
 
     def set_workspace(self, workspace):
         certified = ensure_workspace_exists(workspace)
         self.workspace = certified
-        self.edit.setText(workspace)
+        self.browse.text.setText(workspace)
         if certified != workspace:
             self.workspaceSet.emit(certified)
 
@@ -370,9 +372,9 @@ class WorkspaceWidget(QtWidgets.QWidget):
         workspace = self.edit.text()
         if not os.path.exists(workspace):
             return self.set_wrong()
-        self.edit.setStyleSheet('')
+        self.browse.text.setStyleSheet('')
         self.workspace = ensure_workspace_exists(workspace)
-        self.edit.setText(workspace)
+        self.browse.text.setText(workspace)
         self.workspaceSet.emit(self.workspace)
 
 
@@ -411,13 +413,20 @@ class PathOptions(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(PathOptions, self).__init__(parent, QtCore.Qt.Tool)
         self.setWindowTitle("Set external applications paths")
-        self.ffmpeg = QtWidgets.QLineEdit()
-        self.ffmpeg.textEdited.connect(self.save_options)
-        self.mayapy = QtWidgets.QLineEdit()
-        self.mayapy.textEdited.connect(self.save_options)
-        self.mediaplayer = QtWidgets.QLineEdit()
-        self.mediaplayer.textEdited.connect(self.save_options)
+        self.ffmpeg = BrowserLine()
+        self.ffmpeg.text.textEdited.connect(self.save_options)
+        function = partial(self.get_executable_path, self.ffmpeg)
+        self.ffmpeg.button.released.connect(function)
+        self.mayapy = BrowserLine()
+        self.mayapy.text.textEdited.connect(self.save_options)
+        function = partial(self.get_executable_path, self.mayapy)
+        self.mayapy.button.released.connect(function)
+        self.mediaplayer = BrowserLine()
+        self.mediaplayer.text.textEdited.connect(self.save_options)
+        function = partial(self.get_executable_path, self.mediaplayer)
+        self.mediaplayer.button.released.connect(function)
         self.ok = QtWidgets.QPushButton("ok")
+        self.ok.setFixedWidth(85)
         self.ok.released.connect(self.hide)
         self.ok_layout = QtWidgets.QHBoxLayout()
         self.ok_layout.addStretch(1)
@@ -431,14 +440,20 @@ class PathOptions(QtWidgets.QWidget):
         self.layout.addLayout(self.ok_layout)
         self.set_ui_states()
 
+    def get_executable_path(self, browseline):
+        executables = QtWidgets.QFileDialog.getOpenFileName()
+        if not executables:
+            return
+        browseline.text.setText(executables[0])
+
     def set_ui_states(self):
         ensure_optionvars_exists()
         text = cmds.optionVar(query=FFMPEG_PATH_OPTIONVAR)
-        self.ffmpeg.setText(text)
+        self.ffmpeg.text.setText(text)
         text = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
-        self.mayapy.setText(text)
+        self.mayapy.text.setText(text)
         text = cmds.optionVar(query=MEDIAPLAYER_PATH_OPTIONVAR)
-        self.mediaplayer.setText(text)
+        self.mediaplayer.text.setText(text)
 
     def save_options(self, *useless_signal_args):
         cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, self.ffmpeg.text()])
@@ -452,3 +467,17 @@ def get_default_workspace():
     if os.path.basename(filename) == 'untitled':
         return cmds.workspace(query=True, directory=True)
     return os.path.dirname(filename)
+
+
+class BrowserLine(QtWidgets.QWidget):
+
+    def __init__(self):
+        super(BrowserLine, self).__init__()
+        self.text = QtWidgets.QLineEdit()
+        self.button = QtWidgets.QPushButton(get_icon("folder.png"), "")
+        self.button.setFixedSize(22, 22)
+
+        self.layout = QtWidgets.QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.addWidget(self.text)
+        self.layout.addWidget(self.button)

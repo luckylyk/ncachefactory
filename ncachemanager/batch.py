@@ -131,3 +131,21 @@ def send_batch_ncache_jobs(
 
 def clean_batch_temp_folder(workspace):
     shutil.rmtree(os.path.join(workspace, TEMPFOLDER_NAME))
+
+
+def is_temp_folder_empty(workspace):
+    tempfolder = os.path.join(workspace, TEMPFOLDER_NAME)
+    if os.path.exists(tempfolder) is False:
+        return True
+    if not os.listdir(tempfolder):
+        return True
+    return False
+
+
+def list_flashed_scenes(workspace):
+    tempfolder = os.path.join(workspace, TEMPFOLDER_NAME)
+    scenes = []
+    for scene in os.listdir(tempfolder):
+        if scene.endswith('.ma'):
+            scenes.append(os.path.join(tempfolder, scene))
+    return scenes
