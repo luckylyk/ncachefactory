@@ -6,45 +6,14 @@ from maya import cmds
 from ncachemanager.optionvars import MAYAPY_PATH_OPTIONVAR
 from ncachemanager.versioning import create_cacheversion
 
-SCRIPT_FILENAME = 'batch_ncache.py'
+
+_CURRENTDIR = os.path.dirname(os.path.realpath(__file__))
+_SCRIPT_FILENAME = "record_in_cacheversion.py"
+_SCRIPT_FILEPATH = os.path.join(_CURRENTDIR, '..', 'script', _SCRIPT_FILENAME)
+
 NCACHESCENE_FILENAME = 'ncache_scene.ma'
 TEMPFOLDER_NAME = 'tmp_multicache'
 FLASHSCENE_NAME = 'flash_scene_{}.ma'
-TEMPLATE_SCRIPT = """
-import maya.standalone
-maya.standalone.initialize(name='python')
-
-from maya import cmds, mel
-import sys
-import os
-
-from ncachemanager.versioning import CacheVersion
-from ncachemanager.api import record_in_existing_cacheversion
-import maya.OpenMaya as om2
-
-
-directory = r"{directory}"
-scene_location = r"{scene_location}"
-nodes = {nodes}
-start_frame = {start_frame}
-end_frame = {end_frame}
-playblast_viewport_options = {playblast_viewport_options}
-
-
-cmds.file(scene_location, open=True, force=True)
-cacheversion = CacheVersion(directory)
-record_in_existing_cacheversion(
-    cacheversion=cacheversion,
-    start_frame=start_frame,
-    end_frame=end_frame,
-    nodes=nodes,
-    behavior=0,
-    verbose=True,
-    timelimit=0,
-    explosion_detection_tolerance=0,
-    playblast=True,
-    playblast_viewport_options=playblast_viewport_options)
-"""
 
 
 def build_unique_flashscene_name(workspace):
@@ -82,22 +51,6 @@ def flash_current_scene(workspace):
     return filename
 
 
-def generate_script_file(cacheversion, playblast_viewport_options):
-    destination = os.path.join(cacheversion.directory, SCRIPT_FILENAME)
-    scene_location = os.path.join(cacheversion.directory, NCACHESCENE_FILENAME)
-    script = TEMPLATE_SCRIPT.format(
-        directory=cacheversion.directory,
-        nodes=cacheversion.infos['nodes'].keys(),
-        start_frame=cacheversion.infos['start_frame'],
-        end_frame=cacheversion.infos['end_frame'],
-        scene_location=scene_location,
-        playblast_viewport_options=playblast_viewport_options)
-
-    with open(destination, 'w') as f:
-        f.write(script)
-    return destination
-
-
 def send_batch_ncache_jobs(
         workspace, jobs, start_frame, end_frame, nodes,
         playblast_viewport_options):
@@ -106,6 +59,11 @@ def send_batch_ncache_jobs(
     {'name': str, 'comment': str, 'scene': str}
     '''
     processes = []
+    # build the arguments list. The two None values are differents for every
+    # job and will be redefine during the loop
+    arguments = build_batch_script_arguments(
+        start_frame, end_frame, nodes, playblast_viewport_options)
+
     for job in jobs:
         cacheversion = create_cacheversion(
             workspace=workspace,
@@ -114,19 +72,45 @@ def send_batch_ncache_jobs(
             nodes=nodes,
             start_frame=start_frame,
             end_frame=end_frame)
-        dst = os.path.join(cacheversion.directory, NCACHESCENE_FILENAME)
-        os.rename(job['scene'], dst)
-        mayapy = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
-        python_script_file = generate_script_file(
-            cacheversion,
-            playblast_viewport_options)
-
-        command_args = [mayapy, python_script_file]
-        process = subprocess.Popen(command_args, env=get_current_environment())
+        scene = os.path.join(cacheversion.directory, NCACHESCENE_FILENAME)
+        os.rename(job['scene'], scene)
+        # replace the two arguments which are different for each jobs
+        arguments[2] = cacheversion.directory
+        arguments[3] = scene
+        process = subprocess.Popen(arguments, env=get_current_environment())
         processes.append(process)
 
     clean_batch_temp_folder(workspace)
     return processes
+
+
+def build_batch_script_arguments(
+        start_frame, end_frame, nodes, playblast_viewport_options):
+    arguments = []
+    # mayapy executable
+    arguments.append(cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR))
+    # script executed
+    arguments.append(_SCRIPT_FILEPATH)
+    # directory (set job per job)
+    arguments.append(None)
+    # maya scene, (set job per job)
+    arguments.append(None)
+    # cached nodes
+    arguments.append(', '.join(nodes))
+    # start frame
+    arguments.append(str(start_frame))
+    # end frame
+    arguments.append(str(end_frame))
+    # playblast resolution
+    width = playblast_viewport_options['width']
+    height = playblast_viewport_options['height']
+    arguments.append(' '.join(map(str, [width, height])))
+    # display values for playblast render
+    display_values = playblast_viewport_options['viewport_display_values']
+    arguments.append(' '.join(map(str, map(int, display_values))))
+    # camera shape
+    arguments.append(playblast_viewport_options['camera'])
+    return arguments
 
 
 def clean_batch_temp_folder(workspace):

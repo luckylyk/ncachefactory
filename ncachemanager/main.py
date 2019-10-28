@@ -479,5 +479,6 @@ class BrowserLine(QtWidgets.QWidget):
 
         self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
         self.layout.addWidget(self.text)
         self.layout.addWidget(self.button)

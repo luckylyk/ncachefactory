@@ -40,7 +40,7 @@ class PlayblastOptions(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(PlayblastOptions, self).__init__(parent=parent)
         self._record_playblast = QtWidgets.QCheckBox('record playblast')
-
+        self._camera = CamerasCombo()
         self._resolution = ResolutionSelecter()
         self._viewport_options = DisplayOptions()
         self._viewport_optios_scroll_area = QtWidgets.QScrollArea()
@@ -49,6 +49,7 @@ class PlayblastOptions(QtWidgets.QWidget):
         self.layout.setSpacing(0)
         self.layout.addRow('', self._record_playblast)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
+        self.layout.addRow('camera: ', self._camera)
         self.layout.addRow('resolution: ', self._resolution)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
         text = 'viewport options: '
@@ -86,11 +87,42 @@ class PlayblastOptions(QtWidgets.QWidget):
         return {
             'viewport_display_values': self._viewport_options.values,
             'width': self._resolution.resolution[0],
-            'height': self._resolution.resolution[1]}
+            'height': self._resolution.resolution[1],
+            'camera': self._camera.currentText() # this option need a combo box
+        }
 
     @property
     def record_playblast(self):
         return self._record_playblast.isChecked()
+
+
+class CamerasCombo(QtWidgets.QComboBox):
+    def __init__(self, parent=None):
+        super(CamerasCombo, self).__init__(parent)
+        self._call_update()
+
+    def _call_update(self):
+        cameras = cmds.ls(type='camera')
+        known_cameras = self.cameras()
+        for camera in cameras:
+            if camera not in known_cameras:
+                self.addItem(camera)
+        for camera in known_cameras:
+            if camera not in cameras:
+                index = self.text_index(camera)
+                self.removeItem(index)
+
+    def text_index(self, text):
+        for i in range(self.count() + 1):
+            if text == self.itemText(i):
+                return i
+
+    def cameras(self):
+        return [self.itemText(i) for i in range(self.count() + 1)]
+
+    def mousePressEvent(self, event):
+        self._call_update()
+        super(CamerasCombo, self).mousePressEvent(event)
 
 
 class ResolutionSelecter(QtWidgets.QWidget):

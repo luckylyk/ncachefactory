@@ -46,31 +46,13 @@ def start_playblast_record(
     PLAYBLAST_STORE. Ok I know, that's a bit weak design, but that the simplest
     I found. When the playblast is done, FFMPEG encode the temporary files to a
     non compressed jpg mp4 assembly.
-    viewport_display_values is a dict, here the available keys:
-        'NURBS Curves': False,
-        'NURBS Surfaces': True,
-        'Polygons': True,
-        'Subdiv Surface': True,
-        'Particles': True,
-        'Particle Instance': True,
-        'Fluids': True,
-        'Strokes': True,
-        'Image Planes': True,
-        'UI': False,
-        'Lights': False,
-        'Cameras': False,
-        'Locators': False,
-        'Joints': False,
-        'IK Handles': False,
-        'Deformers': False,
-        'Motion Trails': False,
-        'Components': False,
-        'Hair Systems': False,
-        'Follicles': False,
-        'Misc. UI': False,
-        'Ornaments': False,
+    viewport_display_values is a list of bool, here the value order list:
+        NURBS Curves, NURBS Surfaces ,Polygons , Subdiv Surface, Particles,
+        Particle Instance, Fluids, Strokes, Image Planes, UI, Lights, Cameras,
+        Locators, Joints, IK Handles, Deformers, Motion Trails, Components,
+        Hair Systems, Follicles, Misc. UI, Ornaments
     """
-
+    viewport_display_values = viewport_display_values or []
     if not is_ffmpeg_path_valid():
         cmds.warning(FFMPEG_PATH_NOT_SET_WARNING)
         return None

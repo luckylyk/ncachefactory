@@ -7,6 +7,7 @@ mayapy process.
 
 from functools import partial
 from datetime import datetime
+import logging
 import maya.api.OpenMaya as om2
 from maya import cmds
 from ncachemanager.mesh import is_deformed_mesh_too_stretched
@@ -14,7 +15,7 @@ from ncachemanager.ncloth import (
     find_input_mesh_dagpath, find_output_mesh_dagpath)
 
 
-ROOT_MESSAGE = "INFO ncache: frame {frame_number}, {body}"
+ROOT_MESSAGE = "frame {frame_number}, {body}"
 EXPLOSION_BODY = "excessive strech detect on mesh: {mesh}"
 TIMESPENT_BODY = "is cached in {timespent}"
 TIMELIMIT_BODY = "simulation time exceeds the limit allowed"
@@ -38,9 +39,9 @@ def explosion_detection_callback(
     result = is_deformed_mesh_too_stretched(
         deformed_mesh, reference_mesh, tolerence_factor=tolerance)
     if result is True:
-        print ROOT_MESSAGE.format(
+        logging.warning(ROOT_MESSAGE.format(
             frame_number=cmds.currentTime(query=True),
-            body=EXPLOSION_BODY.format(mesh=deformed_mesh))
+            body=EXPLOSION_BODY.format(mesh=deformed_mesh)))
 
 
 def register_explosion_detection_callbacks(nodes, tolerance):
@@ -65,12 +66,14 @@ def timecheck_callback(times, verbose, timelimit, *useless_callback_args):
     timespent = (times[1] - times[0])
     frame = cmds.currentTime(query=True)
     if verbose is True:
-        print ROOT_MESSAGE.format(
+        message = ROOT_MESSAGE.format(
             frame_number=frame,
             body=TIMESPENT_BODY.format(timespent=timespent))
+        logging.info(message)
     # Time limit to 0 means no limit
     if 0 < timelimit < timespent.total_seconds():
-        print ROOT_MESSAGE.format(frame_number=frame, body=TIMELIMIT_BODY)
+        message = ROOT_MESSAGE.format(frame_number=frame, body=TIMELIMIT_BODY)
+        logging.warning(message)
 
 
 def register_timecheck_callback(verbose=False, timelimit=0):
