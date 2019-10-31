@@ -461,9 +461,9 @@ class PathOptions(QtWidgets.QWidget):
         self.mediaplayer.text.setText(text)
 
     def save_options(self, *useless_signal_args):
-        cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, self.ffmpeg.text()])
-        cmds.optionVar(stringValue=[MAYAPY_PATH_OPTIONVAR, self.mayapy.text()])
-        text = self.mediaplayer.text()
+        cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, self.ffmpeg.text.text()])
+        cmds.optionVar(stringValue=[MAYAPY_PATH_OPTIONVAR, self.mayapy.text.text()])
+        text = self.mediaplayer.text.text()
         cmds.optionVar(stringValue=[MEDIAPLAYER_PATH_OPTIONVAR, text])
 
 
