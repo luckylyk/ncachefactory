@@ -1,5 +1,6 @@
 from maya import cmds, mel
 import maya.api.OpenMaya as om2
+from ncachemanager.mesh import is_deformed_mesh_too_stretched
 
 
 def find_input_mesh_dagpath(clothnode_name):
@@ -26,3 +27,10 @@ def clean_inputmesh_connection(clothnode_name, inattr):
     if not connections:
         return
     cmds.disconnectAttr(connections[0], input_plug)
+
+
+def is_output_too_streched(clothnode_name, tolerance_factor):
+    return is_deformed_mesh_too_stretched(
+        find_input_mesh_dagpath(clothnode_name).name(),
+        find_output_mesh_dagpath(clothnode_name).name(),
+        tolerence_factor=tolerance_factor)

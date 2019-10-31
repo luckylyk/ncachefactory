@@ -22,16 +22,20 @@ from ncachemanager.versioning import (
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachemanager.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
-    VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, CALLBACKS_EXP_OPTIONVAR,
-    FFMPEG_PATH_OPTIONVAR, MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
+    VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, FFMPEG_PATH_OPTIONVAR,
+    MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
     MULTICACHE_EXP_OPTIONVAR, ensure_optionvars_exists)
 from ncachemanager.multincacher import MultiCacher, send_batch_ncache_jobs
+from ncachemanager.timecallbacks import (
+    register_time_callback, add_to_time_callback, unregister_time_callback,
+    time_verbose, clear_time_callback_functions)
 
 
 WINDOW_TITLE = "NCache Manager"
 
 
 class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
+
     def __init__(self, parent=None):
         super(NCacheManager, self).__init__(parent=parent)
         self.setWindowTitle(WINDOW_TITLE)
@@ -63,10 +67,6 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.multicacher.sendMultiCacheRequested.connect(self.send_multi_cache)
         self.multicacher_expander = Expander('Multi Cacher', self.multicacher)
         self.multicacher_expander.clicked.connect(self.adjust_size)
-        self.warnings = WarningOptions()
-        name = "Simulation Warnings"
-        self.warnings_expander = Expander(name, self.warnings)
-        self.warnings_expander.clicked.connect(self.adjust_size)
         self.playblast = PlayblastOptions()
         self.playblast_expander = Expander("Playblast", self.playblast)
         self.playblast_expander.clicked.connect(self.adjust_size)
@@ -99,9 +99,6 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.layout.addSpacing(0)
         self.layout.addWidget(self.playblast_expander)
         self.layout.addWidget(self.playblast)
-        self.layout.addSpacing(0)
-        self.layout.addWidget(self.warnings_expander)
-        self.layout.addWidget(self.warnings)
         self.layout.addSpacing(0)
         self.layout.addWidget(self.comparison_expander)
         self.layout.addWidget(self.comparison)
@@ -173,8 +170,6 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.cacheoptions_expander.set_state(state)
         state = cmds.optionVar(query=PLAYBLAST_EXP_OPTIONVAR)
         self.playblast_expander.set_state(state)
-        state = cmds.optionVar(query=CALLBACKS_EXP_OPTIONVAR)
-        self.warnings_expander.set_state(state)
         state = cmds.optionVar(query=COMPARISON_EXP_OPTIONVAR)
         self.comparison_expander.set_state(state)
         state = cmds.optionVar(query=VERSION_EXP_OPTIONVAR)
@@ -188,8 +183,6 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         value = self.playblast_expander.state
         cmds.optionVar(intValue=[PLAYBLAST_EXP_OPTIONVAR, value])
         value = self.comparison_expander.state
-        cmds.optionVar(intValue=[CALLBACKS_EXP_OPTIONVAR, value])
-        value = self.warnings_expander.state
         cmds.optionVar(intValue=[COMPARISON_EXP_OPTIONVAR, value])
         value = self.versions_expander.state
         cmds.optionVar(intValue=[VERSION_EXP_OPTIONVAR, value])
@@ -198,6 +191,10 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         return QtCore.QSize(350, 650)
 
     def create_cache(self, selection=True):
+        register_time_callback()
+        if self.cacheoptions.verbose is True:
+            add_to_time_callback(time_verbose)
+
         start_frame, end_frame = self.cacheoptions.range
         workspace = self.workspace_widget.directory
         if workspace is None:
@@ -206,23 +203,27 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             nodes = self.nodetable.selected_nodes or []
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
-        tolerance = self.warnings.explosion_detection_tolerance
+
         create_and_record_cacheversion(
             workspace=workspace,
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=nodes,
             behavior=self.cacheoptions.behavior,
-            verbose=self.warnings.verbose,
-            timelimit=self.warnings.timelimit,
             playblast=self.playblast.record_playblast,
-            playblast_viewport_options=self.playblast.viewport_options,
-            explosion_detection_tolerance=tolerance)
+            playblast_viewport_options=self.playblast.viewport_options)
+
         self.nodetable.set_workspace(workspace)
         self.nodetable.update_layout()
         self.selection_changed()
+        unregister_time_callback()
+        clear_time_callback_functions()
 
     def erase_cache(self, selection=True):
+        register_time_callback()
+        if self.cacheoptions.verbose is True:
+            add_to_time_callback(time_verbose)
+
         start_frame, end_frame = self.cacheoptions.range
         workspace = self.workspace_widget.directory
         if workspace is None:
@@ -241,22 +242,24 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             self.create_cache(selection=selection)
             return
 
-        tolerance = self.warnings.explosion_detection_tolerance
         record_in_existing_cacheversion(
             cacheversion=cacheversions[0],
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=nodes,
             behavior=self.cacheoptions.behavior,
-            verbose=self.warnings.verbose,
-            timelimit=self.warnings.timelimit,
             playblast=self.playblast.record_playblast,
-            playblast_viewport_options=self.playblast.viewport_options,
-            explosion_detection_tolerance=tolerance)
+            playblast_viewport_options=self.playblast.viewport_options)
         self.nodetable.update_layout()
         self.selection_changed()
+        unregister_time_callback()
+        clear_time_callback_functions()
 
     def append_cache(self, selection=True):
+        register_time_callback()
+        if self.cacheoptions.verbose is True:
+            add_to_time_callback(time_verbose)
+
         workspace = self.workspace_widget.directory
         if workspace is None:
             return cmds.warning("no workspace set")
@@ -280,17 +283,15 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
                 message = "append cache on multiple version is not suppported."
                 return cmds.warning(message)
 
-        tolerance = self.warnings.explosion_detection_tolerance
         append_to_cacheversion(
             nodes=nodes,
             cacheversion=cacheversion,
-            verbose=self.warnings.verbose,
-            timelimit=self.warnings.timelimit,
             playblast=self.playblast.record_playblast,
-            playblast_viewport_options=self.playblast.viewport_options,
-            explosion_detection_tolerance=tolerance)
+            playblast_viewport_options=self.playblast.viewport_options)
         self.nodetable.update_layout()
         self.selection_changed()
+        unregister_time_callback()
+        clear_time_callback_functions()
 
     def send_multi_cache(self):
         if self.workspace is None:
@@ -302,11 +303,14 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=cmds.ls(type=DYNAMIC_NODES),
-            playblast_viewport_options=self.playblast.viewport_options)
+            playblast_viewport_options=self.playblast.viewport_options,
+            timelimit=self.multicacher.options.timelimit,
+            stretchmax=self.multicacher.options.explosion_detection_tolerance)
         self.multicacher.clear()
 
 
 class Expander(QtWidgets.QPushButton):
+
     def __init__(self, text, child, parent=None):
         super(Expander, self).__init__(parent)
         self.setStyleSheet('text-align: left; font: bold')
@@ -379,6 +383,7 @@ class WorkspaceWidget(QtWidgets.QWidget):
 
 
 class CacheSendersWidget(QtWidgets.QWidget):
+
     def __init__(self, parent=None):
         super(CacheSendersWidget, self).__init__(parent)
         text = "Cache selection"
@@ -410,6 +415,7 @@ class CacheSendersWidget(QtWidgets.QWidget):
 
 
 class PathOptions(QtWidgets.QWidget):
+
     def __init__(self, parent=None):
         super(PathOptions, self).__init__(parent, QtCore.Qt.Tool)
         self.setWindowTitle("Set external applications paths")

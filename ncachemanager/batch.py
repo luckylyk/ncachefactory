@@ -11,8 +11,8 @@ _CURRENTDIR = os.path.dirname(os.path.realpath(__file__))
 _SCRIPT_FILENAME = "record_in_cacheversion.py"
 _SCRIPT_FILEPATH = os.path.join(_CURRENTDIR, '..', 'script', _SCRIPT_FILENAME)
 
-NCACHESCENE_FILENAME = 'ncache_scene.ma'
-TEMPFOLDER_NAME = 'tmp_multicache'
+NCACHESCENE_FILENAME = 'scene.ma'
+TEMPFOLDER_NAME = 'flash_scenes'
 FLASHSCENE_NAME = 'flash_scene_{}.ma'
 
 
@@ -53,7 +53,7 @@ def flash_current_scene(workspace):
 
 def send_batch_ncache_jobs(
         workspace, jobs, start_frame, end_frame, nodes,
-        playblast_viewport_options):
+        playblast_viewport_options, timelimit, stretchmax):
     ''' this function precreate the python script and the folder where will
     be cached the giver jobs. A job is a dict containing tree key:
     {'name': str, 'comment': str, 'scene': str}
@@ -62,7 +62,8 @@ def send_batch_ncache_jobs(
     # build the arguments list. The two None values are differents for every
     # job and will be redefine during the loop
     arguments = build_batch_script_arguments(
-        start_frame, end_frame, nodes, playblast_viewport_options)
+        start_frame, end_frame, nodes, playblast_viewport_options, timelimit,
+        stretchmax)
 
     for job in jobs:
         cacheversion = create_cacheversion(
@@ -85,7 +86,8 @@ def send_batch_ncache_jobs(
 
 
 def build_batch_script_arguments(
-        start_frame, end_frame, nodes, playblast_viewport_options):
+        start_frame, end_frame, nodes, playblast_viewport_options, timelimit,
+        stretchmax):
     arguments = []
     # mayapy executable
     arguments.append(cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR))
@@ -110,6 +112,10 @@ def build_batch_script_arguments(
     arguments.append(' '.join(map(str, map(int, display_values))))
     # camera shape
     arguments.append(playblast_viewport_options['camera'])
+    # timelimit
+    arguments.append(str(timelimit))
+    # stretch max
+    arguments.append(str(stretchmax))
     return arguments
 
 

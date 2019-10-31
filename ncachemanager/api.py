@@ -31,7 +31,6 @@ from ncachemanager.playblast import (
 from ncachemanager.attributes import (
     save_pervertex_maps, extract_xml_attributes, list_node_attributes_values,
     clean_namespaces_in_attributes_dict, ORIGINAL_INPUTSHAPE_ATTRIBUTE)
-from ncachemanager.warnings import register_simulation_callbacks
 
 
 ALTERNATE_INPUTSHAPE_GROUP = "alternative_inputshapes"
@@ -42,15 +41,10 @@ RESTSHAPE_SUFFIX = "_alternate_restshapes"
 
 def create_and_record_cacheversion(
         workspace, start_frame, end_frame, comment=None, name=None,
-        nodes=None, behavior=0, verbose=False, timelimit=0,
-        explosion_detection_tolerance=0, playblast=False,
+        nodes=None, behavior=0, playblast=False,
         playblast_viewport_options=None):
 
     cloth_nodes = cmds.ls(nodes, type="nCloth")
-    callbacks = register_simulation_callbacks(
-        cloth_nodes, verbose, timelimit, explosion_detection_tolerance)
-    if playblast is True:
-        playblast_id = start_playblast_record(**playblast_viewport_options)
 
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     workspace = ensure_workspace_exists(workspace)
@@ -62,6 +56,11 @@ def create_and_record_cacheversion(
         start_frame=start_frame,
         end_frame=end_frame,
         timespent=None)
+
+    if playblast is True:
+        start_playblast_record(
+            directory=cacheversion.directory,**playblast_viewport_options)
+
     save_pervertex_maps(nodes=cloth_nodes, directory=cacheversion.directory)
     start_time = datetime.now()
     record_ncache(
@@ -76,25 +75,21 @@ def create_and_record_cacheversion(
     cacheversion.set_range(nodes, start_frame=start_frame, end_frame=time)
     cacheversion.set_timespent(nodes=nodes, seconds=timespent)
 
-    for callback in callbacks:
-        om2.MMessage.removeCallback(callback)
-    if playblast is True and playblast_id is not None:
-        temp_playblast_path = stop_playblast_record(playblast_id)
+    if playblast is True:
+        temp_playblast_path = stop_playblast_record(cacheversion.directory)
         move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
     return cacheversion
 
 
 def record_in_existing_cacheversion(
         cacheversion, start_frame, end_frame, nodes=None, behavior=0,
-        verbose=False, timelimit=0, explosion_detection_tolerance=0,
         playblast=False, playblast_viewport_options=None):
 
-    cloth_nodes = cmds.ls(nodes, type="nCloth")
-    callbacks = register_simulation_callbacks(
-        cloth_nodes, verbose, timelimit, explosion_detection_tolerance)
     if playblast is True:
-        playblast_id = start_playblast_record(**playblast_viewport_options)
+        start_playblast_record(
+            directory=cacheversion.directory,**playblast_viewport_options)
 
+    cloth_nodes = cmds.ls(nodes, type="nCloth")
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     save_pervertex_maps(nodes=cloth_nodes, directory=cacheversion.directory)
     start_time = datetime.now()
@@ -110,23 +105,18 @@ def record_in_existing_cacheversion(
     cacheversion.set_range(nodes, start_frame=start_frame, end_frame=time)
     cacheversion.set_timespent(nodes=nodes, seconds=timespent)
 
-    for callback in callbacks:
-        om2.MMessage.removeCallback(callback)
-    if playblast is True and playblast_id is not None:
-        temp_playblast_path = stop_playblast_record(playblast_id)
+    if playblast is True:
+        temp_playblast_path = stop_playblast_record(cacheversion.directory)
         move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
 
 
 def append_to_cacheversion(
-        cacheversion, nodes=None, verbose=False, timelimit=0,
-        explosion_detection_tolerance=0, playblast=False,
+        cacheversion, nodes=None, playblast=False,
         playblast_viewport_options=None):
 
-    cloth_nodes = cmds.ls(nodes, type="nCloth")
-    callbacks = register_simulation_callbacks(
-        cloth_nodes, verbose, timelimit, explosion_detection_tolerance)
     if playblast is True:
-        playblast_id = start_playblast_record(**playblast_viewport_options)
+        start_playblast_record(
+            directory=cacheversion.directory,**playblast_viewport_options)
 
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     start_time = datetime.now()
@@ -147,10 +137,8 @@ def append_to_cacheversion(
     if time > end_frame:
         cacheversion.set_range(nodes=nodes, end_frame=time)
 
-    for callback in callbacks:
-        om2.MMessage.removeCallback(callback)
-    if playblast is True and playblast_id is not None:
-        temp_playblast_path = stop_playblast_record(playblast_id)
+    if playblast is True:
+        temp_playblast_path = stop_playblast_record(cacheversion.directory)
         move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
 
 

@@ -1,7 +1,7 @@
 from maya import cmds
 from PySide2 import QtWidgets, QtGui, QtCore
 from ncachemanager.optionvars import (
-    VIEWPORT_ACTIVE_OPTIONVAR, RANGETYPE_OPTIONVAR, CACHE_BEHAVIOR_OPTIONVAR,
+    RANGETYPE_OPTIONVAR, CACHE_BEHAVIOR_OPTIONVAR, VERBOSE_OPTIONVAR,
     VERBOSE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
     EXPLOSION_TOLERENCE_OPTIONVAR, ensure_optionvars_exists)
 
@@ -19,7 +19,7 @@ BLENDMODE_LABELS = (
 class CacheOptions(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(CacheOptions, self).__init__(parent)
-        self._viewport = QtWidgets.QCheckBox('Viewport active during the cache')
+        self._verbose = QtWidgets.QCheckBox('verbose')
         self._rangetype_timeline = QtWidgets.QRadioButton('timeline')
         self._rangetype_custom = QtWidgets.QRadioButton('custom range')
         self._rangetype = QtWidgets.QButtonGroup()
@@ -49,7 +49,7 @@ class CacheOptions(QtWidgets.QWidget):
 
         self.layout = QtWidgets.QFormLayout(self)
         self.layout.setSpacing(0)
-        self.layout.addRow("", self._viewport)
+        self.layout.addRow("", self._verbose)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
         self.layout.addRow("Range: ", self._rangetype_timeline)
         self.layout.addRow("", self._rangetype_custom)
@@ -61,7 +61,7 @@ class CacheOptions(QtWidgets.QWidget):
 
         self.set_optionvars()
         self.update_ui_states()
-        self._viewport.stateChanged.connect(self.save_optionvars)
+        self._verbose.stateChanged.connect(self.save_optionvars)
         self._rangetype.buttonToggled.connect(self.save_optionvars)
         self._rangetype.buttonToggled.connect(self.update_ui_states)
         self._behavior.buttonToggled.connect(self.save_optionvars)
@@ -71,8 +71,8 @@ class CacheOptions(QtWidgets.QWidget):
 
     def set_optionvars(self):
         ensure_optionvars_exists()
-        value = cmds.optionVar(query=VIEWPORT_ACTIVE_OPTIONVAR)
-        self._viewport.setChecked(value)
+        value = cmds.optionVar(query=VERBOSE_OPTIONVAR)
+        self._verbose.setChecked(value)
         id_ = cmds.optionVar(query=RANGETYPE_OPTIONVAR)
         button = self._rangetype.button(id_)
         button.setChecked(True)
@@ -81,8 +81,8 @@ class CacheOptions(QtWidgets.QWidget):
         button.setChecked(True)
 
     def save_optionvars(self, *signals_args):
-        value = self._viewport.isChecked()
-        cmds.optionVar(intValue=[VIEWPORT_ACTIVE_OPTIONVAR, value])
+        value = self._verbose.isChecked()
+        cmds.optionVar(intValue=[VERBOSE_OPTIONVAR, value])
         value = self._rangetype.checkedId()
         cmds.optionVar(intValue=[RANGETYPE_OPTIONVAR, value])
         value = self._behavior.checkedId()
@@ -103,5 +103,5 @@ class CacheOptions(QtWidgets.QWidget):
         return self._behavior.checkedId()
 
     @property
-    def viewport(self):
-        return self._viewport.isChecked()
+    def verbose(self):
+        return self._verbose.isChecked()

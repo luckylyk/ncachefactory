@@ -10,6 +10,8 @@ The script create a ncache in background, this is the arguments orders
     -playblast_resolution
     -viewport_display_values
     -playblast_camera
+    -timelimit
+    -stretchmax
 """
 
 import argparse
@@ -22,9 +24,11 @@ Here's the positional value:
     NURBS Curves, NURBS Surfaces, Polygons, Subdiv Surface, Particles,
     Particle Instance, Fluids, Strokes, Image Planes, UI, Lights, Cameras,
     Locators, Joints, IK Handles, Deformers, Motion Trails, Components,
-    Hair Systems, Follicles, Misc. UI, Ornaments
-"""
+    Hair Systems, Follicles, Misc. UI, Ornaments."""
 PLAYBLAST_RES_HELP = 'resolution of rendered playblast. e.i. "1024 768"'
+TIMELIMIT_HELP = "time limit per frame evaluated in second (0 is no limit)"
+STRETCH_LIMIT_HELP = "Stretch max supported by output mesh (0 is no limit)"
+
 parser = argparse.ArgumentParser()
 parser.add_argument('directory', help="Cache Version directory")
 parser.add_argument('scene', help="Maya file location")
@@ -34,6 +38,8 @@ parser.add_argument('end_frame', help="NCache end frame", type=int)
 parser.add_argument('playblast_resolution', help=PLAYBLAST_RES_HELP)
 parser.add_argument('viewport_display_values', help=PLAYBLAST_DISPLAY_HELP)
 parser.add_argument('playblast_camera', help="camershape name")
+parser.add_argument('timelimit', help=TIMELIMIT_HELP, type=int)
+parser.add_argument('stretchmax', help=STRETCH_LIMIT_HELP, type=int)
 arguments = parser.parse_args()
 
 
@@ -55,40 +61,82 @@ Scripts Arguments:
     - Range = {arguments.start_frame} to {arguments.end_frame}
     - Resolution = {arguments.playblast_resolution}
     - Viewport display = {arguments.viewport_display_values}
-    - Camera blaster = {arguments.playblast_camera}
+    - Blasted camera = {arguments.playblast_camera}
+    - Time limit = {arguments.timelimit}
+    - Stretch max supported = {arguments.stretchmax} * input edge length
 """.format(arguments=arguments)
 logging.info(arguments_infos)
 
 
-import maya.standalone
-maya.standalone.initialize(name='python')
+try:
+    from datetime import datetime
+    from functools import partial
+    from maya import cmds, mel
+    import maya.OpenMaya as om2
+    from ncachemanager.versioning import CacheVersion
+    from ncachemanager.api import record_in_existing_cacheversion
+    from ncachemanager.ncloth import is_output_too_streched
+    from ncachemanager.timecallbacks import (
+        add_to_time_callback, get_timespent_since_last_frame_set, time_verbose,
+        register_time_callback)
 
-from maya import cmds, mel
-from ncachemanager.versioning import CacheVersion
-from ncachemanager.api import record_in_existing_cacheversion
-import maya.OpenMaya as om2
+    import maya.standalone
+    maya.standalone.initialize(name='python')
 
+    def simulation_sanity_checks(nodes, timelimit, stretchmax):
+        """ this function is a time changed callback which kill the
+        simulation in case of explosion detected """
+        result = False
+        if stretchmax > 0:
+            for node in nodes:
+                if is_output_too_streched(node, stretchmax):
+                    result = True
+                    message = "excessive strech detect for node: " + node
+                    logging.error(message)
+                    break
 
-display_values = [
-    bool(int(value))
-    for value in arguments.viewport_display_values.split(' ')]
-width, height = map(int, arguments.playblast_resolution.split(" "))
-playblast_viewport_options = {
-    'width': width,
-    'height': height,
-    'viewport_display_values': display_values,
-    'camera': arguments.playblast_camera}
+        timespent = get_timespent_since_last_frame_set()
+        if timespent is not None:
+            if 0 < timelimit < timespent:
+                message = "simulation time exceeds the limit allowed: {}"
+                logging.error(message.format(timespent))
+                result = True
 
-cmds.file(arguments.scene, open=True, force=True)
-cacheversion = CacheVersion(arguments.directory)
-record_in_existing_cacheversion(
-    cacheversion=cacheversion,
-    start_frame=arguments.start_frame,
-    end_frame=arguments.end_frame,
-    nodes=arguments.nodes.split(', '),
-    behavior=0,
-    verbose=True,
-    timelimit=0,
-    explosion_detection_tolerance=0,
-    playblast=True,
-    playblast_viewport_options=playblast_viewport_options)
+        if result is True:
+            logging.error("User defined explosion limit reached.")
+            cmds.quit(force=True)
+
+    cmds.currentTime(arguments.start_frame, edit=True)
+    func = partial(
+        simulation_sanity_checks,
+        arguments.nodes,
+        arguments.timelimit,
+        arguments.stretchmax)
+    register_time_callback()
+    add_to_time_callback(func)
+    add_to_time_callback(time_verbose)
+
+    display_values = [
+        bool(int(value))
+        for value in arguments.viewport_display_values.split(' ')]
+    width, height = map(int, arguments.playblast_resolution.split(" "))
+    playblast_viewport_options = {
+        'width': width,
+        'height': height,
+        'viewport_display_values': display_values,
+        'camera': arguments.playblast_camera}
+
+    cmds.file(arguments.scene, open=True, force=True)
+    cacheversion = CacheVersion(arguments.directory)
+    record_in_existing_cacheversion(
+        cacheversion=cacheversion,
+        start_frame=arguments.start_frame,
+        end_frame=arguments.end_frame,
+        nodes=arguments.nodes.split(', '),
+        behavior=0,
+        playblast=True,
+        playblast_viewport_options=playblast_viewport_options)
+
+except Exception:
+    import traceback
+    logging.error(traceback.format_exc())
