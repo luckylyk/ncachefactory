@@ -12,7 +12,6 @@ from ncachemanager.ncache import DYNAMIC_NODES
 from ncachemanager.cacheoptions import CacheOptions
 from ncachemanager.qtutils import get_icon, get_maya_windows
 from ncachemanager.playblastoptions import PlayblastOptions
-from ncachemanager.warningoptions import WarningOptions
 from ncachemanager.api import (
     filter_connected_cacheversions, create_and_record_cacheversion,
     record_in_existing_cacheversion, append_to_cacheversion)
