@@ -28,6 +28,7 @@ from ncachemanager.multincacher import MultiCacher, send_batch_ncache_jobs
 from ncachemanager.timecallbacks import (
     register_time_callback, add_to_time_callback, unregister_time_callback,
     time_verbose, clear_time_callback_functions)
+from ncachemanager.monitoring import MultiCacheMonitor
 
 
 WINDOW_TITLE = "NCache Manager"
@@ -44,6 +45,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pathoptions = PathOptions(self)
         self.workspace_widget = WorkspaceWidget()
         self.nodetable = DynamicNodesTableWidget()
+        self.multicache_monitor = None
 
         self.senders = CacheSendersWidget()
         method = partial(self.create_cache, selection=False)
@@ -296,7 +298,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if self.workspace is None:
             None
         start_frame, end_frame = self.cacheoptions.range
-        self.processes = send_batch_ncache_jobs(
+        cacheversions, self.processes = send_batch_ncache_jobs(
             workspace=self.workspace,
             jobs=self.multicacher.jobs,
             start_frame=start_frame,
@@ -305,6 +307,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             playblast_viewport_options=self.playblast.viewport_options,
             timelimit=self.multicacher.options.timelimit,
             stretchmax=self.multicacher.options.explosion_detection_tolerance)
+        if self.multicache_monitor is not None:
+            self.multicache_monitor.close()
+        self.multicache_monitor = MultiCacheMonitor(
+            cacheversions, self.processes, parent=self)
+        self.multicache_monitor.show()
         self.multicacher.clear()
 
 
@@ -450,6 +457,7 @@ class PathOptions(QtWidgets.QWidget):
         if not executables:
             return
         browseline.text.setText(executables[0])
+        self.save_options()
 
     def set_ui_states(self):
         ensure_optionvars_exists()

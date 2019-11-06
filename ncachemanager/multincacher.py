@@ -2,6 +2,7 @@
 import os
 from PySide2 import QtWidgets, QtCore, QtGui
 from maya import cmds
+from ncachemanager.qtutils import get_icon
 from ncachemanager.batch import (
     clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
     send_batch_ncache_jobs, is_temp_folder_empty)
@@ -20,29 +21,33 @@ class MultiCacher(QtWidgets.QWidget):
         self.model = MultiCacheTableModel()
         self.table = MultiCacheTableView()
         self.table.set_model(self.model)
-        self.flash = QtWidgets.QPushButton('flash scene')
-        self.flash.released.connect(self._call_flash_scene)
-        self.remove = QtWidgets.QPushButton('remove selected flash')
-        self.remove.released.connect(self._call_remove_selected_jobs)
-        self.start_all = QtWidgets.QPushButton('start multi caching all nodes')
-        self.start_all.released.connect(self.sendMultiCacheRequested.emit)
-        self.start_sel = QtWidgets.QPushButton('start multi caching selection')
+
+        self.flash = QtWidgets.QAction(get_icon("flash.png"), '', self)
+        self.flash.setToolTip("Save current scene and add it to job queue")
+        self.flash.triggered.connect(self._call_flash_scene)
+        self.remove = QtWidgets.QAction(get_icon("trash.png"), '', self)
+        self.remove.setToolTip("Remove selected scene from job queue")
+        self.remove.triggered.connect(self._call_remove_selected_jobs)
+        self.toolbar = QtWidgets.QToolBar()
+        self.toolbar.setIconSize(QtCore.QSize(15, 15))
+        self.toolbar.addAction(self.flash)
+        self.toolbar.addAction(self.remove)
+        self.cache = QtWidgets.QPushButton('Cache')
+        self.cache.released.connect(self.sendMultiCacheRequested.emit)
+
         self.killer_group = QtWidgets.QGroupBox('Auto kill simulation options')
         self.options = SimulationKillerOptions()
 
-        self.table_buttons_layout = QtWidgets.QHBoxLayout()
-        self.table_buttons_layout.setSpacing(2)
-        self.table_buttons_layout.addStretch(1)
-        self.table_buttons_layout.addWidget(self.flash)
-        self.table_buttons_layout.addWidget(self.remove)
+        self.menu_layout = QtWidgets.QHBoxLayout()
+        self.menu_layout.addStretch(1)
+        self.menu_layout.addWidget(self.toolbar)
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setSpacing(2)
         self.layout.addWidget(self.table)
-        self.layout.addLayout(self.table_buttons_layout)
+        self.layout.addLayout(self.menu_layout)
         self.layout.addSpacing(4)
-        self.layout.addWidget(self.start_all)
-        self.layout.addWidget(self.start_sel)
+        self.layout.addWidget(self.cache)
         self.layout.addWidget(self.options)
 
     def set_workspace(self, workspace):
@@ -159,7 +164,10 @@ class MultiCacheTableModel(QtCore.QAbstractTableModel):
         if role != QtCore.Qt.EditRole:
             return
         row, column = index.row(), index.column()
-        self.jobs[row][column] = data
+        self.layoutAboutToBeChanged.emit()
+        self.jobs[row][self.KEYS[column]] = data
+        self.layoutChanged.emit()
+        return True
 
     def flags(self, index):
         flags = QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable

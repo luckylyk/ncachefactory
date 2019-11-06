@@ -59,6 +59,7 @@ def send_batch_ncache_jobs(
     {'name': str, 'comment': str, 'scene': str}
     '''
     processes = []
+    cacheversions = []
     # build the arguments list. The two None values are differents for every
     # job and will be redefine during the loop
     arguments = build_batch_script_arguments(
@@ -73,6 +74,7 @@ def send_batch_ncache_jobs(
             nodes=nodes,
             start_frame=start_frame,
             end_frame=end_frame)
+        cacheversions.append(cacheversion)
         scene = os.path.join(cacheversion.directory, NCACHESCENE_FILENAME)
         os.rename(job['scene'], scene)
         # replace the two arguments which are different for each jobs
@@ -82,7 +84,7 @@ def send_batch_ncache_jobs(
         processes.append(process)
 
     clean_batch_temp_folder(workspace)
-    return processes
+    return cacheversions, processes
 
 
 def build_batch_script_arguments(

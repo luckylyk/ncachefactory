@@ -55,8 +55,8 @@ def shoot_frame(camera, width, height):
 def stop_playblast_record(directory):
     global _blasted_images
     source = compile_movie(_blasted_images)
-    for image in _blasted_images:
-        os.remove(image)
+    # for image in _blasted_images:
+    #     os.remove(image)
     _blasted_images = []
     destination = os.path.join(directory, os.path.basename(source))
     os.rename(source, destination)

@@ -9,6 +9,7 @@ import os
 import shutil
 from datetime import datetime
 from functools import partial
+import subprocess
 
 from maya import cmds
 import maya.api.OpenMaya as om2
@@ -31,6 +32,7 @@ from ncachemanager.playblast import (
 from ncachemanager.attributes import (
     save_pervertex_maps, extract_xml_attributes, list_node_attributes_values,
     clean_namespaces_in_attributes_dict, ORIGINAL_INPUTSHAPE_ATTRIBUTE)
+from ncachemanager.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
 
 
 ALTERNATE_INPUTSHAPE_GROUP = "alternative_inputshapes"
@@ -59,8 +61,7 @@ def create_and_record_cacheversion(
 
     if playblast is True:
         start_playblast_record(
-            directory=cacheversion.directory,**playblast_viewport_options)
-
+            directory=cacheversion.directory, **playblast_viewport_options)
     save_pervertex_maps(nodes=cloth_nodes, directory=cacheversion.directory)
     start_time = datetime.now()
     record_ncache(
@@ -76,8 +77,8 @@ def create_and_record_cacheversion(
     cacheversion.set_timespent(nodes=nodes, seconds=timespent)
 
     if playblast is True:
-        temp_playblast_path = stop_playblast_record(cacheversion.directory)
-        move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
+        temp_path = stop_playblast_record(cacheversion.directory)
+        move_playblast_to_cacheversion(temp_path, cacheversion)
     return cacheversion
 
 
@@ -106,8 +107,8 @@ def record_in_existing_cacheversion(
     cacheversion.set_timespent(nodes=nodes, seconds=timespent)
 
     if playblast is True:
-        temp_playblast_path = stop_playblast_record(cacheversion.directory)
-        move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
+        temp_path = stop_playblast_record(cacheversion.directory)
+        move_playblast_to_cacheversion(temp_path, cacheversion)
 
 
 def append_to_cacheversion(
@@ -138,8 +139,8 @@ def append_to_cacheversion(
         cacheversion.set_range(nodes=nodes, end_frame=time)
 
     if playblast is True:
-        temp_playblast_path = stop_playblast_record(cacheversion.directory)
-        move_playblast_to_cacheversion(temp_playblast_path, cacheversion)
+        temp_path = stop_playblast_record(cacheversion.directory)
+        move_playblast_to_cacheversion(temp_path, cacheversion)
 
 
 def plug_cacheversion(cacheversion, groupname, suffix, inattr, nodes=None):

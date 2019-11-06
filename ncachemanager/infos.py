@@ -1,13 +1,17 @@
 
 import datetime
+import subprocess
+
 from maya import cmds
 from PySide2 import QtWidgets, QtCore
+
 from ncachemanager.versioning import (
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachemanager.api import (
     filter_connected_cacheversions, connect_cacheversion, apply_settings,
     plug_cacheversion_to_inputmesh, plug_cacheversion_to_restshape,
     recover_original_inputmesh)
+from ncachemanager.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
 from ncachemanager.qtutils import get_icon
 from ncachemanager.attributes import set_pervertex_maps
 
@@ -85,6 +89,9 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.attributes_layout.addSpacing(4)
         self.attributes_layout.addWidget(self.apply_maps)
 
+        self.show_playblasts = QtWidgets.QPushButton("show playblasts")
+        self.show_playblasts.released.connect(self._call_show_playblasts)
+
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setSpacing(4)
         self.layout.addLayout(self.version_layout)
@@ -93,6 +100,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.layout.addLayout(self.connect_layout2)
         self.layout.addWidget(self.recover_input)
         self.layout.addLayout(self.attributes_layout)
+        self.layout.addWidget(self.show_playblasts)
         self.setEnabled(False)
 
     def set_nodes_and_cacheversions(self, nodes=None, cacheversions=None):
@@ -151,6 +159,16 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
     def _call_apply_maps(self):
         set_pervertex_maps(self.nodes, self.cacheversion.directory)
+
+    def _call_show_playblasts(self):
+        mediaplayer = cmds.optionVar(query=MEDIAPLAYER_PATH_OPTIONVAR)
+        if not mediaplayer:
+            return
+        playblasts = self.cacheversion.infos['playblasts']
+        if not playblasts:
+            return
+        arguments = [mediaplayer] + self.cacheversion.infos['playblasts']
+        subprocess.Popen(arguments)
 
 
 class CacheversionsListModel(QtCore.QAbstractListModel):

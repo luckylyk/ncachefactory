@@ -23,12 +23,14 @@ DEFAULT_INFOS = {
 
 import os
 import json
+import glob
 import shutil
 
 INFOS_FILENAME = 'infos.json'
 PLAYBLAST_FILENAME = 'playblast_{}.mp4'
 VERSION_FOLDERNAME = 'version_{}'
 WORKSPACE_FOLDERNAME = 'ncaches'
+LOG_FILENAME = 'infos.log'
 
 
 class CacheVersion(object):
@@ -249,10 +251,24 @@ def get_available_playblast_filename(directory):
     return os.path.join(directory, filename)
 
 
-def move_playblast_to_cacheversion(path, cacheversion):
+def move_playblast_to_cacheversion(source, cacheversion):
     destination = cacheversion.get_available_playblast_filename()
-    os.rename(path, destination)
+    os.rename(source, destination)
     cacheversion.add_playblast(destination)
+    return destination
+
+
+def get_log_filename(cacheversion):
+    return os.path.join(cacheversion.directory, LOG_FILENAME)
+
+
+def list_tmp_jpeg_under_cacheversion(cacheversion):
+    jpegs = []
+    directory = cacheversion.directory
+    for _ in range(5):
+        jpegs.extend(glob.glob(os.path.join(directory, "*.jpg")))
+        directory = os.path.join(directory, "*")
+    return sorted(jpegs)
 
 
 if __name__ == "__main__":
