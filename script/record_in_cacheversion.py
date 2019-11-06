@@ -14,7 +14,6 @@ The script create a ncache in background, this is the arguments orders
     -timelimit
     -stretchmax
 """
-
 import os
 import logging
 import argparse
@@ -33,7 +32,6 @@ PLAYBLAST_RES_HELP = 'resolution of rendered playblast. e.i. "1024 768"'
 TIMELIMIT_HELP = "time limit per frame evaluated in second (0 is no limit)"
 STRETCH_LIMIT_HELP = "Stretch max supported by output mesh (0 is no limit)"
 
-
 try:
     parser = argparse.ArgumentParser()
     parser.add_argument('directory', help="Cache Version directory")
@@ -47,13 +45,17 @@ try:
     parser.add_argument('timelimit', help=TIMELIMIT_HELP, type=int)
     parser.add_argument('stretchmax', help=STRETCH_LIMIT_HELP, type=int)
     arguments = parser.parse_args()
-    # remove all the existing logging handlers that can already set by default
-    # by maya. If those handlers aren't deleted, the module refuse to set is output
-    # in an external log file.
-    for handler in logging.root.handlers[:]:
-        logging.root.removeHandler(handler)
-    logfile = os.path.join(arguments.directory, 'infos.log')
-    logging.basicConfig(filename=logfile, level=logging.INFO)
+
+    def force_log_info(message):
+        # remove all the existing logging handlers that can already set by default
+        # by maya. If those handlers aren't deleted, the module refuse to set is output
+        # in an external log file.
+        for handler in logging.root.handlers[:]:
+            logging.root.removeHandler(handler)
+        logfile = os.path.join(arguments.directory, 'infos.log')
+        logging.basicConfig(filename=logfile, level=logging.INFO)
+        logging.info(message)
+
     # Log the arguments informations.
     arguments_infos = """\
     Scripts Arguments:
@@ -67,7 +69,7 @@ try:
         - Time limit = {arguments.timelimit}
         - Stretch max supported = {arguments.stretchmax} * input edge length
     """.format(arguments=arguments)
-    logging.info(arguments_infos)
+    force_log_info(arguments_infos)
 
     from maya import cmds, mel
     import maya.OpenMaya as om2
@@ -105,7 +107,7 @@ try:
             cmds.quit(force=True)
 
     cmds.file(arguments.scene, open=True, force=True)
-    logging.info('maya scene opened')
+    force_log_info('maya scene opened')
 
     cmds.currentTime(arguments.start_frame, edit=True)
     add_to_time_callback(time_verbose)
@@ -136,10 +138,10 @@ try:
         behavior=0,
         playblast=True,
         playblast_viewport_options=playblast_viewport_options)
-    logging.info("process is terminated")
+    force_log_info("process is terminated")
 
 except Exception:
     import traceback
     logging.error(traceback.format_exc())
-    logging.info("process is terminated")
+    force_log_info("process is terminated")
 
