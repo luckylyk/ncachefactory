@@ -95,7 +95,7 @@ try:
 
         timespent = get_timespent_since_last_frame_set()
         if timespent is not None:
-            if 0 < timelimit < timespent:
+            if 0 < timelimit < timespent.seconds:
                 message = "simulation time exceeds the limit allowed: {}"
                 logging.error(message.format(timespent))
                 result = True
@@ -108,14 +108,14 @@ try:
     logging.info('maya scene opened')
 
     cmds.currentTime(arguments.start_frame, edit=True)
+    add_to_time_callback(time_verbose)
     func = partial(
         simulation_sanity_checks,
-        arguments.nodes,
+        arguments.nodes.split(', '),
         arguments.timelimit,
         arguments.stretchmax)
-    register_time_callback()
     add_to_time_callback(func)
-    add_to_time_callback(time_verbose)
+    register_time_callback()
 
     display_values = [
         bool(int(value))

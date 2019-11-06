@@ -6,9 +6,13 @@ from ncachemanager.versioning import (
     get_log_filename, list_tmp_jpeg_under_cacheversion)
 
 
+WINDOW_TITLE = "Multi NCache Monitoring"
+
+
 class MultiCacheMonitor(QtWidgets.QWidget):
     def __init__(self, cacheversions, processes, parent=None):
         super(MultiCacheMonitor, self).__init__(parent, QtCore.Qt.Window)
+        self.setWindowTitle(WINDOW_TITLE)
         self.tab_widget = QtWidgets.QTabWidget()
         self.job_panels = []
 
@@ -18,9 +22,12 @@ class MultiCacheMonitor(QtWidgets.QWidget):
             self.tab_widget.addTab(job_panel, cacheversion.name)
         imageviewers = [jp.images.image for jp in self.job_panels]
         names = [cv.name for cv in cacheversions]
-        self.monitor = Monitor(names=names, imageviewers=imageviewers)
-        self.tab_widget.insertTab(0, self.monitor, 'Monitor')
-        self.tab_widget.setCurrentIndex(0)
+        # Add a multi cache monitoring only if there's more than one cache job
+        # sent.
+        if len(cacheversions) > 1:
+            self.monitor = Monitor(names=names, imageviewers=imageviewers)
+            self.tab_widget.insertTab(0, self.monitor, 'Monitor')
+            self.tab_widget.setCurrentIndex(0)
 
         self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.setContentsMargins(2, 2, 2, 2)
