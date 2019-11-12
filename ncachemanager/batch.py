@@ -2,6 +2,7 @@ import os
 import subprocess
 import shutil
 import sys
+
 from maya import cmds
 from ncachemanager.optionvars import MAYAPY_PATH_OPTIONVAR
 from ncachemanager.versioning import create_cacheversion
@@ -13,19 +14,33 @@ _SCRIPT_FILEPATH = os.path.join(_CURRENTDIR, '..', 'script', _SCRIPT_FILENAME)
 
 NCACHESCENE_FILENAME = 'scene.ma'
 TEMPFOLDER_NAME = 'flash_scenes'
+WEDGINGFOLDER_NAME = 'wedging_scenes'
 FLASHSCENE_NAME = 'flash_scene_{}.ma'
+WEDGINGSCENE_NAME = 'scene_{}.ma'
+WEDGING_COMMENT_TEMPLATE = """\
+Wedging Cache:
+\tattribute {}
+\tvalue {}"""
 
 
-def build_unique_flashscene_name(workspace):
+def iterate_values(start_value, end_value, iterations):
+    if not iterations:
+        return start_value, end_value
+    difference = float(abs(end_value - start_value))
+    iteration_value = difference / (iterations + 1)
+    return [start_value + (i * iteration_value) for i in range(iterations + 2)]
+
+
+def build_unique_scene_name(workspace, scenename_template, foldername):
     i = 0
-    name = FLASHSCENE_NAME.format(str(i).zfill(2))
-    while os.path.exists(os.path.join(workspace, TEMPFOLDER_NAME, name)):
+    name = scenename_template.format(str(i).zfill(2))
+    while os.path.exists(os.path.join(workspace, foldername, name)):
         i += 1
-        name = FLASHSCENE_NAME.format(str(i).zfill(2))
+        name = scenename_template.format(str(i).zfill(2))
     return name
 
 
-def get_current_environment():
+def gather_current_environment():
     pythonpaths = os.environ["PYTHONPATH"].split(os.pathsep)
     pythonpaths = [p.replace("\\", "/") for p in pythonpaths]
     for path in sys.path:
@@ -40,8 +55,21 @@ def get_current_environment():
 
 def flash_current_scene(workspace):
     currentname = cmds.file(query=True, sceneName=True)
-    flashname = build_unique_flashscene_name(workspace)
+    flashname = build_unique_scene_name(workspace, FLASHSCENE_NAME, TEMPFOLDER_NAME)
     folder = os.path.join(workspace, TEMPFOLDER_NAME)
+    filename = os.path.join(folder, flashname)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    cmds.file(rename=filename)
+    cmds.file(save=True, type="mayaAscii")
+    cmds.file(rename=currentname)
+    return filename
+
+
+def save_scene_for_wedging(workspace):
+    currentname = cmds.file(query=True, sceneName=True)
+    flashname = build_unique_scene_name(workspace, WEDGINGSCENE_NAME, WEDGINGFOLDER_NAME)
+    folder = os.path.join(workspace, WEDGINGFOLDER_NAME)
     filename = os.path.join(folder, flashname)
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -65,7 +93,7 @@ def send_batch_ncache_jobs(
     arguments = build_batch_script_arguments(
         start_frame, end_frame, nodes, playblast_viewport_options, timelimit,
         stretchmax)
-
+    environment = gather_current_environment()
     for job in jobs:
         cacheversion = create_cacheversion(
             workspace=workspace,
@@ -80,25 +108,63 @@ def send_batch_ncache_jobs(
         # replace the two arguments which are different for each jobs
         arguments[2] = cacheversion.directory
         arguments[3] = scene
-        process = subprocess.Popen(arguments, env=get_current_environment())
+        process = subprocess.Popen(
+            arguments,
+            bufsize=-1,
+            env=environment,
+            creationflags=subprocess.CREATE_NEW_CONSOLE)
         processes.append(process)
 
     clean_batch_temp_folder(workspace)
     return cacheversions, processes
 
 
+def send_wedging_ncaches_jobs(
+        workspace, name, start_frame, end_frame, nodes,
+        playblast_viewport_options, timelimit, stretchmax, attribute,
+        start_value, end_value, iterations):
+    processes = []
+    cacheversions = []
+    values = iterate_values(start_value, end_value, iterations)
+    environment = gather_current_environment()
+    scene = save_scene_for_wedging(workspace)
+    for value in values:
+        comment = WEDGING_COMMENT_TEMPLATE.format(attribute, value)
+        cacheversion = create_cacheversion(
+            workspace=workspace,
+            name=name,
+            comment=comment,
+            nodes=nodes,
+            start_frame=start_frame,
+            end_frame=end_frame)
+        cacheversions.append(cacheversion)
+        arguments = build_batch_script_arguments(
+            start_frame, end_frame, nodes, playblast_viewport_options,
+            timelimit, stretchmax, attribute_override_name=attribute,
+            attribute_override_value=value, scene=scene,
+            directory=cacheversion.directory)
+        process = subprocess.Popen(
+            arguments,
+            env=environment,
+            bufsize=-1,
+            creationflags=subprocess.CREATE_NEW_CONSOLE)
+        processes.append(process)
+    return cacheversions, processes
+
+
 def build_batch_script_arguments(
         start_frame, end_frame, nodes, playblast_viewport_options, timelimit,
-        stretchmax):
+        stretchmax, scene=None, directory=None, attribute_override_name="",
+        attribute_override_value=""):
     arguments = []
     # mayapy executable
     arguments.append(cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR))
     # script executed
     arguments.append(_SCRIPT_FILEPATH)
-    # directory (set job per job)
-    arguments.append(None)
-    # maya scene, (set job per job)
-    arguments.append(None)
+    # directory
+    arguments.append(directory)
+    # maya scene
+    arguments.append(scene)
     # cached nodes
     arguments.append(', '.join(nodes))
     # start frame
@@ -118,6 +184,11 @@ def build_batch_script_arguments(
     arguments.append(str(timelimit))
     # stretch max
     arguments.append(str(stretchmax))
+    # Attribute override name
+    arguments.append(attribute_override_name)
+    # Attribute overide value
+    arguments.append(str(attribute_override_value))
+
     return arguments
 
 

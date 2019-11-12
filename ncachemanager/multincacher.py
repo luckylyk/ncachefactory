@@ -5,7 +5,7 @@ from maya import cmds
 from ncachemanager.qtutils import get_icon
 from ncachemanager.batch import (
     clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
-    send_batch_ncache_jobs, is_temp_folder_empty)
+    is_temp_folder_empty)
 from ncachemanager.optionvars import (
     EXPLOSION_TOLERENCE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
     TIMELIMIT_ENABLED_OPTIONVAR, TIMELIMIT_OPTIONVAR, ensure_optionvars_exists)
@@ -13,6 +13,7 @@ from ncachemanager.optionvars import (
 
 class MultiCacher(QtWidgets.QWidget):
     sendMultiCacheRequested = QtCore.Signal()
+    sendWedgingCacheRequested = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(MultiCacher, self).__init__(parent)
@@ -35,20 +36,53 @@ class MultiCacher(QtWidgets.QWidget):
         self.cache = QtWidgets.QPushButton('Cache')
         self.cache.released.connect(self.sendMultiCacheRequested.emit)
 
-        self.killer_group = QtWidgets.QGroupBox('Auto kill simulation options')
-        self.options = SimulationKillerOptions()
-
         self.menu_layout = QtWidgets.QHBoxLayout()
         self.menu_layout.addStretch(1)
         self.menu_layout.addWidget(self.toolbar)
+        self.multicache = QtWidgets.QWidget()
+        self.multicache_layout = QtWidgets.QVBoxLayout(self.multicache)
+        self.multicache_layout.setSpacing(2)
+        self.multicache_layout.addWidget(self.table)
+        self.multicache_layout.addLayout(self.menu_layout)
+        self.multicache_layout.addSpacing(4)
+        self.multicache_layout.addWidget(self.cache)
+
+        self._wedging_name = QtWidgets.QLineEdit()
+        self._attribute = QtWidgets.QLineEdit()
+        self._start_value = QtWidgets.QLineEdit()
+        self._start_value.setValidator(QtGui.QDoubleValidator())
+        self._end_value = QtWidgets.QLineEdit()
+        self._end_value.setValidator(QtGui.QDoubleValidator())
+        self._iterations = QtWidgets.QLineEdit()
+        self._iterations.setValidator(QtGui.QIntValidator())
+        self.cache_wedging = QtWidgets.QPushButton("Cache")
+        self.cache_wedging.released.connect(self.sendWedgingCacheRequested.emit)
+
+        self.wedging = QtWidgets.QWidget()
+        self.wedging_form = QtWidgets.QFormLayout()
+        self.wedging_form.setSpacing(2)
+        self.wedging_form.addRow("Name", self._wedging_name)
+        self.wedging_form.addRow("Attribute", self._attribute)
+        self.wedging_form.addRow("Start value", self._start_value)
+        self.wedging_form.addRow("End value", self._end_value)
+        self.wedging_form.addRow("Number of iterations", self._iterations)
+        self.wedging_layout = QtWidgets.QVBoxLayout(self.wedging)
+        self.wedging_layout.addLayout(self.wedging_form)
+        self.wedging_layout.addWidget(self.cache_wedging)
+
+        self.tabwidget = QtWidgets.QTabWidget()
+        self.tabwidget.addTab(self.multicache, "Flash scene")
+        self.tabwidget.addTab(self.wedging, "Attribute wedging")
+
+        self.options = SimulationKillerOptions()
+        self.options_layout = QtWidgets.QHBoxLayout()
+        self.options_layout.addWidget(self.options)
+        self.killer_group = QtWidgets.QGroupBox('Auto kill simulation options')
+        self.killer_group.setLayout(self.options_layout)
 
         self.layout = QtWidgets.QVBoxLayout(self)
-        self.layout.setSpacing(2)
-        self.layout.addWidget(self.table)
-        self.layout.addLayout(self.menu_layout)
-        self.layout.addSpacing(4)
-        self.layout.addWidget(self.cache)
-        self.layout.addWidget(self.options)
+        self.layout.addWidget(self.tabwidget)
+        self.layout.addWidget(self.killer_group)
 
     def set_workspace(self, workspace):
         self.workspace = workspace
@@ -69,6 +103,26 @@ class MultiCacher(QtWidgets.QWidget):
     @property
     def jobs(self):
         return self.model.jobs
+
+    @property
+    def attribute(self):
+        return self._attribute.text()
+
+    @property
+    def wedging_name(self):
+        return self._wedging_name.text()
+
+    @property
+    def start_value(self):
+        return float(self._start_value.text())
+
+    @property
+    def end_value(self):
+        return float(self._end_value.text())
+
+    @property
+    def iterations(self):
+        return int(self._iterations.text())
 
     def _call_remove_selected_jobs(self):
         jobs = self.table.selected_jobs

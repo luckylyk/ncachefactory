@@ -100,11 +100,11 @@ def set_render_settings_for_playblast(viewport_display_values):
     cmds.setAttr("defaultRenderGlobals.animation", True)
     cmds.setAttr("defaultRenderGlobals.putFrameBeforeExt", True)
     cmds.setAttr("defaultRenderGlobals.outFormatControl", 0)
-    if not viewport_display_values:
+    if viewport_display_values is None:
         return
     cmds.setAttr(
         RENDER_GLOBALS_FILTERVALUES,
-        viewport_display_values,
+        map(long, viewport_display_values),
         type="Int32Array")
 
 

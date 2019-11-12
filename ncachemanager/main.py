@@ -24,7 +24,8 @@ from ncachemanager.optionvars import (
     VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, FFMPEG_PATH_OPTIONVAR,
     MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
     MULTICACHE_EXP_OPTIONVAR, ensure_optionvars_exists)
-from ncachemanager.multincacher import MultiCacher, send_batch_ncache_jobs
+from ncachemanager.multincacher import MultiCacher
+from ncachemanager.batch import send_batch_ncache_jobs, send_wedging_ncaches_jobs
 from ncachemanager.timecallbacks import (
     register_time_callback, add_to_time_callback, unregister_time_callback,
     time_verbose, clear_time_callback_functions)
@@ -66,6 +67,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.cacheoptions_expander.clicked.connect(self.adjust_size)
         self.multicacher = MultiCacher()
         self.multicacher.sendMultiCacheRequested.connect(self.send_multi_cache)
+        self.multicacher.sendWedgingCacheRequested.connect(self.send_wedging_cache)
         self.multicacher_expander = Expander('Multi Cacher', self.multicacher)
         self.multicacher_expander.clicked.connect(self.adjust_size)
         self.playblast = PlayblastOptions()
@@ -313,6 +315,29 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cacheversions, self.processes, parent=self)
         self.multicache_monitor.show()
         self.multicacher.clear()
+
+    def send_wedging_cache(self):
+        if self.workspace is None:
+            None
+        start_frame, end_frame = self.cacheoptions.range
+        cacheversions, self.processes = send_wedging_ncaches_jobs(
+            workspace=self.workspace,
+            name=self.multicacher.wedging_name,
+            start_frame=start_frame,
+            end_frame=end_frame,
+            nodes=cmds.ls(type=DYNAMIC_NODES),
+            playblast_viewport_options=self.playblast.viewport_options,
+            timelimit=self.multicacher.options.timelimit,
+            stretchmax=self.multicacher.options.explosion_detection_tolerance,
+            attribute=self.multicacher.attribute,
+            start_value=self.multicacher.start_value,
+            end_value=self.multicacher.end_value,
+            iterations=self.multicacher.iterations)
+        if self.multicache_monitor is not None:
+            self.multicache_monitor.close()
+        self.multicache_monitor = MultiCacheMonitor(
+            cacheversions, self.processes, parent=self)
+        self.multicache_monitor.show()
 
 
 class Expander(QtWidgets.QPushButton):

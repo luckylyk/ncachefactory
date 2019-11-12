@@ -1,7 +1,9 @@
 import os
 from math import ceil, sqrt
 from PySide2 import QtWidgets, QtGui, QtCore
+
 from ncachemanager.sequencereader import SequenceImageReader, ImageViewer
+from ncachemanager.playblast import compile_movie
 from ncachemanager.versioning import (
     get_log_filename, list_tmp_jpeg_under_cacheversion)
 
@@ -68,6 +70,7 @@ class Monitor(QtWidgets.QWidget):
 class JobPanel(QtWidgets.QWidget):
     def __init__(self, cacheversion, process, parent=None):
         super(JobPanel, self).__init__(parent)
+        self.finished = False
         self.process = process
         self.cacheversion = cacheversion
         self.logfile = get_log_filename(cacheversion)
@@ -77,17 +80,25 @@ class JobPanel(QtWidgets.QWidget):
         endframe = cacheversion.infos['end_frame']
         self.images = SequenceImageReader(range_=[startframe, endframe])
         self.log = InteractiveLog(filepath=self.logfile)
+        self.kill = QtWidgets.QPushButton('kill')
+        self.kill.released.connect(self._call_kill)
+        self.log_widget = QtWidgets.QWidget()
+        self.log_layout = QtWidgets.QVBoxLayout(self.log_widget)
+        self.log_layout.setContentsMargins(0, 0, 0, 0)
+        self.log_layout.setSpacing(2)
+        self.log_layout.addWidget(self.log)
+        self.log_layout.addWidget(self.kill)
 
         self.splitter = QtWidgets.QSplitter()
         self.splitter.addWidget(self.images)
-        self.splitter.addWidget(self.log)
+        self.splitter.addWidget(self.log_widget)
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.addWidget(self.splitter)
 
     def update(self):
-        if self.log.is_log_changed() is False:
+        if self.log.is_log_changed() is False or self.finished is True:
             return
         self.log.update()
         for jpeg in list_tmp_jpeg_under_cacheversion(self.cacheversion):
@@ -101,6 +112,21 @@ class JobPanel(QtWidgets.QWidget):
                     break
                 self.imagepath.append(jpeg)
                 self.images.add_pixmap(pixmap)
+        if self.images.isfull() is True:
+            self.finished = True
+            self.images.finish()
+
+    def _call_kill(self):
+        self.finished = True
+        self.process.kill()
+        self.images.kill()
+        images = list_tmp_jpeg_under_cacheversion(self.cacheversion)
+        source = compile_movie(images)
+        for image in images:
+            os.remove(image)
+        directory = self.cacheversion.directory
+        destination = os.path.join(directory, os.path.basename(source))
+        os.rename(source, destination)
 
 
 class InteractiveLog(QtWidgets.QWidget):

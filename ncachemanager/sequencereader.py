@@ -8,12 +8,14 @@ SLIDER_COLORS = {
     "backgroundcolor.filled": "#25AA33",
     "backgroundcolor.empty": "#334455",
     "framelinecolor": "#FFCC33"}
-
 NOIMAGE_COLORS = {
     "backgroundcolor": "#777777",
     "bordercolor": "#252525",
     "crosscolor": "#ACACAC",
     "textcolor": "#DFDFCC"}
+STATUS_COLORS = {
+    "approved": "#99FF99",
+    "killed": "red"}
 
 
 class SequenceImageReader(QtWidgets.QWidget):
@@ -42,6 +44,18 @@ class SequenceImageReader(QtWidgets.QWidget):
         self.image.name = str(value)
         self.image.set_image(self._pixmaps[self.slider.position])
 
+    def kill(self):
+        self.image.iskilled = True
+        self.image.repaint()
+
+    def finish(self):
+        self.image.isdone = True
+        self.image.repaint()
+
+    def isfull(self):
+        return self.slider.maximum_settable_value >= self.slider.maximum
+
+
 class ImageViewer(QtWidgets.QWidget):
     imageChanged = QtCore.Signal(QtGui.QPixmap)
     nameChanged = QtCore.Signal(str)
@@ -50,6 +64,8 @@ class ImageViewer(QtWidgets.QWidget):
         super(ImageViewer, self).__init__(parent)
         self.image = image
         self.name = name
+        self.isdone = False
+        self.iskilled = False
 
     def sizeHint(self):
         return QtCore.QSize(640, 480)
@@ -185,15 +201,33 @@ class SequenceImageSlider(QtWidgets.QWidget):
 
 
 def draw_imageview(painter, imageview):
-    painter.drawPixmap(imageview.rect(), imageview.image)
+    rect = imageview.rect()
+    painter.drawPixmap(rect, imageview.image)
     font = QtGui.QFont()
     font.setBold(True)
     font.setItalic(False)
     font.setPixelSize(15)
     painter.setFont(font)
     flags = QtCore.Qt.AlignCenter | QtCore.Qt.AlignBottom
-    textrect = QtCore.QRectF(imageview.rect())
+    textrect = QtCore.QRectF(rect)
     painter.drawText(textrect, flags, imageview.name)
+
+    if not imageview.isdone and not imageview.iskilled:
+        return
+
+    font = QtGui.QFont()
+    font.setBold(True)
+    font.setItalic(False)
+    size = ceil(sqrt((rect.width() ** 2) + (rect.width() ** 2)) / 15)
+    font.setPixelSize(size)
+    flags = QtCore.Qt.AlignCenter | QtCore.Qt.AlignVCenter
+    painter.setFont(font)
+    colorname = "approved" if imageview.isdone is True else "killed"
+    text = "V" if imageview.isdone is True else "X"
+    pen = QtGui.QPen(QtGui.QColor(STATUS_COLORS[colorname]))
+    painter.setPen(pen)
+    status_rect = get_status_rect(imageview.rect())
+    painter.drawText(status_rect, flags, text)
 
 
 def draw_empty_imageview(painter, imageview):
@@ -300,6 +334,14 @@ def get_value_from_point(slider, point):
         value += 1
         x += horizontal_unit_size
     return value + slider.minimum
+
+
+def get_status_rect(rect):
+    size = ceil(sqrt((rect.width() ** 2) + (rect.width() ** 2)) / 15)
+    topleft = QtCore.QPointF(
+        rect.bottomRight().x() - size,
+        rect.bottomRight().y() - size)
+    return QtCore.QRectF(topleft, rect.bottomRight())
 
 
 def get_colors(colors):

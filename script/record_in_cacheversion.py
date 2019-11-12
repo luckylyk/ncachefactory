@@ -14,11 +14,13 @@ The script create a ncache in background, this is the arguments orders
     -timelimit
     -stretchmax
 """
+
 import os
 import logging
 import argparse
 from datetime import datetime
 from functools import partial
+
 
 PLAYBLAST_DISPLAY_HELP = """\
 List of 0 and 1 for True and False in and string. e.i : "1 0 1 1 1 1 0 0 1 0"
@@ -31,6 +33,23 @@ Here's the positional value:
 PLAYBLAST_RES_HELP = 'resolution of rendered playblast. e.i. "1024 768"'
 TIMELIMIT_HELP = "time limit per frame evaluated in second (0 is no limit)"
 STRETCH_LIMIT_HELP = "Stretch max supported by output mesh (0 is no limit)"
+ATTRIBUTE_OVERRIDE_HELP = "Plug name which is overrided for simlulation"
+ATTRIBUTE_OVERRIDE_VALUE_HELP = "Attribute overrided value"
+
+INFOS = """\
+Scripts Arguments:
+    - CacheVersion directory = {arguments.directory}
+    - Maya scene = {arguments.scene}
+    - Nodes = {arguments.nodes}
+    - Range = {arguments.start_frame} to {arguments.end_frame}
+    - Resolution = {arguments.playblast_resolution}
+    - Viewport display = {arguments.viewport_display_values}
+    - Blasted camera = {arguments.playblast_camera}
+    - Time limit = {arguments.timelimit}
+    - Stretch max supported = {arguments.stretchmax} * input edge length
+    - Attribute override = {arguments.attribute_override}
+    - Attribute override value = {arguments.attribute_override_value}
+"""
 
 try:
     parser = argparse.ArgumentParser()
@@ -44,6 +63,8 @@ try:
     parser.add_argument('playblast_camera', help="camershape name")
     parser.add_argument('timelimit', help=TIMELIMIT_HELP, type=int)
     parser.add_argument('stretchmax', help=STRETCH_LIMIT_HELP, type=int)
+    parser.add_argument('attribute_override', help=ATTRIBUTE_OVERRIDE_HELP)
+    parser.add_argument('attribute_override_value', help=ATTRIBUTE_OVERRIDE_VALUE_HELP, type=float)
     arguments = parser.parse_args()
 
     def force_log_info(message):
@@ -57,19 +78,7 @@ try:
         logging.info(message)
 
     # Log the arguments informations.
-    arguments_infos = """\
-    Scripts Arguments:
-        - CacheVersion directory = {arguments.directory}
-        - Maya scene = {arguments.scene}
-        - Nodes = {arguments.nodes}
-        - Range = {arguments.start_frame} to {arguments.end_frame}
-        - Resolution = {arguments.playblast_resolution}
-        - Viewport display = {arguments.viewport_display_values}
-        - Blasted camera = {arguments.playblast_camera}
-        - Time limit = {arguments.timelimit}
-        - Stretch max supported = {arguments.stretchmax} * input edge length
-    """.format(arguments=arguments)
-    force_log_info(arguments_infos)
+    force_log_info(INFOS.format(arguments=arguments))
 
     from maya import cmds, mel
     import maya.OpenMaya as om2
@@ -106,8 +115,19 @@ try:
             logging.error("User defined explosion limit reached.")
             cmds.quit(force=True)
 
+    # force dg evaluation to DG to ensure not multi thread usage.
+    cmds.evaluationManager(mode="off")
     cmds.file(arguments.scene, open=True, force=True)
     force_log_info('maya scene opened')
+
+    attribute = arguments.attribute_override
+    value = arguments.attribute_override_value
+    if attribute:
+        if not cmds.objExists(attribute):
+            msg = "{} doesn't exists and cannot be overrided".format(attribute)
+            raise ValueError(msg)
+        cmds.setAttr(attribute, value)
+        force_log_info("attribute \"{}\" set to {}".format(attribute, value))
 
     cmds.currentTime(arguments.start_frame, edit=True)
     add_to_time_callback(time_verbose)
