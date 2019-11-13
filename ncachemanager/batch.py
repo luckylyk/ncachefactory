@@ -155,7 +155,7 @@ def send_wedging_ncaches_jobs(
 def build_batch_script_arguments(
         start_frame, end_frame, nodes, playblast_viewport_options, timelimit,
         stretchmax, scene=None, directory=None, attribute_override_name="",
-        attribute_override_value=""):
+        attribute_override_value=0.0):
     arguments = []
     # mayapy executable
     arguments.append(cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR))

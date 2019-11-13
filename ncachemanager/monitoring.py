@@ -115,8 +115,11 @@ class JobPanel(QtWidgets.QWidget):
         if self.images.isfull() is True:
             self.finished = True
             self.images.finish()
+            self.kill.setEnabled(False)
 
     def _call_kill(self):
+        if self.finished is True:
+            return
         self.finished = True
         self.process.kill()
         self.images.kill()

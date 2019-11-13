@@ -78,6 +78,9 @@ try:
         logging.info(message)
 
     # Log the arguments informations.
+    if arguments.attribute_override == "":
+        arguments.attribute_override = None
+        arguments.attribute_override_value = None
     force_log_info(INFOS.format(arguments=arguments))
 
     from maya import cmds, mel
@@ -130,6 +133,7 @@ try:
         force_log_info("attribute \"{}\" set to {}".format(attribute, value))
 
     cmds.currentTime(arguments.start_frame, edit=True)
+    # add the check to callbacks
     add_to_time_callback(time_verbose)
     func = partial(
         simulation_sanity_checks,
