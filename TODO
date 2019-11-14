@@ -9,6 +9,7 @@ BUGS:
     - blast in mayapy doesn't support the ornaments. Force disabling the option in mayapy
 
 BASIC CONFORT
+    - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor
     - Add values for wedging check before execute it
     - fix iterations count. that currently doesnt count first and last value.
       3 iteration == 5 caches, that sounds weird for artists
