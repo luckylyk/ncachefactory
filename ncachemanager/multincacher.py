@@ -3,12 +3,16 @@ import os
 from PySide2 import QtWidgets, QtCore, QtGui
 from maya import cmds
 from ncachemanager.qtutils import get_icon
+from ncachemanager.attributes import list_wedgable_attributes
 from ncachemanager.batch import (
     clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
     is_temp_folder_empty)
 from ncachemanager.optionvars import (
     EXPLOSION_TOLERENCE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
     TIMELIMIT_ENABLED_OPTIONVAR, TIMELIMIT_OPTIONVAR, ensure_optionvars_exists)
+
+
+ATTRIBUTEPICKER_WINDOW_NAME = "Pick plug from selection"
 
 
 class MultiCacher(QtWidgets.QWidget):
@@ -49,6 +53,9 @@ class MultiCacher(QtWidgets.QWidget):
 
         self._wedging_name = QtWidgets.QLineEdit()
         self._attribute = QtWidgets.QLineEdit()
+        self._pick = QtWidgets.QPushButton("P")
+        self._pick.setFixedSize(18, 18)
+        self._pick.released.connect(self._call_pick_attribute)
         self._start_value = QtWidgets.QLineEdit()
         self._start_value.setValidator(QtGui.QDoubleValidator())
         self._end_value = QtWidgets.QLineEdit()
@@ -58,11 +65,17 @@ class MultiCacher(QtWidgets.QWidget):
         self.cache_wedging = QtWidgets.QPushButton("Cache")
         self.cache_wedging.released.connect(self.sendWedgingCacheRequested.emit)
 
+        self.attribute_layout = QtWidgets.QHBoxLayout()
+        self.attribute_layout.setContentsMargins(0, 0, 0, 0)
+        self.attribute_layout.setSpacing(0)
+        self.attribute_layout.addWidget(self._attribute)
+        self.attribute_layout.addWidget(self._pick)
+
         self.wedging = QtWidgets.QWidget()
         self.wedging_form = QtWidgets.QFormLayout()
         self.wedging_form.setSpacing(2)
         self.wedging_form.addRow("Name", self._wedging_name)
-        self.wedging_form.addRow("Attribute", self._attribute)
+        self.wedging_form.addRow("Attribute", self.attribute_layout)
         self.wedging_form.addRow("Start value", self._start_value)
         self.wedging_form.addRow("End value", self._end_value)
         self.wedging_form.addRow("Number of iterations", self._iterations)
@@ -136,6 +149,13 @@ class MultiCacher(QtWidgets.QWidget):
         scene = flash_current_scene(self.workspace)
         job = {'name': 'flashed scene', 'comment': '', 'scene': scene}
         self.model.add_job(job)
+
+    def _call_pick_attribute(self):
+        dialog = AttributePicker()
+        result = dialog.exec_()
+        if result == QtWidgets.QDialog.Rejected:
+            return
+        self._attribute.setText(dialog.plug)
 
 
 class MultiCacheTableView(QtWidgets.QTableView):
@@ -342,3 +362,41 @@ class SimulationKillerOptions(QtWidgets.QWidget):
         if not self._timelimit_enable.isChecked():
             return 0
         return int(self._timelimit.text())
+
+
+class AttributePicker(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(AttributePicker, self).__init__(parent, QtCore.Qt.Tool)
+        self.setWindowTitle(ATTRIBUTEPICKER_WINDOW_NAME)
+        self.selection = QtWidgets.QListWidget()
+        self.selection.itemSelectionChanged.connect(self.node_selected)
+        self.selection.setFixedHeight(50)
+        self.selection.addItems(cmds.ls(selection=True, dag=True))
+        self.attributes = QtWidgets.QListWidget()
+        self.ok = QtWidgets.QPushButton("ok")
+        self.ok.released.connect(self.accept)
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.addWidget(self.selection)
+        self.layout.addWidget(self.attributes)
+        self.layout.addWidget(self.ok)
+
+    def node_selected(self):
+        self.attributes.clear()
+        items = self.selection.selectedItems()
+        if not items:
+            return
+        node = items[0].text()
+        attributes = list_wedgable_attributes(node)
+        self.attributes.addItems(attributes)
+
+    @property
+    def plug(self):
+        items = self.selection.selectedItems()
+        if not items:
+            return
+        node = items[0].text()
+        items = self.attributes.selectedItems()
+        if not items:
+            return
+        attribute = items[0].text()
+        return node + "." + attribute

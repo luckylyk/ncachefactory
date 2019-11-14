@@ -143,3 +143,15 @@ def ensure_node_has_ncachemanager_tags(node):
     for tag in TAGS:
         if not cmds.attributeQuery(tag['longName'], node=node, exists=True):
             cmds.addAttr(node, **tag)
+
+
+def list_wedgable_attributes(node):
+    attributes = []
+    for attribute in cmds.listAttr(node):
+        plug = node + "." + attribute
+        if plug.count(".") > 1:
+            continue
+        if cmds.getAttr(plug, type=True) not in ["double", "float", "int"]:
+            continue
+        attributes.append(attribute)
+    return sorted(attributes)
