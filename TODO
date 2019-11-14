@@ -1,0 +1,23 @@
+
+
+BUGS:
+    - timing calculation per frame, look fucked
+    - strech check seems not working
+    - fix persp cam doesn't seems working in batch cache
+    - subprocess NEW_CONSOLE doesn't work under KDE/linux
+    - fix workspace not well recognized
+    - blast in mayapy doesn't support the ornaments. Force disabling the option in mayapy
+
+BASIC CONFORT
+    - Add values for wedging check before execute it
+    - fix iterations count. that currently doesnt count first and last value.
+      3 iteration == 5 caches, that sounds weird for artists
+    - during interactive cache, if the cache is connection to the scene,
+      it doesn't take interactively the frame cached after connection.
+      Just force the all range in the ncache node to force the full range.
+
+FEATURES
+    - Add text in viewport for rendering (cache name and comment)
+    - For mayapy caches, create a geometry text linked to the camera to fixe the issue.
+    - Make the monitor support to receive new caches and remove some cache instead of recreating the widget everytime,
+      losing the current caching viewport on each opening.
