@@ -315,6 +315,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             cacheversions, self.processes, parent=self)
         self.multicache_monitor.show()
         self.multicacher.clear()
+        self.nodetable.set_workspace(self.workspace)
+        self.nodetable.update_layout()
+        self.selection_changed()
 
     def send_wedging_cache(self):
         if self.workspace is None:
@@ -336,6 +339,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.multicache_monitor = MultiCacheMonitor(
             cacheversions, self.processes, parent=self)
         self.multicache_monitor.show()
+        self.nodetable.set_workspace(self.workspace)
+        self.nodetable.update_layout()
+        self.selection_changed()
 
 
 class Expander(QtWidgets.QPushButton):
