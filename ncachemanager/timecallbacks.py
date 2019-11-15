@@ -10,6 +10,7 @@ use function: remove_from_time_callback
 
 from datetime import datetime
 import logging
+import traceback
 from maya import cmds
 import maya.api.OpenMaya as om2
 
@@ -50,10 +51,24 @@ def time_callback(*useless_callback_args):
     if is_time_callback_muted():
         return
     mute_time_callback()
-    for func in _functions:
-        func()
+    for callable_object in _functions:
+        try:
+            callable_object()
+        except Exception:
+            name = get_callable_name(callable_object)
+            message = "time callback {} failed".format(name)
+            logging.error(message + '\n' + traceback.format_exc())
+
     unmute_time_callback()
     update_time_infos()
+
+
+def get_callable_name(callable_object):
+    try:
+        name = callable_object.__name__
+    except AttributeError:
+        name = callable_object.__repr__()
+    return name
 
 
 def mute_time_callback():
@@ -78,14 +93,11 @@ def clear_time_callback_functions():
 
 def add_to_time_callback(callable_object):
     global _functions
-    if callable_object not in _functions:
-        _functions.append(callable_object)
-    try:
-        name = callable_object.__name__
-    except AttributeError:
-        name = callable_object.__repr__()
-    logging.warning(name + ' is already registered to callback')
-    return
+    if callable_object in _functions:
+        name = get_callable_name(callable_object)
+        logging.warning(name + ' is already registered to callback')
+        return
+    _functions.append(callable_object)
 
 
 def remove_from_time_callback(callable_object):
