@@ -2,12 +2,14 @@ todo list created from commit 60
 
 BUGS:
     - timing calculation per frame, look fucked
-    - strech check seems not working
     - fix persp cam doesn't seems working in batch cache
     - subprocess NEW_CONSOLE doesn't work under KDE/linux
     - fix workspace not well recognized
     - blast in mayapy doesn't support the ornaments. Force disabling the option in mayapy
     - fix nhair connection
+
+    __ done __
+    - stretch check seems not working
 
 BASIC CONFORT
     - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor

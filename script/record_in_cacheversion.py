@@ -117,6 +117,7 @@ try:
         if result is True:
             logging.error("User defined explosion limit reached.")
             cmds.quit(force=True)
+            exit()
 
     # force dg evaluation to DG to ensure not multi thread usage.
     cmds.evaluationManager(mode="off")
