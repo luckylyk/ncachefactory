@@ -1,12 +1,13 @@
 import os
 from math import ceil, sqrt
 from PySide2 import QtWidgets, QtGui, QtCore
-
+from maya import cmds
 from ncachemanager.sequencereader import SequenceImageReader, ImageViewer
 from ncachemanager.playblast import compile_movie
+from ncachemanager.api import connect_cacheversion
+from ncachemanager.ncache import list_connected_cachefiles
 from ncachemanager.versioning import (
     get_log_filename, list_tmp_jpeg_under_cacheversion)
-
 
 WINDOW_TITLE = "Multi NCache Monitoring"
 
@@ -82,11 +83,14 @@ class JobPanel(QtWidgets.QWidget):
         self.log = InteractiveLog(filepath=self.logfile)
         self.kill = QtWidgets.QPushButton('kill')
         self.kill.released.connect(self._call_kill)
+        self.connect_cache = QtWidgets.QPushButton('connect cache')
+        self.connect_cache.released.connect(self._call_connect_cache)
         self.log_widget = QtWidgets.QWidget()
         self.log_layout = QtWidgets.QVBoxLayout(self.log_widget)
         self.log_layout.setContentsMargins(0, 0, 0, 0)
         self.log_layout.setSpacing(2)
         self.log_layout.addWidget(self.log)
+        self.log_layout.addWidget(self.connect_cache)
         self.log_layout.addWidget(self.kill)
 
         self.splitter = QtWidgets.QSplitter()
@@ -117,6 +121,21 @@ class JobPanel(QtWidgets.QWidget):
             self.images.finish()
             self.kill.setEnabled(False)
 
+    def _call_connect_cache(self):
+        startframe = self.cacheversion.infos['start_frame']
+        endframe = self.cacheversion.infos['end_frame']
+        connect_cacheversion(self.cacheversion)
+        cachenodes = list_connected_cachefiles()
+        # because that connect a cache with is currently caching from
+        # an external maya, that change the start frame and end frame of
+        # the cache file node. That allow an interactive update of the
+        # cache when each frame is cached.
+        for cachenode in cachenodes:
+            cmds.setAttr(cachenode + '.sourceStart', startframe)
+            cmds.setAttr(cachenode + '.originalStart', startframe)
+            cmds.setAttr(cachenode + '.originalEnd', endframe)
+            cmds.setAttr(cachenode + '.sourceEnd', endframe)
+
     def _call_kill(self):
         if self.finished is True:
             return
@@ -130,6 +149,7 @@ class JobPanel(QtWidgets.QWidget):
         directory = self.cacheversion.directory
         destination = os.path.join(directory, os.path.basename(source))
         os.rename(source, destination)
+        self.kill.setEnabled(False)
 
 
 class InteractiveLog(QtWidgets.QWidget):

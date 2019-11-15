@@ -12,6 +12,8 @@ _CURRENTDIR = os.path.dirname(os.path.realpath(__file__))
 _SCRIPT_FILENAME = "record_in_cacheversion.py"
 _SCRIPT_FILEPATH = os.path.join(_CURRENTDIR, '..', 'script', _SCRIPT_FILENAME)
 
+FLASHCACHE_NAME = 'flashed cache'
+WEDGINGCACHE_NAME = 'wedging cache'
 NCACHESCENE_FILENAME = 'scene.ma'
 TEMPFOLDER_NAME = 'flash_scenes'
 WEDGINGFOLDER_NAME = 'wedging_scenes'
@@ -21,14 +23,6 @@ WEDGING_COMMENT_TEMPLATE = """\
 Wedging Cache:
 \tattribute {}
 \tvalue {}"""
-
-
-def iterate_values(start_value, end_value, iterations):
-    if not iterations:
-        return start_value, end_value
-    difference = float(abs(end_value - start_value))
-    iteration_value = difference / (iterations + 1)
-    return [start_value + (i * iteration_value) for i in range(iterations + 2)]
 
 
 def build_unique_scene_name(workspace, scenename_template, foldername):
@@ -121,11 +115,9 @@ def send_batch_ncache_jobs(
 
 def send_wedging_ncaches_jobs(
         workspace, name, start_frame, end_frame, nodes,
-        playblast_viewport_options, timelimit, stretchmax, attribute,
-        start_value, end_value, iterations):
+        playblast_viewport_options, timelimit, stretchmax, attribute, values):
     processes = []
     cacheversions = []
-    values = iterate_values(start_value, end_value, iterations)
     environment = gather_current_environment()
     scene = save_scene_for_wedging(workspace)
     for value in values:

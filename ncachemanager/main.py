@@ -330,9 +330,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             timelimit=self.multicacher.options.timelimit,
             stretchmax=self.multicacher.options.explosion_detection_tolerance,
             attribute=self.multicacher.attribute,
-            start_value=self.multicacher.start_value,
-            end_value=self.multicacher.end_value,
-            iterations=self.multicacher.iterations)
+            values=self.multicacher.wedging_values)
         if self.multicache_monitor is not None:
             self.multicache_monitor.close()
         self.multicache_monitor = MultiCacheMonitor(

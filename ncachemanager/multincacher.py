@@ -6,13 +6,23 @@ from ncachemanager.qtutils import get_icon
 from ncachemanager.attributes import list_wedgable_attributes
 from ncachemanager.batch import (
     clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
-    is_temp_folder_empty)
+    is_temp_folder_empty, FLASHCACHE_NAME, WEDGINGCACHE_NAME)
 from ncachemanager.optionvars import (
     EXPLOSION_TOLERENCE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
     TIMELIMIT_ENABLED_OPTIONVAR, TIMELIMIT_OPTIONVAR, ensure_optionvars_exists)
 
 
 ATTRIBUTEPICKER_WINDOW_NAME = "Pick plug from selection"
+VALUES_BUIDLER_NAME = "Values builder"
+
+
+def compute_wedging_values(start_value, end_value, iterations):
+    if iterations < 3:
+        return start_value, end_value
+    iterations -= 2
+    difference = float(abs(end_value - start_value))
+    iteration_value = difference / (iterations + 1)
+    return [start_value + (i * iteration_value) for i in range(iterations + 2)]
 
 
 class MultiCacher(QtWidgets.QWidget):
@@ -52,18 +62,18 @@ class MultiCacher(QtWidgets.QWidget):
         self.multicache_layout.addWidget(self.cache)
 
         self._wedging_name = QtWidgets.QLineEdit()
+        self._wedging_name.setText(WEDGINGCACHE_NAME)
         self._attribute = QtWidgets.QLineEdit()
         self._pick = QtWidgets.QPushButton("P")
         self._pick.setFixedSize(18, 18)
         self._pick.released.connect(self._call_pick_attribute)
-        self._start_value = QtWidgets.QLineEdit()
-        self._start_value.setValidator(QtGui.QDoubleValidator())
-        self._end_value = QtWidgets.QLineEdit()
-        self._end_value.setValidator(QtGui.QDoubleValidator())
-        self._iterations = QtWidgets.QLineEdit()
-        self._iterations.setValidator(QtGui.QIntValidator())
+        self._values =  QtWidgets.QLineEdit()
+        self._values_builder = QtWidgets.QPushButton("B")
+        self._values_builder.setFixedSize(18, 18)
+        self._values_builder.released.connect(self._call_values_builder)
+
         self.cache_wedging = QtWidgets.QPushButton("Cache")
-        self.cache_wedging.released.connect(self.sendWedgingCacheRequested.emit)
+        self.cache_wedging.released.connect(self._send_wedging_cache)
 
         self.attribute_layout = QtWidgets.QHBoxLayout()
         self.attribute_layout.setContentsMargins(0, 0, 0, 0)
@@ -71,14 +81,18 @@ class MultiCacher(QtWidgets.QWidget):
         self.attribute_layout.addWidget(self._attribute)
         self.attribute_layout.addWidget(self._pick)
 
+        self.values_layout = QtWidgets.QHBoxLayout()
+        self.values_layout.setContentsMargins(0, 0, 0, 0)
+        self.values_layout.setSpacing(0)
+        self.values_layout.addWidget(self._values)
+        self.values_layout.addWidget(self._values_builder)
+
         self.wedging = QtWidgets.QWidget()
         self.wedging_form = QtWidgets.QFormLayout()
         self.wedging_form.setSpacing(2)
         self.wedging_form.addRow("Name", self._wedging_name)
         self.wedging_form.addRow("Attribute", self.attribute_layout)
-        self.wedging_form.addRow("Start value", self._start_value)
-        self.wedging_form.addRow("End value", self._end_value)
-        self.wedging_form.addRow("Number of iterations", self._iterations)
+        self.wedging_form.addRow("Values", self.values_layout)
         self.wedging_layout = QtWidgets.QVBoxLayout(self.wedging)
         self.wedging_layout.addLayout(self.wedging_form)
         self.wedging_layout.addWidget(self.cache_wedging)
@@ -107,7 +121,7 @@ class MultiCacher(QtWidgets.QWidget):
             clean_batch_temp_folder(workspace)
             return
         for scene in list_flashed_scenes(self.workspace):
-            job = {'name': 'flashed scene', 'comment': '', 'scene': scene}
+            job = {'name': FLASHCACHE_NAME, 'comment': '', 'scene': scene}
             self.model.add_job(job)
 
     def clear(self):
@@ -126,16 +140,8 @@ class MultiCacher(QtWidgets.QWidget):
         return self._wedging_name.text()
 
     @property
-    def start_value(self):
-        return float(self._start_value.text())
-
-    @property
-    def end_value(self):
-        return float(self._end_value.text())
-
-    @property
-    def iterations(self):
-        return int(self._iterations.text())
+    def wedging_values(self):
+        return map(float, self._values.text().split(","))
 
     def _call_remove_selected_jobs(self):
         jobs = self.table.selected_jobs
@@ -147,7 +153,7 @@ class MultiCacher(QtWidgets.QWidget):
         if self.workspace is None:
             return
         scene = flash_current_scene(self.workspace)
-        job = {'name': 'flashed scene', 'comment': '', 'scene': scene}
+        job = {'name': FLASHCACHE_NAME, 'comment': '', 'scene': scene}
         self.model.add_job(job)
 
     def _call_pick_attribute(self):
@@ -156,6 +162,27 @@ class MultiCacher(QtWidgets.QWidget):
         if result == QtWidgets.QDialog.Rejected:
             return
         self._attribute.setText(dialog.plug)
+
+    def _call_values_builder(self):
+        dialog = ValuesBuilder()
+        result = dialog.exec_()
+        if result == QtWidgets.QDialog.Rejected:
+            return
+        self._values.setText(", ".join(map(str, dialog.values)))
+
+    def _send_wedging_cache(self):
+        if not cmds.objExists(self._attribute.text()):
+            return QtWidgets.QMessageBox.warning(
+                None, "Error", "Attribute specified doesn't exists.")
+        try:
+            self.wedging_values
+        except:
+            return QtWidgets.QMessageBox.warning(
+                None, "Error", "Invalid wedging values. Must be list of float")
+        self.sendWedgingCacheRequested.emit()
+
+
+
 
 
 class MultiCacheTableView(QtWidgets.QTableView):
@@ -362,6 +389,36 @@ class SimulationKillerOptions(QtWidgets.QWidget):
         if not self._timelimit_enable.isChecked():
             return 0
         return int(self._timelimit.text())
+
+
+class ValuesBuilder(QtWidgets.QDialog):
+    def __init__(self, parent=None):
+        super(ValuesBuilder, self).__init__(parent, QtCore.Qt.Tool)
+        self.setWindowTitle(VALUES_BUIDLER_NAME)
+        self._start_value = QtWidgets.QLineEdit()
+        self._start_value.setValidator(QtGui.QDoubleValidator())
+        self._end_value = QtWidgets.QLineEdit()
+        self._end_value.setValidator(QtGui.QDoubleValidator())
+        self._iterations = QtWidgets.QLineEdit()
+        self._iterations.setText("3")
+        validator = QtGui.QIntValidator()
+        validator.setBottom(3)
+        self._iterations.setValidator(validator)
+
+        self.ok = QtWidgets.QPushButton("ok")
+        self.ok.released.connect(self.accept)
+        self.layout = QtWidgets.QFormLayout(self)
+        self.layout.addRow("start value", self._start_value)
+        self.layout.addRow("end value", self._end_value)
+        self.layout.addRow("iteration", self._iterations)
+        self.layout.addWidget(self.ok)
+
+    @property
+    def values(self):
+        return compute_wedging_values(
+            float(self._start_value.text()),
+            float(self._end_value.text()),
+            int(self._iterations.text()))
 
 
 class AttributePicker(QtWidgets.QDialog):
