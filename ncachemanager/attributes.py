@@ -155,3 +155,24 @@ def list_wedgable_attributes(node):
             continue
         attributes.append(attribute)
     return sorted(attributes)
+
+
+def list_channelbox_highlited_plugs():
+    # find objects and attributes highlighted in each part of the channel box
+    # Main, Shape, Input, Output
+    plugs = set()
+    channelbox = "mainChannelBox"
+    kwargs = (
+        ('selectedMainAttributes', 'mainObjectList'),
+        ('selectedShapeAttributes', 'shapeObjectList'),
+        ('selectedHistoryAttributes', 'historyObjectList'),
+        ('selectedOutputAttributes', 'outputObjectList'))
+    for kwattr, kwnode in kwargs:
+        attributes = cmds.channelBox(channelbox, query=True, **{kwattr: True})
+        nodes = cmds.channelBox(channelbox, query=True, **{kwnode: True})
+        if attributes is None:
+            continue
+        for node in nodes:
+            for attribute in attributes:
+                plugs.add(node + '.' + attribute)
+    return list(plugs)
