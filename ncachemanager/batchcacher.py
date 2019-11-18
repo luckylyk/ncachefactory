@@ -25,12 +25,12 @@ def compute_wedging_values(start_value, end_value, iterations):
     return [start_value + (i * iteration_value) for i in range(iterations + 2)]
 
 
-class MultiCacher(QtWidgets.QWidget):
+class BatchCacher(QtWidgets.QWidget):
     sendMultiCacheRequested = QtCore.Signal()
     sendWedgingCacheRequested = QtCore.Signal()
 
     def __init__(self, parent=None):
-        super(MultiCacher, self).__init__(parent)
+        super(BatchCacher, self).__init__(parent)
         self.workspace = None
         self.selection_model = None
         self.model = MultiCacheTableModel()

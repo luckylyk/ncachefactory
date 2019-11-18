@@ -24,7 +24,7 @@ from ncachemanager.optionvars import (
     VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, FFMPEG_PATH_OPTIONVAR,
     MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
     MULTICACHE_EXP_OPTIONVAR, ensure_optionvars_exists)
-from ncachemanager.multincacher import MultiCacher
+from ncachemanager.batchcacher import BatchCacher
 from ncachemanager.batch import send_batch_ncache_jobs, send_wedging_ncaches_jobs
 from ncachemanager.timecallbacks import (
     register_time_callback, add_to_time_callback, unregister_time_callback,
@@ -46,7 +46,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.pathoptions = PathOptions(self)
         self.workspace_widget = WorkspaceWidget()
         self.nodetable = DynamicNodesTableWidget()
-        self.multicache_monitor = None
+        self.batch_monitor = MultiCacheMonitor(parent=self)
 
         self.senders = CacheSendersWidget()
         method = partial(self.create_cache, selection=False)
@@ -65,11 +65,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.cacheoptions = CacheOptions()
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
         self.cacheoptions_expander.clicked.connect(self.adjust_size)
-        self.multicacher = MultiCacher()
-        self.multicacher.sendMultiCacheRequested.connect(self.send_multi_cache)
-        self.multicacher.sendWedgingCacheRequested.connect(self.send_wedging_cache)
-        self.multicacher_expander = Expander('Multi Cacher', self.multicacher)
-        self.multicacher_expander.clicked.connect(self.adjust_size)
+        self.batchcacher = BatchCacher()
+        self.batchcacher.sendMultiCacheRequested.connect(self.send_multi_cache)
+        self.batchcacher.sendWedgingCacheRequested.connect(self.send_wedging_cache)
+        self.batchcacher_expander = Expander('Batch Cacher', self.batchcacher)
+        self.batchcacher_expander.clicked.connect(self.adjust_size)
         self.playblast = PlayblastOptions()
         self.playblast_expander = Expander("Playblast", self.playblast)
         self.playblast_expander.clicked.connect(self.adjust_size)
@@ -94,8 +94,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.layout.addWidget(self.nodetable)
         self.layout.addWidget(self.senders)
         self.layout.addSpacing(8)
-        self.layout.addWidget(self.multicacher_expander)
-        self.layout.addWidget(self.multicacher)
+        self.layout.addWidget(self.batchcacher_expander)
+        self.layout.addWidget(self.batchcacher)
         self.layout.addSpacing(0)
         self.layout.addWidget(self.cacheoptions_expander)
         self.layout.addWidget(self.cacheoptions)
@@ -137,7 +137,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def set_workspace(self, workspace):
         self.workspace = workspace
         self.nodetable.set_workspace(workspace)
-        self.multicacher.set_workspace(workspace)
+        self.batchcacher.set_workspace(workspace)
         self.workspace_widget.set_workspace(workspace)
         self.nodetable.update_layout()
 
@@ -168,7 +168,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def apply_optionvars(self):
         ensure_optionvars_exists()
         state = cmds.optionVar(query=MULTICACHE_EXP_OPTIONVAR)
-        self.multicacher_expander.set_state(state)
+        self.batchcacher_expander.set_state(state)
         state = cmds.optionVar(query=CACHEOPTIONS_EXP_OPTIONVAR)
         self.cacheoptions_expander.set_state(state)
         state = cmds.optionVar(query=PLAYBLAST_EXP_OPTIONVAR)
@@ -179,7 +179,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.versions_expander.set_state(state)
 
     def save_optionvars(self):
-        value = self.multicacher_expander.state
+        value = self.batchcacher_expander.state
         cmds.optionVar(intValue=[MULTICACHE_EXP_OPTIONVAR, value])
         value = self.cacheoptions_expander.state
         cmds.optionVar(intValue=[CACHEOPTIONS_EXP_OPTIONVAR, value])
@@ -300,21 +300,20 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if self.workspace is None:
             None
         start_frame, end_frame = self.cacheoptions.range
-        cacheversions, self.processes = send_batch_ncache_jobs(
+        cacheversions, processes = send_batch_ncache_jobs(
             workspace=self.workspace,
-            jobs=self.multicacher.jobs,
+            jobs=self.batchcacher.jobs,
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=cmds.ls(type=DYNAMIC_NODES),
             playblast_viewport_options=self.playblast.viewport_options,
-            timelimit=self.multicacher.options.timelimit,
-            stretchmax=self.multicacher.options.explosion_detection_tolerance)
-        if self.multicache_monitor is not None:
-            self.multicache_monitor.close()
-        self.multicache_monitor = MultiCacheMonitor(
-            cacheversions, self.processes, parent=self)
-        self.multicache_monitor.show()
-        self.multicacher.clear()
+            timelimit=self.batchcacher.options.timelimit,
+            stretchmax=self.batchcacher.options.explosion_detection_tolerance)
+        self.processes.extend(processes)
+        for cacheversion, process in zip(cacheversions, processes):
+            self.batch_monitor.add_job(cacheversion, process)
+        self.batch_monitor.show()
+        self.batchcacher.clear()
         self.nodetable.set_workspace(self.workspace)
         self.nodetable.update_layout()
         self.selection_changed()
@@ -323,22 +322,21 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         if self.workspace is None:
             None
         start_frame, end_frame = self.cacheoptions.range
-        cacheversions, self.processes = send_wedging_ncaches_jobs(
+        cacheversions, processes = send_wedging_ncaches_jobs(
             workspace=self.workspace,
-            name=self.multicacher.wedging_name,
+            name=self.batchcacher.wedging_name,
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=cmds.ls(type=DYNAMIC_NODES),
             playblast_viewport_options=self.playblast.viewport_options,
-            timelimit=self.multicacher.options.timelimit,
-            stretchmax=self.multicacher.options.explosion_detection_tolerance,
-            attribute=self.multicacher.attribute,
-            values=self.multicacher.wedging_values)
-        if self.multicache_monitor is not None:
-            self.multicache_monitor.close()
-        self.multicache_monitor = MultiCacheMonitor(
-            cacheversions, self.processes, parent=self)
-        self.multicache_monitor.show()
+            timelimit=self.batchcacher.options.timelimit,
+            stretchmax=self.batchcacher.options.explosion_detection_tolerance,
+            attribute=self.batchcacher.attribute,
+            values=self.batchcacher.wedging_values)
+        self.processes.extend(processes)
+        for cacheversion, process in zip(cacheversions, processes):
+            self.batch_monitor.add_job(cacheversion, process)
+        self.batch_monitor.show()
         self.nodetable.set_workspace(self.workspace)
         self.nodetable.update_layout()
         self.selection_changed()

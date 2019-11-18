@@ -88,6 +88,7 @@ try:
     from ncachemanager.versioning import CacheVersion
     from ncachemanager.api import record_in_existing_cacheversion
     from ncachemanager.ncloth import is_output_too_streched
+    from ncachemanager.viewporttext import create_viewport_text
     from ncachemanager.timecallbacks import (
         add_to_time_callback, get_timespent_since_last_frame_set, time_verbose,
         register_time_callback)
@@ -123,6 +124,7 @@ try:
     cmds.evaluationManager(mode="off")
     cmds.file(arguments.scene, open=True, force=True)
     force_log_info('maya scene opened')
+    cacheversion = CacheVersion(arguments.directory)
 
     attribute = arguments.attribute_override
     value = arguments.attribute_override_value
@@ -132,6 +134,12 @@ try:
             raise ValueError(msg)
         cmds.setAttr(attribute, value)
         force_log_info("attribute \"{}\" set to {}".format(attribute, value))
+
+    text = '{}\n{}'.format(cacheversion.name, cacheversion.infos['comment'])
+    if attribute:
+        text += '\n{}, {}'.format(attribute, value)
+    logging.info(text)
+    create_viewport_text(text, arguments.playblast_camera)
 
     cmds.currentTime(arguments.start_frame, edit=True)
     # add the check to callbacks

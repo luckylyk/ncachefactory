@@ -13,24 +13,13 @@ WINDOW_TITLE = "Multi NCache Monitoring"
 
 
 class MultiCacheMonitor(QtWidgets.QWidget):
-    def __init__(self, cacheversions, processes, parent=None):
+    def __init__(self, parent=None):
         super(MultiCacheMonitor, self).__init__(parent, QtCore.Qt.Window)
         self.setWindowTitle(WINDOW_TITLE)
         self.tab_widget = QtWidgets.QTabWidget()
+        self.tab_widget.setTabsClosable(True)
+        self.tab_widget.tabCloseRequested.connect(self.tab_closed)
         self.job_panels = []
-
-        for cacheversion, process in zip(cacheversions, processes):
-            job_panel = JobPanel(cacheversion, process)
-            self.job_panels.append(job_panel)
-            self.tab_widget.addTab(job_panel, cacheversion.name)
-        imageviewers = [jp.images.image for jp in self.job_panels]
-        names = [cv.name for cv in cacheversions]
-        # Add a multi cache monitoring only if there's more than one cache job
-        # sent.
-        if len(cacheversions) > 1:
-            self.monitor = Monitor(names=names, imageviewers=imageviewers)
-            self.tab_widget.insertTab(0, self.monitor, 'Monitor')
-            self.tab_widget.setCurrentIndex(0)
 
         self.layout = QtWidgets.QHBoxLayout(self)
         self.layout.setContentsMargins(2, 2, 2, 2)
@@ -39,9 +28,30 @@ class MultiCacheMonitor(QtWidgets.QWidget):
         self.timer = QtCore.QBasicTimer()
         self.timer.start(1000, self)
 
-    def closeEvent(self, *event):
-        super(MultiCacheMonitor, self).closeEvent(*event)
+    def tab_closed(self, index):
+        self.tab_widget.widget(index).kill()
+        self.tab_widget.removeTab(index)
+        self.job_panels.remove(index)
+
+    def add_job(self, cacheversion, process):
+        job_panel = JobPanel(cacheversion, process)
+        self.job_panels.append(job_panel)
+        self.tab_widget.addTab(job_panel, cacheversion.name)
+
+    def showEvent(self, *events):
+        super(MultiCacheMonitor, self).showEvent(*events)
+        self.timer.start(1000, self)
+
+    def closeEvent(self, *events):
+        super(MultiCacheMonitor, self).closeEvent(*events)
         self.timer.stop()
+        kill_them_all = None
+        for job_panel in self.job_panels:
+            if not job_panel.finished:
+                if kill_them_all is None:
+                    kill_them_all = kill_them_all_confirmation_dialog()
+                if kill_them_all is True:
+                    job_panel.kill()
 
     def timerEvent(self, event):
         for job_panel in self.job_panels:
@@ -81,17 +91,18 @@ class JobPanel(QtWidgets.QWidget):
         endframe = cacheversion.infos['end_frame']
         self.images = SequenceImageReader(range_=[startframe, endframe])
         self.log = InteractiveLog(filepath=self.logfile)
-        self.kill = QtWidgets.QPushButton('kill')
-        self.kill.released.connect(self._call_kill)
+        self.kill_button = QtWidgets.QPushButton('kill')
+        self.kill_button.released.connect(self._call_kill)
         self.connect_cache = QtWidgets.QPushButton('connect cache')
         self.connect_cache.released.connect(self._call_connect_cache)
+        self.connect_cache.setEnabled(False)
         self.log_widget = QtWidgets.QWidget()
         self.log_layout = QtWidgets.QVBoxLayout(self.log_widget)
         self.log_layout.setContentsMargins(0, 0, 0, 0)
         self.log_layout.setSpacing(2)
         self.log_layout.addWidget(self.log)
         self.log_layout.addWidget(self.connect_cache)
-        self.log_layout.addWidget(self.kill)
+        self.log_layout.addWidget(self.kill_button)
 
         self.splitter = QtWidgets.QSplitter()
         self.splitter.addWidget(self.images)
@@ -105,7 +116,8 @@ class JobPanel(QtWidgets.QWidget):
         if self.log.is_log_changed() is False or self.finished is True:
             return
         self.log.update()
-        for jpeg in list_tmp_jpeg_under_cacheversion(self.cacheversion):
+        jpegs = list_tmp_jpeg_under_cacheversion(self.cacheversion)
+        for jpeg in jpegs:
             # often, jpeg files are listed before to be fully written or the
             # file pysically exist. This create null pixmap and the viewport
             # has dead frames. Those checks stop the update in case of issue
@@ -116,10 +128,15 @@ class JobPanel(QtWidgets.QWidget):
                     break
                 self.imagepath.append(jpeg)
                 self.images.add_pixmap(pixmap)
+
+        if jpegs and self.connect_cache.isEnabled() is False:
+            # allow to connect a cache only if at least one frame is cached.
+            self.connect_cache.setEnabled(True)
+
         if self.images.isfull() is True:
             self.finished = True
             self.images.finish()
-            self.kill.setEnabled(False)
+            self.kill_button.setEnabled(False)
 
     def _call_connect_cache(self):
         startframe = self.cacheversion.infos['start_frame']
@@ -137,19 +154,25 @@ class JobPanel(QtWidgets.QWidget):
             cmds.setAttr(cachenode + '.sourceEnd', endframe)
 
     def _call_kill(self):
+        self.kill()
+        self.kill_button.setEnabled(False)
+
+    def kill(self):
         if self.finished is True:
             return
         self.finished = True
         self.process.kill()
         self.images.kill()
         images = list_tmp_jpeg_under_cacheversion(self.cacheversion)
+        # if the cache is not started yet, no images are already recorded
+        if not images:
+            return
         source = compile_movie(images)
         for image in images:
             os.remove(image)
         directory = self.cacheversion.directory
         destination = os.path.join(directory, os.path.basename(source))
         os.rename(source, destination)
-        self.kill.setEnabled(False)
 
 
 class InteractiveLog(QtWidgets.QWidget):
@@ -183,3 +206,16 @@ class InteractiveLog(QtWidgets.QWidget):
         scrollbar = self.text.verticalScrollBar()
         scrollbar.setSliderPosition(scrollbar.maximum())
         return True
+
+
+def kill_them_all_confirmation_dialog():
+    message = (
+        "Some caching processes still running, do you want to kill them all ?")
+    buttons = QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+    result = QtWidgets.QMessageBox.question(
+        None,
+        'Cache running',
+        message,
+        buttons,
+        QtWidgets.QMessageBox.Yes)
+    return result == QtWidgets.QMessageBox.Yes
