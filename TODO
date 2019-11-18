@@ -1,8 +1,10 @@
 todo list created from commit 60
 
 BUGS:
+    - text on mayapy viewport is broken (more than unachieved)
     - timing calculation per frame, look fucked
-    - fix persp cam doesn't seems working in batch cache
+    - fix persp cam doesn't seems working in batch cache:
+      UPDATE: camera selection is now totally broken
     - subprocess NEW_CONSOLE doesn't work under KDE/linux
     - fix workspace not well recognized
     - blast in mayapy doesn't support the ornaments. Force disabling the option in mayapy
