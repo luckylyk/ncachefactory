@@ -109,11 +109,12 @@ def import_ncache(node, filename, behavior=0):
     # doesn't need channel check for cloth nodes
     else:
         inattrs = node + '.positions'
-        cache = cmds.cacheFile(
-            attachFile=True,
-            fileName=filename,
-            inAttr=inattrs)
-        cmds.connectAttr(cache + '.inRange', node + '.playFromCache')
+
+    cache = cmds.cacheFile(
+        attachFile=True,
+        fileName=filename,
+        inAttr=inattrs)
+    cmds.connectAttr(cache + '.inRange', node + '.playFromCache')
 
     if connections:
         reconnect_cachenodes(connections)

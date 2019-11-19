@@ -3,7 +3,8 @@ import os
 from PySide2 import QtWidgets, QtCore, QtGui
 from maya import cmds
 from ncachemanager.qtutils import get_icon
-from ncachemanager.attributes import list_wedgable_attributes
+from ncachemanager.attributes import (
+    list_wedgable_attributes, list_channelbox_highlited_plugs)
 from ncachemanager.batch import (
     clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
     is_temp_folder_empty, FLASHCACHE_NAME, WEDGINGCACHE_NAME)
@@ -67,6 +68,9 @@ class BatchCacher(QtWidgets.QWidget):
         self._pick = QtWidgets.QPushButton("P")
         self._pick.setFixedSize(18, 18)
         self._pick.released.connect(self._call_pick_attribute)
+        self._find = QtWidgets.QPushButton("F")
+        self._find.setFixedSize(18, 18)
+        self._find.released.connect(self._call_find_attribute)
         self._values =  QtWidgets.QLineEdit()
         self._values_builder = QtWidgets.QPushButton("B")
         self._values_builder.setFixedSize(18, 18)
@@ -80,6 +84,7 @@ class BatchCacher(QtWidgets.QWidget):
         self.attribute_layout.setSpacing(0)
         self.attribute_layout.addWidget(self._attribute)
         self.attribute_layout.addWidget(self._pick)
+        self.attribute_layout.addWidget(self._find)
 
         self.values_layout = QtWidgets.QHBoxLayout()
         self.values_layout.setContentsMargins(0, 0, 0, 0)
@@ -156,12 +161,18 @@ class BatchCacher(QtWidgets.QWidget):
         job = {'name': FLASHCACHE_NAME, 'comment': '', 'scene': scene}
         self.model.add_job(job)
 
-    def _call_pick_attribute(self):
+    def _call_find_attribute(self):
         dialog = AttributePicker()
         result = dialog.exec_()
         if result == QtWidgets.QDialog.Rejected:
             return
         self._attribute.setText(dialog.plug)
+
+    def _call_pick_attribute(self):
+        plugs = list_channelbox_highlited_plugs()
+        if not plugs:
+            return cmds.warning('no plug selected in channelbox')
+        self._attribute.setText(plugs[-1])
 
     def _call_values_builder(self):
         dialog = ValuesBuilder()

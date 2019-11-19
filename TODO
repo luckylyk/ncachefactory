@@ -1,20 +1,22 @@
 todo list created from commit 60
 
 BUGS:
-    - text on mayapy viewport is broken (more than unachieved)
     - timing calculation per frame, look fucked
-    - fix persp cam doesn't seems working in batch cache:
-      UPDATE: camera selection is now totally broken
     - subprocess NEW_CONSOLE doesn't work under KDE/linux
     - fix workspace not well recognized
     - blast in mayapy doesn't support the ornaments. Force disabling the option in mayapy
-    - fix nhair connection
 
     __ done __
+    - text on mayapy viewport is broken (more than unachieved)
+    - fix persp cam doesn't seems working in batch cache:
+      UPDATE: camera selection is now totally broken
     - stretch check seems not working
+    - fix nhair connections
 
 BASIC CONFORT
+    - set viewport batch text relative to focal
     - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor
+    - Save the playblast viewport options
 
     __ done __
     - Add values for wedging check before execute it
@@ -29,5 +31,6 @@ BASIC CONFORT
 FEATURES
     - Add text in viewport for rendering (cache name and comment)
     - For mayapy caches, create a geometry text linked to the camera to fixe the issue.
-    - Make the monitor support to receive new caches and remove some cache instead of recreating the widget everytime,
+    - Make the monitor support to receive new caches and remove some cache
+      instead of recreating the widget everytime,
       losing the current caching viewport on each opening.

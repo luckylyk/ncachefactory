@@ -34,7 +34,7 @@ def build_unique_scene_name(workspace, scenename_template, foldername):
     return name
 
 
-def gather_current_environment():
+def copy_current_environment():
     pythonpaths = os.environ["PYTHONPATH"].split(os.pathsep)
     pythonpaths = [p.replace("\\", "/") for p in pythonpaths]
     for path in sys.path:
@@ -47,30 +47,21 @@ def gather_current_environment():
     return environment
 
 
+def save_scene_for_batch(workspace, scenename, folder):
+    currentname = cmds.file(query=True, sceneName=True)
+    name = build_unique_scene_name(workspace, scenename, folder)
+    folder = os.path.join(workspace, folder)
+    filename = os.path.join(folder, name)
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    cmds.file(rename=filename)
+    cmds.file(save=True, type="mayaAscii")
+    cmds.file(rename=currentname)
+    return filename
+
+
 def flash_current_scene(workspace):
-    currentname = cmds.file(query=True, sceneName=True)
-    flashname = build_unique_scene_name(workspace, FLASHSCENE_NAME, TEMPFOLDER_NAME)
-    folder = os.path.join(workspace, TEMPFOLDER_NAME)
-    filename = os.path.join(folder, flashname)
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    cmds.file(rename=filename)
-    cmds.file(save=True, type="mayaAscii")
-    cmds.file(rename=currentname)
-    return filename
-
-
-def save_scene_for_wedging(workspace):
-    currentname = cmds.file(query=True, sceneName=True)
-    flashname = build_unique_scene_name(workspace, WEDGINGSCENE_NAME, WEDGINGFOLDER_NAME)
-    folder = os.path.join(workspace, WEDGINGFOLDER_NAME)
-    filename = os.path.join(folder, flashname)
-    if not os.path.exists(folder):
-        os.makedirs(folder)
-    cmds.file(rename=filename)
-    cmds.file(save=True, type="mayaAscii")
-    cmds.file(rename=currentname)
-    return filename
+    return save_scene_for_batch(workspace, FLASHSCENE_NAME, TEMPFOLDER_NAME)
 
 
 def send_batch_ncache_jobs(
@@ -87,7 +78,7 @@ def send_batch_ncache_jobs(
     arguments = build_batch_script_arguments(
         start_frame, end_frame, nodes, playblast_viewport_options, timelimit,
         stretchmax)
-    environment = gather_current_environment()
+    environment = copy_current_environment()
     for job in jobs:
         cacheversion = create_cacheversion(
             workspace=workspace,
@@ -116,10 +107,14 @@ def send_batch_ncache_jobs(
 def send_wedging_ncaches_jobs(
         workspace, name, start_frame, end_frame, nodes,
         playblast_viewport_options, timelimit, stretchmax, attribute, values):
+    ''' this function send on a maya batch multiple cache based on a wedging
+    attribute test. An attribute is specified and a list of values. The
+    launch one maya per value to process to create a cache version.
+    '''
     processes = []
     cacheversions = []
-    environment = gather_current_environment()
-    scene = save_scene_for_wedging(workspace)
+    environment = copy_current_environment()
+    scene = save_scene_for_batch(workspace, WEDGINGSCENE_NAME, WEDGINGFOLDER_NAME)
     for value in values:
         comment = WEDGING_COMMENT_TEMPLATE.format(attribute, value)
         cacheversion = create_cacheversion(

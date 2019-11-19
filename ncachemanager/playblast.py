@@ -25,9 +25,7 @@ def start_playblast_record(
         directory, camera='perspShape', width=1024, height=748,
         viewport_display_values=None):
     for cam in cmds.ls(type="camera"):
-        import logging
-        logging.info(str([cam, camera, cam == camera]))
-        cmds.setAttr(camera + '.renderable', cam == camera)
+        cmds.setAttr(cam + '.renderable', cam == camera)
     # the current global render settings are backup to be reset at the end of
     # the record. That's saved in the global dict BACKUPED_RENDER_SETTINGS
     # which is cleaned at the end. Ok global variables are evil, but there the
@@ -50,7 +48,7 @@ def shoot_frame(camera, width, height):
     frame = cmds.currentTime(query=True)
     cmds.setAttr("defaultRenderGlobals.startFrame", frame)
     cmds.setAttr("defaultRenderGlobals.endFrame", frame)
-    image = cmds.ogsRender(camera, width=width, height=height)
+    image = cmds.ogsRender(width=width, height=height)
     global _blasted_images
     _blasted_images.append(image)
 

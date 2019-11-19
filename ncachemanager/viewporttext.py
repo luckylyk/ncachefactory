@@ -5,9 +5,9 @@ from PySide2 import QtGui
 
 VIEWPORT_TEXT_SHADDER_NAME = "ncache_viewport_text_shader"
 ORTOGRAPHIC_OFFSET = -14, 5, -1
-ORTOGRAPHIC_SCALE = 0.06, 0.06, 0.06
+ORTOGRAPHIC_SCALE = 0.04, 0.04, 0.04
 NORMAL_OFFSET = -0.48, 0.15, -1
-NORMAL_SCALE = 0.001, 0.001, 0.001
+NORMAL_SCALE = 0.0015, 0.0015, 0.0015
 
 
 def create_viewport_text(text, camera):

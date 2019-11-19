@@ -122,6 +122,7 @@ try:
 
     # force dg evaluation to DG to ensure not multi thread usage.
     cmds.evaluationManager(mode="off")
+    force_log_info('open maya scene ...')
     cmds.file(arguments.scene, open=True, force=True)
     force_log_info('maya scene opened')
     cacheversion = CacheVersion(arguments.directory)
@@ -136,9 +137,6 @@ try:
         force_log_info("attribute \"{}\" set to {}".format(attribute, value))
 
     text = '{}\n{}'.format(cacheversion.name, cacheversion.infos['comment'])
-    if attribute:
-        text += '\n{}, {}'.format(attribute, value)
-    logging.info(text)
     create_viewport_text(text, arguments.playblast_camera)
 
     cmds.currentTime(arguments.start_frame, edit=True)

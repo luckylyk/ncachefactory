@@ -158,8 +158,8 @@ def list_wedgable_attributes(node):
 
 
 def list_channelbox_highlited_plugs():
-    # find objects and attributes highlighted in each part of the channel box
-    # Main, Shape, Input, Output
+    '''this function inspect the maya ui and return all the selected plugs in
+    the channelbox.'''
     plugs = set()
     channelbox = "mainChannelBox"
     kwargs = (
