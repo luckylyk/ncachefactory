@@ -1,3 +1,7 @@
+"""
+This module contains some Maya dynamic node representations. Those objects are
+used as model for table view."""
+
 from maya import cmds
 import maya.api.OpenMaya as om2
 

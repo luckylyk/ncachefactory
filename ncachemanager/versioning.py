@@ -34,6 +34,7 @@ LOG_FILENAME = 'infos.log'
 
 
 class CacheVersion(object):
+
     def __init__(self, directory):
         self.directory = directory.replace("\\", "/")
         self.infos_path = os.path.join(self.directory, INFOS_FILENAME)

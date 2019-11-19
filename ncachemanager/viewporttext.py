@@ -1,3 +1,10 @@
+"""
+Ornament option is not supported for hardware render 2.0 maya on batch. This
+option crash maya. So this module allow a basic physical text creation in the
+scene which is aligned to the camera. That's a bit stupid solution, but I
+doesn't have other for playblast in batch :(.
+"""
+
 
 from maya import cmds
 from PySide2 import QtGui
@@ -57,6 +64,8 @@ def create_text(text):
 
 
 def apply_text_shading(mesh):
+    """ Create and apply a standard white lambert with incendescence to 1.0
+    """
     lambert = cmds.shadingNode(
         'lambert',
         asShader=True,
