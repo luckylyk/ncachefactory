@@ -9,7 +9,7 @@ from ncachemanager.ncache import list_connected_cachefiles
 from ncachemanager.versioning import (
     get_log_filename, list_tmp_jpeg_under_cacheversion)
 
-WINDOW_TITLE = "Multi NCache Monitoring"
+WINDOW_TITLE = "Batch cacher monitoring"
 
 
 class MultiCacheMonitor(QtWidgets.QWidget):
