@@ -11,7 +11,6 @@ from ncachemanager.timecallbacks import add_to_time_callback, remove_from_time_c
 from ncachemanager.optionvars import FFMPEG_PATH_OPTIONVAR
 
 
-FFMPEG_COMMAND = "-framerate 24 -i {images_expression} -codec copy {output}.mp4"
 OUTPUT_RENDER_FILENAME = 'ncache_playblast'
 RENDER_GLOBALS_FILTERVALUES = "hardwareRenderingGlobals.objectTypeFilterValueArray"
 RENDER_GLOBALS_FILTERNAMES = "hardwareRenderingGlobals.objectTypeFilterNameArray"
@@ -56,8 +55,8 @@ def shoot_frame(camera, width, height):
 def stop_playblast_record(directory):
     global _blasted_images
     source = compile_movie(_blasted_images)
-    for image in _blasted_images:
-        os.remove(image)
+    # for image in _blasted_images:
+    #     os.remove(image)
     _blasted_images = []
     destination = os.path.join(directory, os.path.basename(source))
     os.rename(source, destination)
@@ -120,15 +119,21 @@ def list_render_filter_options():
 
 
 def compile_movie(images):
+    """ this function an mp4 video from the jpgeg given. In the same folder.
+    The jpeg filenames pattern must finish by ".%6d.jpg" to be understood by
+    the function
+    """
     ffmpeg = cmds.optionVar(query=FFMPEG_PATH_OPTIONVAR)
-    output = images[0][:-11]
+    output = images[0][:-11] + ".mp4"
     # this line analyse the filename given and build a filename expression
     # understood by FFMMPEG. %6d mean 6 digit frame number.
     images_expression = re.sub(r".\d\d\d\d\d\d.jpg", ".%6d.jpg", (images[0]))
-    command = FFMPEG_COMMAND.format(
-        images_expression=images_expression,
-        output=output)
-
-    process = subprocess.Popen([ffmpeg, command])
+    # on some ffmpeg versions, that need the start frame specified for images
+    # sequences. This line infer the first frame from the first filename
+    startframe = int(images[0].split('.')[-2])
+    arguments = [
+        ffmpeg, "-framerate", "24", "-start_number", str(startframe),
+        "-i", images_expression, "-codec", "copy", output]
+    process = subprocess.Popen(arguments)
     process.wait()
-    return output + ".mp4"
+    return output
