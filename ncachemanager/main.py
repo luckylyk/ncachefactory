@@ -406,7 +406,7 @@ class WorkspaceWidget(QtWidgets.QWidget):
             self.workspaceSet.emit(certified)
 
     def _call_set_workspace(self):
-        workspace = self.edit.text()
+        workspace = self.browse.text.text()
         if not os.path.exists(workspace):
             return self.set_wrong()
         self.browse.text.setStyleSheet('')
