@@ -193,9 +193,6 @@ class BatchCacher(QtWidgets.QWidget):
         self.sendWedgingCacheRequested.emit()
 
 
-
-
-
 class MultiCacheTableView(QtWidgets.QTableView):
 
     def __init__(self, parent=None):
