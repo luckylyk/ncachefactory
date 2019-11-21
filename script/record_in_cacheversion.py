@@ -77,6 +77,11 @@ try:
         logging.basicConfig(filename=logfile, level=logging.INFO)
         logging.info(message)
 
+    if arguments.viewport_display_values[-1] == 1:
+        arguments.viewport_display_values[-1] = 0
+        msg = 'Ornament option in viewport is not supported and turned off'
+        force_log_info(msg)
+        
     # Log the arguments informations.
     if arguments.attribute_override == "":
         arguments.attribute_override = None
