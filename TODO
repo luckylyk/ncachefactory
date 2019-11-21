@@ -3,10 +3,10 @@ todo list created from commit 60
 BUGS:
     - timing calculation per frame, look fucked
     - subprocess NEW_CONSOLE doesn't work under KDE/linux
-    - fix workspace not well recognized
     - blast in mayapy doesn't support the ornaments. Force disabling the option in mayapy
 
     __ done __
+    - fix workspace not well recognized
     - text on mayapy viewport is broken (more than unachieved)
     - fix persp cam doesn't seems working in batch cache:
       UPDATE: camera selection is now totally broken
@@ -28,7 +28,7 @@ BASIC CONFORT
       it doesn't take interactively the frame cached after connection.
       Just force the all range in the ncache node to force the full range.
 
-FEATURES
+MAIN FEATURES
     - Add text in viewport for rendering (cache name and comment)
     - For mayapy caches, create a geometry text linked to the camera to fixe the issue.
     - Make the monitor support to receive new caches and remove some cache
