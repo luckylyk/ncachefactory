@@ -14,6 +14,7 @@ BUGS:
     - fix nhair connections
 
 BASIC CONFORT
+    - set sortable the cacheversions in the explorer panel
     - set viewport batch text relative to focal
     - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor
     - Save the playblast viewport options
