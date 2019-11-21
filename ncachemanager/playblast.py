@@ -11,7 +11,7 @@ from ncachemanager.timecallbacks import add_to_time_callback, remove_from_time_c
 from ncachemanager.optionvars import FFMPEG_PATH_OPTIONVAR
 
 
-FFMPEG_COMMAND = "{ffmpeg} -framerate 24 -i {images_expression} -codec copy {output}.mp4"
+FFMPEG_COMMAND = "-framerate 24 -i {images_expression} -codec copy {output}.mp4"
 OUTPUT_RENDER_FILENAME = 'ncache_playblast'
 RENDER_GLOBALS_FILTERVALUES = "hardwareRenderingGlobals.objectTypeFilterValueArray"
 RENDER_GLOBALS_FILTERNAMES = "hardwareRenderingGlobals.objectTypeFilterNameArray"
@@ -126,10 +126,9 @@ def compile_movie(images):
     # understood by FFMMPEG. %6d mean 6 digit frame number.
     images_expression = re.sub(r".\d\d\d\d\d\d.jpg", ".%6d.jpg", (images[0]))
     command = FFMPEG_COMMAND.format(
-        ffmpeg=ffmpeg,
         images_expression=images_expression,
         output=output)
 
-    process = subprocess.Popen(command)
+    process = subprocess.Popen([ffmpeg, command])
     process.wait()
     return output + ".mp4"
