@@ -18,25 +18,37 @@ NORMAL_SCALE = 0.0015, 0.0015, 0.0015
 REFERENCE_FOCAL = 35
 
 
-
 def create_viewport_text(text, camera):
-    main_group = cmds.group(empty=True, world=True)
-    secondary_group = cmds.group(empty=True, world=True)
-    cmds.parent(secondary_group, main_group)
+    group = cmds.group(empty=True, world=True)
     meshtext = create_text(text)
     meshparent = cmds.listRelatives(meshtext, parent=True)[0]
-    cmds.parent(meshparent, secondary_group)
-    constrain_group_to_camera(main_group, camera)
     if cmds.getAttr(camera + '.orthographic'):
-        cmds.setAttrw(meshparent + ".translate", *ORTOGRAPHIC_OFFSET)
+        cmds.parent(meshparent, group)
+        cmds.setAttr(meshparent + ".translate", *ORTOGRAPHIC_OFFSET)
         cmds.setAttr(meshparent + ".scale", *ORTOGRAPHIC_SCALE)
     else:
         cmds.setAttr(meshparent + ".translate", *NORMAL_OFFSET)
         cmds.setAttr(meshparent + ".scale", *NORMAL_SCALE)
-        cmds.setAttr(secondary_group + ".translateZ", -1)
-        # scale = REFERENCE_FOCAL / cmds.getAttr(camera + '.focalLength')
-        # cmds.setAttr(secondary_group + ".scale", *[scale]*3)
+        link_text_to_non_orthographic_camera(group, camera, meshparent)
+    constrain_group_to_camera(group, camera)
     return text
+
+
+def link_text_to_non_orthographic_camera(group, camera, text):
+    ''' this function create a simple setup which drive the text scale
+    by the camera focalLength.
+    '''
+    secondary_group = cmds.group(empty=True, world=True)
+    cmds.parent(text, secondary_group)
+    cmds.parent(secondary_group, group)
+    cmds.setAttr(secondary_group + ".translateZ", -1)
+    multiply = cmds.createNode('multiplyDivide')
+    cmds.setAttr(multiply + '.operation', 2)
+    cmds.setAttr(multiply + '.input1.input1X', REFERENCE_FOCAL)
+    cmds.connectAttr(camera + '.focalLength', multiply + '.input2.input2X')
+    cmds.connectAttr(multiply + '.output.outputX', secondary_group + '.scale.scaleX')
+    cmds.connectAttr(multiply + '.output.outputX', secondary_group + '.scale.scaleY')
+    cmds.connectAttr(multiply + '.output.outputX', secondary_group + '.scale.scaleZ')
 
 
 def check_type_plugin():
@@ -46,6 +58,9 @@ def check_type_plugin():
 
 
 def constrain_group_to_camera(group, camera):
+    ''' this function align the main group text with the given camera. And
+    constrain the group to it in translate and rotate.
+    '''
     camera = cmds.listRelatives(camera, parent=True)[0]
     px, py, pz = cmds.xform(
         camera, query=True, translation=True, absolute=True, worldSpace=True)
@@ -62,7 +77,7 @@ def create_text(text):
     check_type_plugin()
     typenode = cmds.createNode("type")
     mesh = cmds.createNode("mesh")
-    transform = cmds.listRelatives(mesh, parent=True)[0]
+    # the nodeType "type" only support text as hexadecimal data
     text = string_to_hexadecimal(text)
     cmds.setAttr(typenode + '.textInput', text, type="string")
     cmds.setAttr(typenode + '.currentFont', "Arial", type="string")
