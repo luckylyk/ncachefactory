@@ -1,6 +1,6 @@
 from maya import cmds
 from PySide2 import QtWidgets, QtGui, QtCore
-from ncachemanager.optionvars import (
+from ncachefactory.optionvars import (
     RANGETYPE_OPTIONVAR, CACHE_BEHAVIOR_OPTIONVAR, VERBOSE_OPTIONVAR,
     VERBOSE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
     EXPLOSION_TOLERENCE_OPTIONVAR, ensure_optionvars_exists)

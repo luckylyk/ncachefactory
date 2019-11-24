@@ -2,11 +2,11 @@ import os
 from math import ceil, sqrt
 from PySide2 import QtWidgets, QtGui, QtCore
 from maya import cmds
-from ncachemanager.sequencereader import SequenceImageReader, ImageViewer
-from ncachemanager.playblast import compile_movie
-from ncachemanager.api import connect_cacheversion
-from ncachemanager.ncache import list_connected_cachefiles
-from ncachemanager.versioning import (
+from ncachefactory.sequencereader import SequenceImageReader, ImageViewer
+from ncachefactory.playblast import compile_movie
+from ncachefactory.cachemanager import connect_cacheversion
+from ncachefactory.ncache import list_connected_cachefiles
+from ncachefactory.versioning import (
     get_log_filename, list_tmp_jpeg_under_cacheversion)
 
 WINDOW_TITLE = "Batch cacher monitoring"

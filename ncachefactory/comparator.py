@@ -2,7 +2,7 @@
 import maya.api.OpenMaya as om2
 from maya import cmds
 from PySide2 import QtWidgets, QtCore
-from ncachemanager.api import compare_node_and_version
+from ncachefactory.cachemanager import compare_node_and_version
 
 
 WINDOW_TITLE = "Comparator"

@@ -2,15 +2,15 @@ from PySide2 import QtWidgets, QtGui, QtCore
 from maya import cmds
 import maya.OpenMaya as om
 
-from ncachemanager.qtutils import get_icon
-from ncachemanager.nodes import filtered_dynamic_nodes, create_dynamic_node
-from ncachemanager.api import filter_connected_cacheversions
-from ncachemanager.versioning import (
+from ncachefactory.qtutils import get_icon
+from ncachefactory.nodes import filtered_dynamic_nodes, create_dynamic_node
+from ncachefactory.cachemanager import filter_connected_cacheversions
+from ncachefactory.versioning import (
     list_available_cacheversions, split_namespace_nodename)
-from ncachemanager.ncache import (
+from ncachefactory.ncache import (
     DYNAMIC_NODES, clear_cachenodes, list_connected_cachefiles,
     list_connected_cacheblends)
-from ncachemanager.filtering import FilterDialog
+from ncachefactory.filtering import FilterDialog
 
 RANGE_CACHED_COLOR = "#44aa22"
 RANGE_NOT_CACHED_COLOR = "#333333"

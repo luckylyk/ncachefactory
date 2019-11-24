@@ -1,7 +1,7 @@
 
 from PySide2 import QtWidgets
-from ncachemanager.qtutils import get_maya_windows
-from ncachemanager.main import NCacheManager
+from ncachefactory.qtutils import get_maya_windows
+from ncachefactory.main import NCacheManager
 
 
 _ncachemanager_window = None

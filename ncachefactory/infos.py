@@ -5,15 +5,15 @@ import subprocess
 from maya import cmds
 from PySide2 import QtWidgets, QtCore
 
-from ncachemanager.versioning import (
+from ncachefactory.versioning import (
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
-from ncachemanager.api import (
+from ncachefactory.cachemanager import (
     filter_connected_cacheversions, connect_cacheversion, apply_settings,
     plug_cacheversion_to_inputmesh, plug_cacheversion_to_restshape,
     recover_original_inputmesh)
-from ncachemanager.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
-from ncachemanager.qtutils import get_icon
-from ncachemanager.attributes import set_pervertex_maps
+from ncachefactory.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
+from ncachefactory.qtutils import get_icon
+from ncachefactory.attributes import set_pervertex_maps
 
 
 class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):

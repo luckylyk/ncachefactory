@@ -4,8 +4,8 @@ import shutil
 import sys
 
 from maya import cmds
-from ncachemanager.optionvars import MAYAPY_PATH_OPTIONVAR
-from ncachemanager.versioning import create_cacheversion
+from ncachefactory.optionvars import MAYAPY_PATH_OPTIONVAR
+from ncachefactory.versioning import create_cacheversion
 
 
 _CURRENTDIR = os.path.dirname(os.path.realpath(__file__))
@@ -96,8 +96,7 @@ def send_batch_ncache_jobs(
         process = subprocess.Popen(
             arguments,
             bufsize=-1,
-            env=environment,
-            creationflags=subprocess.CREATE_NEW_CONSOLE)
+            env=environment)
         processes.append(process)
 
     clean_batch_temp_folder(workspace)
@@ -133,8 +132,7 @@ def send_wedging_ncaches_jobs(
         process = subprocess.Popen(
             arguments,
             env=environment,
-            bufsize=-1,
-            creationflags=subprocess.CREATE_NEW_CONSOLE)
+            bufsize=-1)
         processes.append(process)
     return cacheversions, processes
 

@@ -5,12 +5,12 @@ used as model for table view."""
 from maya import cmds
 import maya.api.OpenMaya as om2
 
-from ncachemanager.ncloth import (
+from ncachefactory.ncloth import (
     find_input_mesh_dagpath, find_output_mesh_dagpath)
-from ncachemanager.mesh import (
+from ncachefactory.mesh import (
     set_mesh_color, get_mesh_color, is_mesh_visible,
     switch_meshes_visibilities)
-from ncachemanager.attributes import (
+from ncachefactory.attributes import (
     ensure_node_has_ncachemanager_tags, FILTERED_FOR_NCACHEMANAGER)
 
 

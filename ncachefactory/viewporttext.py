@@ -13,22 +13,29 @@ from PySide2 import QtGui
 VIEWPORT_TEXT_SHADDER_NAME = "ncache_viewport_text_shader"
 ORTOGRAPHIC_OFFSET = -14, 5, -1
 ORTOGRAPHIC_SCALE = 0.04, 0.04, 0.04
-NORMAL_OFFSET = -0.48, 0.15, -1
+NORMAL_OFFSET = -0.48, 0.15, 0
 NORMAL_SCALE = 0.0015, 0.0015, 0.0015
+REFERENCE_FOCAL = 35
+
 
 
 def create_viewport_text(text, camera):
-    group = cmds.group(empty=True, world=True)
+    main_group = cmds.group(empty=True, world=True)
+    secondary_group = cmds.group(empty=True, world=True)
+    cmds.parent(secondary_group, main_group)
     meshtext = create_text(text)
     meshparent = cmds.listRelatives(meshtext, parent=True)[0]
-    cmds.parent(meshparent, group)
-    constrain_group_to_camera(group, camera)
+    cmds.parent(meshparent, secondary_group)
+    constrain_group_to_camera(main_group, camera)
     if cmds.getAttr(camera + '.orthographic'):
-        cmds.setAttr(meshparent + ".translate", *ORTOGRAPHIC_OFFSET)
+        cmds.setAttrw(meshparent + ".translate", *ORTOGRAPHIC_OFFSET)
         cmds.setAttr(meshparent + ".scale", *ORTOGRAPHIC_SCALE)
     else:
         cmds.setAttr(meshparent + ".translate", *NORMAL_OFFSET)
         cmds.setAttr(meshparent + ".scale", *NORMAL_SCALE)
+        cmds.setAttr(secondary_group + ".translateZ", -1)
+        # scale = REFERENCE_FOCAL / cmds.getAttr(camera + '.focalLength')
+        # cmds.setAttr(secondary_group + ".scale", *[scale]*3)
     return text
 
 
@@ -55,6 +62,7 @@ def create_text(text):
     check_type_plugin()
     typenode = cmds.createNode("type")
     mesh = cmds.createNode("mesh")
+    transform = cmds.listRelatives(mesh, parent=True)[0]
     text = string_to_hexadecimal(text)
     cmds.setAttr(typenode + '.textInput', text, type="string")
     cmds.setAttr(typenode + '.currentFont', "Arial", type="string")

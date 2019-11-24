@@ -6,30 +6,30 @@ from PySide2 import QtCore, QtWidgets
 from maya import cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-from ncachemanager.nodetable import DynamicNodesTableWidget
-from ncachemanager.comparator import ComparisonWidget
-from ncachemanager.ncache import DYNAMIC_NODES
-from ncachemanager.cacheoptions import CacheOptions
-from ncachemanager.qtutils import get_icon, get_maya_windows
-from ncachemanager.playblastoptions import PlayblastOptions
-from ncachemanager.api import (
+from ncachefactory.nodetable import DynamicNodesTableWidget
+from ncachefactory.comparator import ComparisonWidget
+from ncachefactory.ncache import DYNAMIC_NODES
+from ncachefactory.cacheoptions import CacheOptions
+from ncachefactory.qtutils import get_icon, get_maya_windows
+from ncachefactory.playblastoptions import PlayblastOptions
+from ncachefactory.cachemanager import (
     filter_connected_cacheversions, create_and_record_cacheversion,
     record_in_existing_cacheversion, append_to_cacheversion)
-from ncachemanager.infos import WorkspaceCacheversionsExplorer
-from ncachemanager.versioning import (
+from ncachefactory.infos import WorkspaceCacheversionsExplorer
+from ncachefactory.versioning import (
     ensure_workspace_exists, list_available_cacheversions,
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
-from ncachemanager.optionvars import (
+from ncachefactory.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
     VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, FFMPEG_PATH_OPTIONVAR,
     MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
     MULTICACHE_EXP_OPTIONVAR, ensure_optionvars_exists)
-from ncachemanager.batchcacher import BatchCacher
-from ncachemanager.batch import send_batch_ncache_jobs, send_wedging_ncaches_jobs
-from ncachemanager.timecallbacks import (
+from ncachefactory.batchcacher import BatchCacher
+from ncachefactory.batch import send_batch_ncache_jobs, send_wedging_ncaches_jobs
+from ncachefactory.timecallbacks import (
     register_time_callback, add_to_time_callback, unregister_time_callback,
     time_verbose, clear_time_callback_functions)
-from ncachemanager.monitoring import MultiCacheMonitor
+from ncachefactory.monitoring import MultiCacheMonitor
 
 
 WINDOW_TITLE = "NCache Manager"

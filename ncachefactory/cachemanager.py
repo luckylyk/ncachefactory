@@ -14,25 +14,25 @@ import subprocess
 from maya import cmds
 import maya.api.OpenMaya as om2
 
-from ncachemanager.versioning import (
+from ncachefactory.versioning import (
     create_cacheversion, ensure_workspace_exists, find_file_match,
     clear_cacheversion_content, cacheversion_contains_node,
     move_playblast_to_cacheversion)
-from ncachemanager.mesh import (
+from ncachefactory.mesh import (
     create_mesh_for_geo_cache, attach_geo_cache,
     is_deformed_mesh_too_stretched)
-from ncachemanager.ncloth import (
+from ncachefactory.ncloth import (
     find_input_mesh_dagpath, clean_inputmesh_connection,
     find_output_mesh_dagpath)
-from ncachemanager.ncache import (
+from ncachefactory.ncache import (
     import_ncache, record_ncache, DYNAMIC_NODES, clear_cachenodes,
     list_connected_cachefiles, list_connected_cacheblends, append_ncache)
-from ncachemanager.playblast import (
+from ncachefactory.playblast import (
     start_playblast_record, stop_playblast_record)
-from ncachemanager.attributes import (
+from ncachefactory.attributes import (
     save_pervertex_maps, extract_xml_attributes, list_node_attributes_values,
     clean_namespaces_in_attributes_dict, ORIGINAL_INPUTSHAPE_ATTRIBUTE)
-from ncachemanager.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
+from ncachefactory.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
 
 
 ALTERNATE_INPUTSHAPE_GROUP = "alternative_inputshapes"

@@ -68,20 +68,15 @@ try:
     arguments = parser.parse_args()
 
     def force_log_info(message):
-        # remove all the existing logging handlers that can already set by default
-        # by maya. If those handlers aren't deleted, the module refuse to set is output
-        # in an external log file.
+        # remove all the existing logging handlers that can already set by
+        # default by maya. If those handlers aren't deleted, the module refuse
+        # to set is output in an external log file.
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
         logfile = os.path.join(arguments.directory, 'infos.log')
         logging.basicConfig(filename=logfile, level=logging.INFO)
         logging.info(message)
 
-    if arguments.viewport_display_values[-1] == 1:
-        arguments.viewport_display_values[-1] = 0
-        msg = 'Ornament option in viewport is not supported and turned off'
-        force_log_info(msg)
-        
     # Log the arguments informations.
     if arguments.attribute_override == "":
         arguments.attribute_override = None
@@ -90,11 +85,11 @@ try:
 
     from maya import cmds, mel
     import maya.OpenMaya as om2
-    from ncachemanager.versioning import CacheVersion
-    from ncachemanager.api import record_in_existing_cacheversion
-    from ncachemanager.ncloth import is_output_too_streched
-    from ncachemanager.viewporttext import create_viewport_text
-    from ncachemanager.timecallbacks import (
+    from ncachefactory.versioning import CacheVersion
+    from ncachefactory.cachemanager import record_in_existing_cacheversion
+    from ncachefactory.ncloth import is_output_too_streched
+    from ncachefactory.viewporttext import create_viewport_text
+    from ncachefactory.timecallbacks import (
         add_to_time_callback, get_timespent_since_last_frame_set, time_verbose,
         register_time_callback)
 
@@ -158,6 +153,11 @@ try:
     display_values = [
         bool(int(value))
         for value in arguments.viewport_display_values.split(' ')]
+    if display_values[-1] == 1:
+        display_values[-1] = 0
+        msg = 'Ornament option in viewport is not supported and turned off'
+        force_log_info(msg)
+
     width, height = map(int, arguments.playblast_resolution.split(" "))
     playblast_viewport_options = {
         'width': width,

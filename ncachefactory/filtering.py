@@ -1,7 +1,7 @@
 from PySide2 import QtCore, QtWidgets
 from maya import cmds
-from ncachemanager.ncache import DYNAMIC_NODES
-from ncachemanager.attributes import FILTERED_FOR_NCACHEMANAGER
+from ncachefactory.ncache import DYNAMIC_NODES
+from ncachefactory.attributes import FILTERED_FOR_NCACHEMANAGER
 
 
 WINDOW_TITLE = "Visible for cachemanager"

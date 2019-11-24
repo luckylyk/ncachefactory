@@ -2,13 +2,13 @@
 import os
 from PySide2 import QtWidgets, QtCore, QtGui
 from maya import cmds
-from ncachemanager.qtutils import get_icon
-from ncachemanager.attributes import (
+from ncachefactory.qtutils import get_icon
+from ncachefactory.attributes import (
     list_wedgable_attributes, list_channelbox_highlited_plugs)
-from ncachemanager.batch import (
+from ncachefactory.batch import (
     clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
     is_temp_folder_empty, FLASHCACHE_NAME, WEDGINGCACHE_NAME)
-from ncachemanager.optionvars import (
+from ncachefactory.optionvars import (
     EXPLOSION_TOLERENCE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
     TIMELIMIT_ENABLED_OPTIONVAR, TIMELIMIT_OPTIONVAR, ensure_optionvars_exists)
 

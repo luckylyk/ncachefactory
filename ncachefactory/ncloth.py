@@ -1,6 +1,6 @@
 from maya import cmds, mel
 import maya.api.OpenMaya as om2
-from ncachemanager.mesh import is_deformed_mesh_too_stretched
+from ncachefactory.mesh import is_deformed_mesh_too_stretched
 
 
 def find_input_mesh_dagpath(clothnode_name):

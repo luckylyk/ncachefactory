@@ -7,8 +7,8 @@ from functools import partial
 from maya import cmds
 import pymel.core as pm
 
-from ncachemanager.timecallbacks import add_to_time_callback, remove_from_time_callback
-from ncachemanager.optionvars import FFMPEG_PATH_OPTIONVAR
+from ncachefactory.timecallbacks import add_to_time_callback, remove_from_time_callback
+from ncachefactory.optionvars import FFMPEG_PATH_OPTIONVAR
 
 
 OUTPUT_RENDER_FILENAME = 'ncache_playblast'

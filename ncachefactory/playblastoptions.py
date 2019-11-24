@@ -1,9 +1,9 @@
 from functools import partial
 from PySide2 import QtCore, QtWidgets, QtGui
 from maya import cmds
-from ncachemanager.qtutils import get_icon
-from ncachemanager.playblast import list_render_filter_options
-from ncachemanager.optionvars import (
+from ncachefactory.qtutils import get_icon
+from ncachefactory.playblast import list_render_filter_options
+from ncachefactory.optionvars import (
     RECORD_PLAYBLAST_OPTIONVAR, PLAYBLAST_RESOLUTION_OPTIONVAR)
 
 RESOLUTION_PRESETS = {
