@@ -6,7 +6,7 @@ home = os.path.expanduser("~")
 sys.path.append(r"D:\Works\Python\GitHub\ncachefactory")
 from maya import cmds, mel
 for key in sys.modules.keys():
-    if 'ncachemanager' in key:
+    if 'ncachefactory' in key:
         print key
         del sys.modules[key]
 
@@ -46,8 +46,7 @@ def create_ncloth_test_scene():
     mel.eval('createNConstraint("pointToSurface", "")')
 
 
-create_ncloth_test_scene()
-
-
-import ncachemanager
-ncachemanager.launch()
+if __name__ == "__main__":
+    create_ncloth_test_scene()
+    import ncachefactory
+    ncachefactory.launch()
