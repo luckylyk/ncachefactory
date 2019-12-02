@@ -420,6 +420,10 @@ class SwitcherDelegate(QtWidgets.QStyledItemDelegate):
 
 class VisibilityDelegate(SwitcherDelegate):
 
+    def __init__(self, table):
+        super(VisibilityDelegate, self).__init__(table)
+        self.last_dynamic_node_set = None
+
     def createEditor(self, _, __, index):
         dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
         state = not dynamic_node.visible
@@ -427,14 +431,23 @@ class VisibilityDelegate(SwitcherDelegate):
         return
 
     def get_icon(self, dynamic_node):
+        if dynamic_node != self.last_dynamic_node_set:
+            self.last_dynamic_node_set = dynamic_node
+            self.icons = None
+
         if self.icons is None:
             self.icons = (
                 get_icon(dynamic_node.ICONS['hidden']),
                 get_icon(dynamic_node.ICONS['visible']))
+
         return self.icons[bool(dynamic_node.visible)]
 
 
 class EnableDelegate(SwitcherDelegate):
+
+    def __init__(self, table):
+        super(EnableDelegate, self).__init__(table)
+        self.last_dynamic_node_set = None
 
     def createEditor(self, _, __, index):
         dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
@@ -442,10 +455,15 @@ class EnableDelegate(SwitcherDelegate):
         return
 
     def get_icon(self, dynamic_node):
+        if dynamic_node != self.last_dynamic_node_set:
+            self.last_dynamic_node_set = dynamic_node
+            self.icons = None
+
         if self.icons is None:
             self.icons = (
                 get_icon(dynamic_node.ICONS['off']),
                 get_icon(dynamic_node.ICONS['on']))
+
         return self.icons[bool(dynamic_node.enable)]
 
 

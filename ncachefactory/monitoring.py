@@ -9,6 +9,7 @@ from ncachefactory.ncache import list_connected_cachefiles
 from ncachefactory.versioning import (
     get_log_filename, list_tmp_jpeg_under_cacheversion)
 
+
 WINDOW_TITLE = "Batch cacher monitoring"
 
 

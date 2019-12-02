@@ -22,7 +22,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(WorkspaceCacheversionsExplorer, self).__init__(parent)
-        self.setFixedHeight(350)
+        self.setFixedHeight(385)
         self.cacheversion = None
         self.nodes = None
 
@@ -103,6 +103,18 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.layout.addWidget(self.show_playblasts)
         self.setEnabled(False)
 
+    def update_ui_states(self):
+        contains_clothnodes = bool(cmds.ls(self.nodes, type='nCloth'))
+        self.plug_input.setEnabled(contains_clothnodes)
+        self.plug_rest.setEnabled(contains_clothnodes)
+        self.recover_input.setEnabled(contains_clothnodes)
+        self.apply_maps.setEnabled(contains_clothnodes)
+        if self.cacheversion is not None:
+            playblasts_available = bool(self.cacheversion.infos['playblasts'])
+            self.show_playblasts.setEnabled(playblasts_available)
+        else:
+            self.show_playblasts.setEnabled(False)
+
     def set_nodes_and_cacheversions(self, nodes=None, cacheversions=None):
         self.nodes = nodes
         if cacheversions is None or nodes is None:
@@ -118,6 +130,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
             return
         index = self.version_selector_model.cacheversions.index(cacheversions[0])
         self.version_selector.setCurrentIndex(index)
+        self.update_ui_states()
 
     def _call_index_changed(self, index):
         if not self.version_selector_model.cacheversions:
@@ -126,6 +139,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
             return
         self.cacheversion = self.version_selector_model.cacheversions[index]
         self.cacheversion_infos.set_cacheversion(self.cacheversion)
+        self.update_ui_states()
 
     def get_connectable_nodes(self):
         nodes = []
@@ -146,18 +160,22 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         connect_cacheversion(self.cacheversion, nodes=nodes, behavior=2)
 
     def _call_plug_input(self):
-        plug_cacheversion_to_inputmesh(self.cacheversion, self.nodes)
+        nodes = cmds.ls(self.nodes, type='nCloth')
+        plug_cacheversion_to_inputmesh(self.cacheversion, nodes)
 
     def _call_plug_rest(self):
-        plug_cacheversion_to_restshape(self.cacheversion, self.nodes)
+        nodes = cmds.ls(self.nodes, type='nCloth')
+        plug_cacheversion_to_restshape(self.cacheversion, nodes)
 
     def _call_recover_input(self):
-        recover_original_inputmesh(self.nodes)
+        nodes = cmds.ls(self.nodes, type='nCloth')
+        recover_original_inputmesh(nodes)
 
     def _call_apply_settings(self):
         apply_settings(self.cacheversion, self.nodes)
 
     def _call_apply_maps(self):
+        nodes = cmds.ls(self.nodes, type='nCloth')
         set_pervertex_maps(self.nodes, self.cacheversion.directory)
 
     def _call_show_playblasts(self):
