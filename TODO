@@ -14,8 +14,10 @@ BUGS:
     - fix nhair connections
 
 BASIC CONFORT
+    - set the cache button disable in batch cacher if no scene or attribute override are specified
+    - no cache if mayapy is wrong
     - set sortable the cacheversions in the explorer panel
-    - Save the playblast viewport options
+    - Save the playblast viewport options into maya preferences
 
     __ done __
     - set viewport batch text relative to focal
