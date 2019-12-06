@@ -32,7 +32,7 @@ from ncachefactory.timecallbacks import (
 from ncachefactory.monitoring import MultiCacheMonitor
 
 
-WINDOW_TITLE = "NCache Manager"
+WINDOW_TITLE = "NCache Factory"
 
 
 class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
