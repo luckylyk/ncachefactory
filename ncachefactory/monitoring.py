@@ -32,12 +32,13 @@ class MultiCacheMonitor(QtWidgets.QWidget):
     def tab_closed(self, index):
         self.tab_widget.widget(index).kill()
         self.tab_widget.removeTab(index)
-        self.job_panels.remove(index)
+        self.job_panels.pop(index)
 
     def add_job(self, cacheversion, process):
         job_panel = JobPanel(cacheversion, process)
         self.job_panels.append(job_panel)
         self.tab_widget.addTab(job_panel, cacheversion.name)
+        self.tab_widget.setCurrentIndex(len(self.job_panels) - 1)
 
     def showEvent(self, *events):
         super(MultiCacheMonitor, self).showEvent(*events)

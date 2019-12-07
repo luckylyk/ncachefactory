@@ -49,6 +49,7 @@ class BatchCacher(QtWidgets.QWidget):
         self.toolbar.addAction(self.flash)
         self.toolbar.addAction(self.remove)
         self.cache = QtWidgets.QPushButton('Cache')
+        self.cache.setEnabled(False)
         self.cache.released.connect(self.sendMultiCacheRequested.emit)
 
         self.menu_layout = QtWidgets.QHBoxLayout()
@@ -128,9 +129,11 @@ class BatchCacher(QtWidgets.QWidget):
         for scene in list_flashed_scenes(self.workspace):
             job = {'name': FLASHCACHE_NAME, 'comment': '', 'scene': scene}
             self.model.add_job(job)
+        self.cache.setEnabled(bool(self.model.jobs))
 
     def clear(self):
         self.model.clear_jobs()
+        self.cache.setEnabled(False)
 
     @property
     def jobs(self):
@@ -153,6 +156,7 @@ class BatchCacher(QtWidgets.QWidget):
         for job in jobs:
             self.model.remove_job(job)
             os.remove(job[2])
+        self.cache.setEnabled(bool(self.model.jobs))
 
     def _call_flash_scene(self):
         if self.workspace is None:

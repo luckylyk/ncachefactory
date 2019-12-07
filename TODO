@@ -1,4 +1,4 @@
-todo list created from commit 60
+mtodo list created from commit 60
 
 BUGS:
   - timing calculation per frame, look fucked
@@ -17,21 +17,21 @@ BUGS:
 
 
 BASIC CONFORT
-  - set sortable the cacheversions in the explorer panel
-  - Save the playblast viewport options
-  - set interactive state for cache plug buttons, and show playblast button too
+    - set sortable the cacheversions in the explorer panel
+    - Save the playblast viewport options into maya preferences
 
-  __ done __
-  - set viewport batch text relative to focal
-  - Add values for wedging check before execute it
-  - fix iterations count. that currently doesnt count first and last value.
-    3 iteration == 5 caches, that sounds weird for artists
-  - allow to type manually the values to wedge
-  - connect cache from monitor
-  - during interactive cache, if the cache is connection to the scene,
-    it doesn't take interactively the frame cached after connection.
-    Just force the all range in the ncache node to force the full range.
-
+    __ done __
+    - no cache if mayapy path is wrong
+    - set the cache button disable in batch cacher if no scene or attribute override are specified
+    - set viewport batch text relative to focal
+    - Add values for wedging check before execute it
+    - fix iterations count. that currently doesnt count first and last value.
+      3 iteration == 5 caches, that sounds weird for artists
+    - allow to type manually the values to wedge
+    - connect cache from monitor
+    - during interactive cache, if the cache is connection to the scene,
+      it doesn't take interactively the frame cached after connection.
+      Just force the all range in the ncache node to force the full range.
 
 MAIN FEATURES
   - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor

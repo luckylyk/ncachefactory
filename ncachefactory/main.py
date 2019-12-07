@@ -32,7 +32,7 @@ from ncachefactory.timecallbacks import (
 from ncachefactory.monitoring import MultiCacheMonitor
 
 
-WINDOW_TITLE = "NCache Manager"
+WINDOW_TITLE = "NCache Factory"
 
 
 class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
@@ -298,7 +298,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def send_multi_cache(self):
         if self.workspace is None:
-            None
+            return cmds.warning("invalid workspace set")
+        mayapy = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
+        if os.path.exists(mayapy) is False:
+            return cmds.warning("invalid mayapy path set")
+            
         start_frame, end_frame = self.cacheoptions.range
         cacheversions, processes = send_batch_ncache_jobs(
             workspace=self.workspace,
