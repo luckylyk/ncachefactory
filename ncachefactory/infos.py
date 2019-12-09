@@ -22,7 +22,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(WorkspaceCacheversionsExplorer, self).__init__(parent)
-        self.setFixedHeight(385)
+        self.setFixedHeight(420)
         self.cacheversion = None
         self.nodes = None
 
@@ -221,7 +221,7 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         self.name.setEnabled(False)
         self.name.textEdited.connect(self._call_name_changed)
         self.comment = QtWidgets.QTextEdit()
-        self.comment.setFixedHeight(40)
+        self.comment.setFixedHeight(50)
         self.comment.setEnabled(False)
         self.comment.textChanged.connect(self._call_comment_changed)
         self.nodes_table_model = NodeInfosTableModel()

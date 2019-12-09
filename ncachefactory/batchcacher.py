@@ -7,7 +7,7 @@ from ncachefactory.attributes import (
     list_wedgable_attributes, list_channelbox_highlited_plugs)
 from ncachefactory.batch import (
     clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
-    is_temp_folder_empty, FLASHCACHE_NAME, WEDGINGCACHE_NAME)
+    is_temp_folder_empty, BATCHCACHE_NAME, WEDGINGCACHE_NAME)
 from ncachefactory.optionvars import (
     EXPLOSION_TOLERENCE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
     TIMELIMIT_ENABLED_OPTIONVAR, TIMELIMIT_OPTIONVAR, ensure_optionvars_exists)
@@ -32,6 +32,7 @@ class BatchCacher(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(BatchCacher, self).__init__(parent)
+        self.setFixedHeight(350)
         self.workspace = None
         self.selection_model = None
         self.model = MultiCacheTableModel()
@@ -66,14 +67,17 @@ class BatchCacher(QtWidgets.QWidget):
         self._wedging_name = QtWidgets.QLineEdit()
         self._wedging_name.setText(WEDGINGCACHE_NAME)
         self._attribute = QtWidgets.QLineEdit()
-        self._pick = QtWidgets.QPushButton("P")
+        self._pick = QtWidgets.QPushButton(get_icon("pipette.png"), "")
+        self._pick.setToolTip("pick selected channel in channel editor")
         self._pick.setFixedSize(18, 18)
         self._pick.released.connect(self._call_pick_attribute)
-        self._find = QtWidgets.QPushButton("F")
+        self._find = QtWidgets.QPushButton(get_icon("magnifyingglass.png"), "")
+        self._find.setToolTip("find attribute in selection")
         self._find.setFixedSize(18, 18)
         self._find.released.connect(self._call_find_attribute)
         self._values =  QtWidgets.QLineEdit()
-        self._values_builder = QtWidgets.QPushButton("B")
+        self._values_builder = QtWidgets.QPushButton(get_icon("hammer.png"), "")
+        self._values_builder.setToolTip("build value list")
         self._values_builder.setFixedSize(18, 18)
         self._values_builder.released.connect(self._call_values_builder)
 
@@ -127,7 +131,7 @@ class BatchCacher(QtWidgets.QWidget):
             clean_batch_temp_folder(workspace)
             return
         for scene in list_flashed_scenes(self.workspace):
-            job = {'name': FLASHCACHE_NAME, 'comment': '', 'scene': scene}
+            job = {'name': BATCHCACHE_NAME, 'comment': '', 'scene': scene}
             self.model.add_job(job)
         self.cache.setEnabled(bool(self.model.jobs))
 
@@ -153,17 +157,20 @@ class BatchCacher(QtWidgets.QWidget):
 
     def _call_remove_selected_jobs(self):
         jobs = self.table.selected_jobs
+        if jobs is None:
+            return
         for job in jobs:
             self.model.remove_job(job)
-            os.remove(job[2])
+            os.remove(job['scene'])
         self.cache.setEnabled(bool(self.model.jobs))
 
     def _call_flash_scene(self):
         if self.workspace is None:
             return
         scene = flash_current_scene(self.workspace)
-        job = {'name': FLASHCACHE_NAME, 'comment': '', 'scene': scene}
+        job = {'name': BATCHCACHE_NAME, 'comment': '', 'scene': scene}
         self.model.add_job(job)
+        self.cache.setEnabled(bool(self.model.jobs))
 
     def _call_find_attribute(self):
         dialog = AttributePicker()
@@ -303,7 +310,7 @@ def get_clean_tempfile_confirmation_dialog():
     buttons = QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
     result = QtWidgets.QMessageBox.question(
         None,
-        'Exist flashed scene',
+        'flashed scene exist',
         message,
         buttons,
         QtWidgets.QMessageBox.Yes)

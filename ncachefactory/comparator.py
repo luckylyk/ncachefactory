@@ -16,6 +16,7 @@ class ComparisonWidget(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ComparisonWidget, self).__init__(parent)
         self.setWindowTitle(WINDOW_TITLE)
+        self.setFixedHeight(200)
 
         self._callbacks = []
         self.node = None

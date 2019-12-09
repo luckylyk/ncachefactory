@@ -1,11 +1,14 @@
 mtodo list created from commit 60
 
+
 BUGS:
   - timing calculation per frame, look fucked
   - Adapt geo text to cam ratio
-  - Node table keep wrong icon
+  - Fix panel saved visibility
+  - unlock attributes before setAttr and relock
 
   __ done __
+  - Node table keep wrong icon in memory
   - fix workspace not well recognized
   - blast in mayapy doesn't support the ornaments. Force disabling the option in mayapy
   - subprocess NEW_CONSOLE doesn't work under KDE/linux
@@ -17,24 +20,29 @@ BUGS:
 
 
 BASIC CONFORT
-    - set sortable the cacheversions in the explorer panel
-    - Save the playblast viewport options into maya preferences
+  - set sortable the cacheversions in the explorer panel
 
-    __ done __
-    - no cache if mayapy path is wrong
-    - set the cache button disable in batch cacher if no scene or attribute override are specified
-    - set viewport batch text relative to focal
-    - Add values for wedging check before execute it
-    - fix iterations count. that currently doesnt count first and last value.
-      3 iteration == 5 caches, that sounds weird for artists
-    - allow to type manually the values to wedge
-    - connect cache from monitor
-    - during interactive cache, if the cache is connection to the scene,
-      it doesn't take interactively the frame cached after connection.
-      Just force the all range in the ncache node to force the full range.
+  __ done __
+  - Fix sizes
+  - dock widget automatically on right panel
+  - Add icons for attribute pick buttons
+  - Save the playblast viewport options into maya preferences
+  - no cache if mayapy path is wrong
+  - set the cache button disable in batch cacher if no scene or attribute override are specified
+  - set viewport batch text relative to focal
+  - Add values for wedging check before execute it
+  - fix iterations count. that currently doesnt count first and last value.
+    3 iteration == 5 caches, that sounds weird for artists
+  - allow to type manually the values to wedge
+  - connect cache from monitor
+  - during interactive cache, if the cache is connection to the scene,
+    it doesn't take interactively the frame cached after connection.
+    Just force the all range in the ncache node to force the full range.
+
 
 MAIN FEATURES
   - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor
+  - blend attribute value button is still not implemented
 
   __ done __
   - For mayapy caches, create a geometry text linked to the camera to fixe the issue.
@@ -45,5 +53,7 @@ MAIN FEATURES
 
 
 OTHER
+  - Set tooltip on every qpushbutton
   - Update readme with new features
   - Remove pymel usage to optimise nCacheFactory loading
+  - create HTML documentation

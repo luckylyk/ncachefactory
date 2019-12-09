@@ -9,6 +9,7 @@ CACHE_BEHAVIOR_OPTIONVAR = 'ncachefactory_behavior'
 VERBOSE_OPTIONVAR = 'ncachefactory_verbose'
 RECORD_PLAYBLAST_OPTIONVAR = 'ncachefactory_record_playblast'
 PLAYBLAST_RESOLUTION_OPTIONVAR = 'ncachefactory_resolution_playblast'
+PLAYBLAST_VIEWPORT_OPTIONVAR = 'ncachefactory_playblast_viewport'
 EXPLOSION_DETECTION_OPTIONVAR = 'ncachefactory_explosion_detection'
 EXPLOSION_TOLERENCE_OPTIONVAR = 'ncachefactory_explosion_tolerence'
 TIMELIMIT_ENABLED_OPTIONVAR = 'ncachefactory_timelimit_enabled'
@@ -37,6 +38,7 @@ OPTIONVARS = {
     FFMPEG_PATH_OPTIONVAR: '',
     MEDIAPLAYER_PATH_OPTIONVAR: '',
     MAYAPY_PATH_OPTIONVAR: '',
+    PLAYBLAST_VIEWPORT_OPTIONVAR: '0 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0',
     MULTICACHE_EXP_OPTIONVAR: 0,
     CACHEOPTIONS_EXP_OPTIONVAR: 0,
     COMPARISON_EXP_OPTIONVAR: 0,

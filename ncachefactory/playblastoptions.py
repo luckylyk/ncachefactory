@@ -4,7 +4,8 @@ from maya import cmds
 from ncachefactory.qtutils import get_icon
 from ncachefactory.playblast import list_render_filter_options
 from ncachefactory.optionvars import (
-    RECORD_PLAYBLAST_OPTIONVAR, PLAYBLAST_RESOLUTION_OPTIONVAR)
+    RECORD_PLAYBLAST_OPTIONVAR, PLAYBLAST_RESOLUTION_OPTIONVAR,
+    PLAYBLAST_VIEWPORT_OPTIONVAR)
 
 RESOLUTION_PRESETS = {
     "VGA 4:3": (640,480),
@@ -39,10 +40,12 @@ RESOLUTION_PRESETS = {
 class PlayblastOptions(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(PlayblastOptions, self).__init__(parent=parent)
+        self.setFixedHeight(250)
         self._record_playblast = QtWidgets.QCheckBox('record playblast')
         self._camera = CamerasCombo()
         self._resolution = ResolutionSelecter()
         self._viewport_options = DisplayOptions()
+        self._viewport_options.optionModified.connect(self.save_states)
         self._viewport_optios_scroll_area = QtWidgets.QScrollArea()
         self._viewport_optios_scroll_area.setWidget(self._viewport_options)
         self.layout = QtWidgets.QFormLayout(self)
@@ -75,6 +78,12 @@ class PlayblastOptions(QtWidgets.QWidget):
         resolution = "x".join(map(str, self._resolution.resolution))
         cmds.optionVar(stringValue=[PLAYBLAST_RESOLUTION_OPTIONVAR, resolution])
 
+        opt = ["1" if v is True else "0" for v in self._viewport_options.values]
+        print opt
+        opt = " ".join(opt)
+        print opt
+        cmds.optionVar(stringValue=[PLAYBLAST_VIEWPORT_OPTIONVAR, opt])
+
     def select_ffmpeg_path(self):
         ffmpeg = QtWidgets.QFileDialog.getOpenFileName()
         if not ffmpeg:
@@ -88,8 +97,7 @@ class PlayblastOptions(QtWidgets.QWidget):
             'viewport_display_values': self._viewport_options.values,
             'width': self._resolution.resolution[0],
             'height': self._resolution.resolution[1],
-            'camera': self._camera.currentText() # this option need a combo box
-        }
+            'camera': self._camera.currentText()}
 
     @property
     def record_playblast(self):
@@ -168,12 +176,15 @@ class ResolutionSelecter(QtWidgets.QWidget):
 
 
 class DisplayOptions(QtWidgets.QWidget):
+    optionModified = QtCore.Signal()
+
     def __init__(self, parent=None):
         super(DisplayOptions, self).__init__(parent=parent)
         self.layout = QtWidgets.QVBoxLayout(self)
         self.checkboxes = []
         for option, state in list_render_filter_options():
             checkbox = QtWidgets.QCheckBox(option)
+            checkbox.released.connect(self.optionModified.emit)
             checkbox.option = option
             checkbox.setChecked(bool(state))
             self.checkboxes.append(checkbox)

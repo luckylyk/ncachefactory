@@ -32,6 +32,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(DynamicNodesTableWidget, self).__init__(parent)
+        self.setFixedHeight(275)
         self._workspace = None
         self._active_selection_callbacks = True
         self._callbacks = []

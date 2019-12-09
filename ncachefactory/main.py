@@ -10,7 +10,7 @@ from ncachefactory.nodetable import DynamicNodesTableWidget
 from ncachefactory.comparator import ComparisonWidget
 from ncachefactory.ncache import DYNAMIC_NODES
 from ncachefactory.cacheoptions import CacheOptions
-from ncachefactory.qtutils import get_icon, get_maya_windows
+from ncachefactory.qtutils import get_icon, dock_window_to_tab
 from ncachefactory.playblastoptions import PlayblastOptions
 from ncachefactory.cachemanager import (
     filter_connected_cacheversions, create_and_record_cacheversion,
@@ -64,58 +64,73 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         self.cacheoptions = CacheOptions()
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
-        self.cacheoptions_expander.clicked.connect(self.adjust_size)
         self.batchcacher = BatchCacher()
         self.batchcacher.sendMultiCacheRequested.connect(self.send_multi_cache)
         self.batchcacher.sendWedgingCacheRequested.connect(self.send_wedging_cache)
         self.batchcacher_expander = Expander('Batch Cacher', self.batchcacher)
-        self.batchcacher_expander.clicked.connect(self.adjust_size)
         self.playblast = PlayblastOptions()
         self.playblast_expander = Expander("Playblast", self.playblast)
-        self.playblast_expander.clicked.connect(self.adjust_size)
         self.comparison = ComparisonWidget()
         self.comparison.setFixedHeight(250)
         self.comparison_expander = Expander("Comparisons", self.comparison)
-        self.comparison_expander.clicked.connect(self.adjust_size)
         self.versions = WorkspaceCacheversionsExplorer()
         self.versions.infosModified.connect(self.nodetable.update_layout)
         self.versions.cacheApplied.connect(self.nodetable.update_layout)
         text = "Available Versions"
         self.versions_expander = Expander(text, self.versions)
-        self.versions_expander.clicked.connect(self.adjust_size)
 
         self.workspace_widget.workspaceSet.connect(self.set_workspace)
         self.nodetable.selectionIsChanged.connect(self.selection_changed)
 
-        self.layout = QtWidgets.QVBoxLayout(self)
+        self.main_widget = QtWidgets.QWidget()
+
+        self.layout = QtWidgets.QVBoxLayout(self.main_widget)
         self.layout.setSpacing(0)
         self.layout.addWidget(self.workspace_widget)
         self.layout.setSpacing(4)
         self.layout.addWidget(self.nodetable)
         self.layout.addWidget(self.senders)
         self.layout.addSpacing(8)
+        self.layout.addWidget(self.versions_expander)
+        self.layout.addWidget(self.versions)
+        self.layout.addSpacing(0)
         self.layout.addWidget(self.batchcacher_expander)
         self.layout.addWidget(self.batchcacher)
         self.layout.addSpacing(0)
         self.layout.addWidget(self.cacheoptions_expander)
         self.layout.addWidget(self.cacheoptions)
         self.layout.addSpacing(0)
-        self.layout.addWidget(self.playblast_expander)
-        self.layout.addWidget(self.playblast)
-        self.layout.addSpacing(0)
         self.layout.addWidget(self.comparison_expander)
         self.layout.addWidget(self.comparison)
         self.layout.addSpacing(0)
-        self.layout.addWidget(self.versions_expander)
-        self.layout.addWidget(self.versions)
+        self.layout.addWidget(self.playblast_expander)
+        self.layout.addWidget(self.playblast)
+        self.layout.addStretch(1)
 
         self.menubar = QtWidgets.QMenuBar(self)
-        self.menufile = QtWidgets.QMenu('edit', self.menubar)
+        self.menufile = QtWidgets.QMenu('misc', self.menubar)
         self.menubar.addMenu(self.menufile)
-        self.editpath = QtWidgets.QAction('edit external path', self.menufile)
-        self.menufile.addAction(self.editpath)
+        self.editpath = QtWidgets.QAction('dependencies path', self.menufile)
         self.editpath.triggered.connect(self.pathoptions.show)
+        self.menufile.addAction(self.editpath)
+        self.show_monitor = QtWidgets.QAction('batch cache monitor', self.menufile)
+        self.menufile.addAction(self.show_monitor)
+        self.show_monitor.triggered.connect(self.batch_monitor.show)
+        self.dock_to_tab = QtWidgets.QAction('dock to right', self.menufile)
+        self.menufile.addAction(self.dock_to_tab)
+        self.dock_to_tab.triggered.connect(self._call_dock_to_right)
         self.layout.setMenuBar(self.menubar)
+
+        self.scrollarea = QtWidgets.QScrollArea()
+        self.scrollarea.setFocusPolicy(QtCore.Qt.NoFocus)
+        self.scrollarea.setWidget(self.main_widget)
+        self.scrollarea.setWidgetResizable(True)
+        self.scrollarea.setMinimumWidth(420)
+        self.scrollarea.setAlignment(QtCore.Qt.AlignCenter)
+
+        self.main_layout = QtWidgets.QVBoxLayout(self)
+        self.main_layout.setContentsMargins(0, 0, 0, 0)
+        self.main_layout.addWidget(self.scrollarea)
 
         self.set_workspace(get_default_workspace())
 
@@ -123,10 +138,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         super(NCacheManager, self).show(**kwargs)
         self.apply_optionvars()
         self.nodetable.show()
-        self.adjust_size()
 
-    def adjust_size(self, *unused_signals_args):
-        self.adjustSize()
+    def _call_dock_to_right(self):
+        dock_window_to_tab(self, "NEXDockControl")
 
     def closeEvent(self, e):
         super(NCacheManager, self).closeEvent(e)
@@ -302,7 +316,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         mayapy = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
         if os.path.exists(mayapy) is False:
             return cmds.warning("invalid mayapy path set")
-            
+
         start_frame, end_frame = self.cacheoptions.range
         cacheversions, processes = send_batch_ncache_jobs(
             workspace=self.workspace,
@@ -324,7 +338,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def send_wedging_cache(self):
         if self.workspace is None:
-            None
+            return cmds.warning("invalid workspace set")
+        mayapy = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
+        if os.path.exists(mayapy) is False:
+            return cmds.warning("invalid mayapy path set")
+
         start_frame, end_frame = self.cacheoptions.range
         cacheversions, processes = send_wedging_ncaches_jobs(
             workspace=self.workspace,

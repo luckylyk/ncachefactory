@@ -9,15 +9,15 @@ from ncachefactory.versioning import create_cacheversion
 
 
 _CURRENTDIR = os.path.dirname(os.path.realpath(__file__))
-_SCRIPT_FILENAME = "record_in_cacheversion.py"
+_SCRIPT_FILENAME = 'record_in_cacheversion.py'
 _SCRIPT_FILEPATH = os.path.join(_CURRENTDIR, '..', 'script', _SCRIPT_FILENAME)
 
-FLASHCACHE_NAME = 'flashed cache'
+BATCHCACHE_NAME = 'batch cache'
 WEDGINGCACHE_NAME = 'wedging cache'
 NCACHESCENE_FILENAME = 'scene.ma'
-TEMPFOLDER_NAME = 'flash_scenes'
+TEMPFOLDER_NAME = 'on_queue_scenes'
 WEDGINGFOLDER_NAME = 'wedging_scenes'
-FLASHSCENE_NAME = 'flash_scene_{}.ma'
+BATCHSCENE_NAME = 'batch_scene_{}.ma'
 WEDGINGSCENE_NAME = 'scene_{}.ma'
 WEDGING_COMMENT_TEMPLATE = """\
 Wedging Cache:
@@ -61,7 +61,7 @@ def save_scene_for_batch(workspace, scenename, folder):
 
 
 def flash_current_scene(workspace):
-    return save_scene_for_batch(workspace, FLASHSCENE_NAME, TEMPFOLDER_NAME)
+    return save_scene_for_batch(workspace, BATCHSCENE_NAME, TEMPFOLDER_NAME)
 
 
 def send_batch_ncache_jobs(

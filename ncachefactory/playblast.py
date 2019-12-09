@@ -1,6 +1,7 @@
 import os
 import re
 import shutil
+import logging
 import subprocess
 from functools import partial
 
@@ -8,7 +9,7 @@ from maya import cmds
 import pymel.core as pm
 
 from ncachefactory.timecallbacks import add_to_time_callback, remove_from_time_callback
-from ncachefactory.optionvars import FFMPEG_PATH_OPTIONVAR
+from ncachefactory.optionvars import FFMPEG_PATH_OPTIONVAR, PLAYBLAST_VIEWPORT_OPTIONVAR
 
 
 OUTPUT_RENDER_FILENAME = 'ncache_playblast'
@@ -114,7 +115,9 @@ def list_render_filter_options():
     The function return a list of tuple: [("camera", True), ("mesh", True), ..]
     """
     keys = cmds.getAttr(RENDER_GLOBALS_FILTERNAMES)
-    values = cmds.getAttr(RENDER_GLOBALS_FILTERVALUES)
+    values = cmds.optionVar(query=PLAYBLAST_VIEWPORT_OPTIONVAR)
+    logging.info(values)
+    values = [bool(int(value)) for value in values.split(" ")]
     return zip(keys, values)
 
 
