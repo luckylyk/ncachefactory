@@ -9,7 +9,9 @@ from maya import cmds
 import pymel.core as pm
 
 from ncachefactory.timecallbacks import add_to_time_callback, remove_from_time_callback
-from ncachefactory.optionvars import FFMPEG_PATH_OPTIONVAR, PLAYBLAST_VIEWPORT_OPTIONVAR
+from ncachefactory.optionvars import (
+        FFMPEG_PATH_OPTIONVAR, PLAYBLAST_VIEWPORT_OPTIONVAR,
+        ensure_optionvars_exists)
 
 
 OUTPUT_RENDER_FILENAME = 'ncache_playblast'
@@ -114,6 +116,7 @@ def list_render_filter_options():
     renderer. e.i. Nurbs Curves, Camera, etc ...
     The function return a list of tuple: [("camera", True), ("mesh", True), ..]
     """
+    ensure_optionvars_exists()
     keys = cmds.getAttr(RENDER_GLOBALS_FILTERNAMES)
     values = cmds.optionVar(query=PLAYBLAST_VIEWPORT_OPTIONVAR)
     logging.info(values)
