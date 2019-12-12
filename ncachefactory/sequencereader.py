@@ -44,6 +44,12 @@ class SequenceImageReader(QtWidgets.QWidget):
         self.image.name = str(value)
         self.image.set_image(self._pixmaps[self.slider.position])
 
+    def set_next_image(self):
+        if self.slider.value == self.slider.maximum_settable_value:
+            self.slider.value = 0
+        else:
+            self.slider.value += 1
+
     def kill(self):
         self.image.iskilled = True
         self.image.repaint()

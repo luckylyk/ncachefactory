@@ -129,6 +129,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.scrollarea.setWidgetResizable(True)
         self.scrollarea.setMinimumWidth(420)
         self.scrollarea.setAlignment(QtCore.Qt.AlignCenter)
+        self.scrollarea.setFrameShape(QtWidgets.QFrame.NoFrame)
 
         self.main_layout = QtWidgets.QVBoxLayout(self)
         self.main_layout.setContentsMargins(0, 0, 0, 0)

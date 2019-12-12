@@ -119,7 +119,6 @@ def list_render_filter_options():
     ensure_optionvars_exists()
     keys = cmds.getAttr(RENDER_GLOBALS_FILTERNAMES)
     values = cmds.optionVar(query=PLAYBLAST_VIEWPORT_OPTIONVAR)
-    logging.info(values)
     values = [bool(int(value)) for value in values.split(" ")]
     return zip(keys, values)
 

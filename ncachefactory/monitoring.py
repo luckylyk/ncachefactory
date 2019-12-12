@@ -27,7 +27,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
         self.layout.addWidget(self.tab_widget)
 
         self.timer = QtCore.QBasicTimer()
-        self.timer.start(1000, self)
+        self.updater = wooden_legged_centipede(24)
 
     def tab_closed(self, index):
         self.tab_widget.widget(index).kill()
@@ -42,7 +42,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
 
     def showEvent(self, *events):
         super(MultiCacheMonitor, self).showEvent(*events)
-        self.timer.start(1000, self)
+        self.timer.start(24, self)
 
     def closeEvent(self, *events):
         super(MultiCacheMonitor, self).closeEvent(*events)
@@ -56,8 +56,14 @@ class MultiCacheMonitor(QtWidgets.QWidget):
                     job_panel.kill()
 
     def timerEvent(self, event):
-        for job_panel in self.job_panels:
-            job_panel.update()
+        current_job_panel = self.job_panels[self.tab_widget.currentIndex()]
+        if current_job_panel.is_playing:
+            current_job_panel.images.set_next_image()
+            return
+
+        if next(self.updater) is True:
+            for job_panel in self.job_panels:
+                job_panel.update()
 
 
 class Monitor(QtWidgets.QWidget):
@@ -84,6 +90,7 @@ class JobPanel(QtWidgets.QWidget):
     def __init__(self, cacheversion, process, parent=None):
         super(JobPanel, self).__init__(parent)
         self.finished = False
+        self.is_playing = False
         self.process = process
         self.cacheversion = cacheversion
         self.logfile = get_log_filename(cacheversion)
@@ -98,6 +105,9 @@ class JobPanel(QtWidgets.QWidget):
         self.connect_cache = QtWidgets.QPushButton('connect cache')
         self.connect_cache.released.connect(self._call_connect_cache)
         self.connect_cache.setEnabled(False)
+        self.playstop = QtWidgets.QPushButton("play")
+        self.playstop.setEnabled(False)
+        self.playstop.released.connect(self._call_playstop)
         self.log_widget = QtWidgets.QWidget()
         self.log_layout = QtWidgets.QVBoxLayout(self.log_widget)
         self.log_layout.setContentsMargins(0, 0, 0, 0)
@@ -105,6 +115,7 @@ class JobPanel(QtWidgets.QWidget):
         self.log_layout.addWidget(self.log)
         self.log_layout.addWidget(self.connect_cache)
         self.log_layout.addWidget(self.kill_button)
+        self.log_layout.addWidget(self.playstop)
 
         self.splitter = QtWidgets.QSplitter()
         self.splitter.addWidget(self.images)
@@ -131,9 +142,13 @@ class JobPanel(QtWidgets.QWidget):
                 self.imagepath.append(jpeg)
                 self.images.add_pixmap(pixmap)
 
-        if jpegs and self.connect_cache.isEnabled() is False:
+        if jpegs:
             # allow to connect a cache only if at least one frame is cached.
-            self.connect_cache.setEnabled(True)
+            if self.connect_cache.isEnabled() is False:
+                self.connect_cache.setEnabled(True)
+            # allow to set play mode only if at least one frame is cached.
+            if self.playstop.isEnabled() is False :
+                self.playstop.setEnabled(True)
 
         if self.images.isfull() is True:
             self.finished = True
@@ -158,6 +173,10 @@ class JobPanel(QtWidgets.QWidget):
     def _call_kill(self):
         self.kill()
         self.kill_button.setEnabled(False)
+
+    def _call_playstop(self):
+        self.is_playing = not self.is_playing
+        self.playstop.setText("stop" if self.is_playing else "play")
 
     def kill(self):
         if self.finished is True:
@@ -221,3 +240,14 @@ def kill_them_all_confirmation_dialog():
         buttons,
         QtWidgets.QMessageBox.Yes)
     return result == QtWidgets.QMessageBox.Yes
+
+
+def wooden_legged_centipede(leg_number):
+    """this is an iterator which return False everytime except when the cycle
+    reach the specified number, then it returns True, and the cycle restart"""
+    leg = 0
+    while True:
+        if leg > leg_number:
+            leg = 0
+        yield leg == leg_number
+        leg += 1
