@@ -59,8 +59,6 @@ _match = (
     ('mediaplayer_default_path', MEDIAPLAYER_PATH_OPTIONVAR))
 for option, optionvar in match:
     custom_value = cfg.get('default_path', option)
-    if option == 'None':
-        continue
     OPTIONVARS[optionvar] = custom_value
 
 
