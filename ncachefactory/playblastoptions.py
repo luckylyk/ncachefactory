@@ -78,8 +78,8 @@ class PlayblastOptions(QtWidgets.QWidget):
         resolution = "x".join(map(str, self._resolution.resolution))
         cmds.optionVar(stringValue=[PLAYBLAST_RESOLUTION_OPTIONVAR, resolution])
 
-        opt = ["1" if v is True else "0" for v in self._viewport_options.values]*
-        opt = " ".join(opt)*
+        opt = ["1" if v is True else "0" for v in self._viewport_options.values]
+        opt = " ".join(opt)
         cmds.optionVar(stringValue=[PLAYBLAST_VIEWPORT_OPTIONVAR, opt])
 
     def select_ffmpeg_path(self):
