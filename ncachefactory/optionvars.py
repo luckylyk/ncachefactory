@@ -1,8 +1,12 @@
 """
 This module contains all preferences saved available for the ncachefactory app
 """
+import os
+import ConfigParser
 from maya import cmds
 
+_current_dir = os.path.dirname(os.path.realpath(__file__))
+CONFIGFILE_PATH = os.path.join(_current_dir, '..', 'config.cfg')
 
 RANGETYPE_OPTIONVAR = 'ncachefactory_rangetype'
 CACHE_BEHAVIOR_OPTIONVAR = 'ncachefactory_behavior'
@@ -44,6 +48,20 @@ OPTIONVARS = {
     COMPARISON_EXP_OPTIONVAR: 0,
     PLAYBLAST_EXP_OPTIONVAR: 0,
     VERSION_EXP_OPTIONVAR: 0}
+
+
+# set default values from config file
+cfg = ConfigParser.ConfigParser()
+cfg.read(CONFIGFILE_PATH)
+_match = (
+    ('mayapy_default_path', MAYAPY_PATH_OPTIONVAR),
+    ('ffmpeg_default_path', FFMPEG_PATH_OPTIONVAR)
+    ('mediaplayer_default_path', MEDIAPLAYER_PATH_OPTIONVAR))
+for option, optionvar in match:
+    custom_value = cfg.get('default_path', option)
+    if option == 'None':
+        continue
+    OPTIONVARS[optionvar] = custom_value
 
 
 def ensure_optionvars_exists():
