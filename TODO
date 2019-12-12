@@ -4,10 +4,10 @@ mtodo list created from commit 60
 BUGS:
   - timing calculation per frame, look fucked
   - Adapt geo text to cam ratio
-  - Fix panel saved visibilities
   - unlock attributes before setAttr and relock
 
   __ done __
+  - Fix panel saved visibilities
   - fix slider time line after widget resizing
   - Fix the evil fr 150 start frame bug
   - Node table keep wrong icon in memory
