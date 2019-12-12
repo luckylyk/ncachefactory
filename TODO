@@ -43,10 +43,10 @@ BASIC CONFORT
 
 
 MAIN FEATURES
-  - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor
   - blend attribute value button is still not implemented
 
   __ done __
+  - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor
   - For mayapy caches, create a geometry text linked to the camera to fixe the issue.
   - Add text in viewport for rendering (cache name and comment)
   - Make the monitor support to receive new caches and remove some cache
