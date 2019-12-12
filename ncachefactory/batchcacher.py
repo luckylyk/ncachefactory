@@ -108,8 +108,8 @@ class BatchCacher(QtWidgets.QWidget):
         self.wedging_layout.addWidget(self.cache_wedging)
 
         self.tabwidget = QtWidgets.QTabWidget()
-        self.tabwidget.addTab(self.multicache, "Flash scene")
-        self.tabwidget.addTab(self.wedging, "Attribute wedging")
+        self.tabwidget.addTab(self.multicache, "multi scene")
+        self.tabwidget.addTab(self.wedging, "attribute wedging")
 
         self.options = SimulationKillerOptions()
         self.options_layout = QtWidgets.QHBoxLayout()
@@ -305,12 +305,12 @@ class MultiCacheTableModel(QtCore.QAbstractTableModel):
 
 def get_clean_tempfile_confirmation_dialog():
     message = (
-        "Some flashed scenes already exists.\n"
-        "Do you want to fush them ?")
+        "Some old scenes aren't cleaned.\n"
+        "Do you want to flush them ?")
     buttons = QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
     result = QtWidgets.QMessageBox.question(
         None,
-        'flashed scene exist',
+        'old scenes exist',
         message,
         buttons,
         QtWidgets.QMessageBox.Yes)

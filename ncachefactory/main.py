@@ -10,7 +10,7 @@ from ncachefactory.nodetable import DynamicNodesTableWidget
 from ncachefactory.comparator import ComparisonWidget
 from ncachefactory.ncache import DYNAMIC_NODES
 from ncachefactory.cacheoptions import CacheOptions
-from ncachefactory.qtutils import get_icon, dock_window_to_tab
+from ncachefactory.qtutils import get_icon
 from ncachefactory.playblastoptions import PlayblastOptions
 from ncachefactory.cachemanager import (
     filter_connected_cacheversions, create_and_record_cacheversion,
@@ -64,20 +64,25 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
         self.cacheoptions = CacheOptions()
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
+        self.cacheoptions_expander.released.connect(self.save_optionvars)
         self.batchcacher = BatchCacher()
         self.batchcacher.sendMultiCacheRequested.connect(self.send_multi_cache)
         self.batchcacher.sendWedgingCacheRequested.connect(self.send_wedging_cache)
         self.batchcacher_expander = Expander('Batch Cacher', self.batchcacher)
+        self.batchcacher_expander.released.connect(self.save_optionvars)
         self.playblast = PlayblastOptions()
         self.playblast_expander = Expander("Playblast", self.playblast)
+        self.playblast_expander.released.connect(self.save_optionvars)
         self.comparison = ComparisonWidget()
         self.comparison.setFixedHeight(250)
         self.comparison_expander = Expander("Comparisons", self.comparison)
+        self.comparison_expander.released.connect(self.save_optionvars)
         self.versions = WorkspaceCacheversionsExplorer()
         self.versions.infosModified.connect(self.nodetable.update_layout)
         self.versions.cacheApplied.connect(self.nodetable.update_layout)
         text = "Available Versions"
         self.versions_expander = Expander(text, self.versions)
+        self.versions_expander.released.connect(self.save_optionvars)
 
         self.workspace_widget.workspaceSet.connect(self.set_workspace)
         self.nodetable.selectionIsChanged.connect(self.selection_changed)
@@ -116,9 +121,6 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.show_monitor = QtWidgets.QAction('batch cache monitor', self.menufile)
         self.menufile.addAction(self.show_monitor)
         self.show_monitor.triggered.connect(self.batch_monitor.show)
-        self.dock_to_tab = QtWidgets.QAction('dock to right', self.menufile)
-        self.menufile.addAction(self.dock_to_tab)
-        self.dock_to_tab.triggered.connect(self._call_dock_to_right)
         self.layout.setMenuBar(self.menubar)
 
         self.scrollarea = QtWidgets.QScrollArea()
@@ -138,9 +140,6 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         super(NCacheManager, self).show(**kwargs)
         self.apply_optionvars()
         self.nodetable.show()
-
-    def _call_dock_to_right(self):
-        dock_window_to_tab(self, "NEXDockControl")
 
     def closeEvent(self, e):
         super(NCacheManager, self).closeEvent(e)
@@ -194,15 +193,15 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
 
     def save_optionvars(self):
         value = self.batchcacher_expander.state
-        cmds.optionVar(intValue=[MULTICACHE_EXP_OPTIONVAR, value])
+        cmds.optionVar(intValue=[MULTICACHE_EXP_OPTIONVAR, int(value)])
         value = self.cacheoptions_expander.state
-        cmds.optionVar(intValue=[CACHEOPTIONS_EXP_OPTIONVAR, value])
+        cmds.optionVar(intValue=[CACHEOPTIONS_EXP_OPTIONVAR, int(value)])
         value = self.playblast_expander.state
-        cmds.optionVar(intValue=[PLAYBLAST_EXP_OPTIONVAR, value])
+        cmds.optionVar(intValue=[PLAYBLAST_EXP_OPTIONVAR, int(value)])
         value = self.comparison_expander.state
-        cmds.optionVar(intValue=[COMPARISON_EXP_OPTIONVAR, value])
+        cmds.optionVar(intValue=[COMPARISON_EXP_OPTIONVAR, int(value)])
         value = self.versions_expander.state
-        cmds.optionVar(intValue=[VERSION_EXP_OPTIONVAR, value])
+        cmds.optionVar(intValue=[VERSION_EXP_OPTIONVAR, int(value)])
 
     def sizeHint(self):
         return QtCore.QSize(350, 650)

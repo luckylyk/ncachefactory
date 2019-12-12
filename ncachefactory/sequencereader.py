@@ -98,10 +98,10 @@ class SequenceImageSlider(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(SequenceImageSlider, self).__init__(parent)
         self.setFixedHeight(10)
-        self._minimum = 0
-        self._maximum = 150
+        self._minimum = None
+        self._maximum = None
         self._value = 0
-        self._maximum_settable_value = 0
+        self._maximum_settable_value = None
         self._mouse_is_pressed = False
 
         self.filled_rect = None
@@ -155,14 +155,25 @@ class SequenceImageSlider(QtWidgets.QWidget):
         self.repaint()
 
     def compute_shapes(self):
+        values = [self.minimum, self.maximum, self.maximum_settable_value]
+        if all([v is not None for v in values]) is False:
+            return
         self.filled_rect = get_filled_rect(self)
         self.value_line = get_value_line(self)
 
     def mousePressEvent(self, event):
+        if self._value is None:
+            return
         self._mouse_is_pressed = True
         self.set_value_from_point(event.pos())
 
+    def resizeEvent(self, _):
+        self.compute_shapes()
+        self.repaint()
+
     def mouseMoveEvent(self, event):
+        if self._value is None:
+            return
         self._mouse_is_pressed = True
         self.set_value_from_point(event.pos())
 
@@ -180,9 +191,6 @@ class SequenceImageSlider(QtWidgets.QWidget):
         self.compute_shapes()
         self.repaint()
         self.valueChanged.emit(self._value)
-
-    def resizeEvent(self, event):
-        self.repaint()
 
     def paintEvent(self, event):
         if not all([self.filled_rect, self.value_line]):

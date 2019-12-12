@@ -21,8 +21,8 @@ BATCHSCENE_NAME = 'batch_scene_{}.ma'
 WEDGINGSCENE_NAME = 'scene_{}.ma'
 WEDGING_COMMENT_TEMPLATE = """\
 Wedging Cache:
-\tattribute {}
-\tvalue {}"""
+  attribute {}
+  value {}"""
 
 
 def build_unique_scene_name(workspace, scenename_template, foldername):

@@ -4,10 +4,12 @@ mtodo list created from commit 60
 BUGS:
   - timing calculation per frame, look fucked
   - Adapt geo text to cam ratio
-  - Fix panel saved visibility
+  - Fix panel saved visibilities
   - unlock attributes before setAttr and relock
 
   __ done __
+  - fix slider time line after widget resizing
+  - Fix the evil fr 150 start frame bug
   - Node table keep wrong icon in memory
   - fix workspace not well recognized
   - blast in mayapy doesn't support the ornaments. Force disabling the option in mayapy
@@ -52,7 +54,7 @@ MAIN FEATURES
     losing the current caching viewport on each opening.
 
 
-OTHER
+ACCESIBILITY
   - Set tooltip on every qpushbutton
   - Update readme with new features
   - Remove pymel usage to optimise nCacheFactory loading
