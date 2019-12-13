@@ -46,7 +46,7 @@ class SequenceImageReader(QtWidgets.QWidget):
 
     def set_next_image(self):
         if self.slider.value == self.slider.maximum_settable_value:
-            self.slider.value = 0
+            self.slider.value = self.slider.minimum
         else:
             self.slider.value += 1
 
