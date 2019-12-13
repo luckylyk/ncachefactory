@@ -7,6 +7,7 @@ BUGS:
   - unlock attributes before setAttr and relock
 
   __ done __
+  - Fix set next frame on time slider which return to 0 instead of min slider value
   - Fix panel saved visibilities
   - fix slider time line after widget resizing
   - Fix the evil fr 150 start frame bug
@@ -25,7 +26,8 @@ BASIC CONFORT
   - set sortable the cacheversions in the explorer panel
 
   __ done __
-  - Fix sizes
+  - Add config system to allow external edit for custom configuration
+  - Fix widget sizes
   - dock widget automatically on right panel
   - Add icons for attribute pick buttons
   - Save the playblast viewport options into maya preferences

@@ -8,10 +8,11 @@ from functools import partial
 from maya import cmds
 import pymel.core as pm
 
-from ncachefactory.timecallbacks import add_to_time_callback, remove_from_time_callback
+from ncachefactory.timecallbacks import (
+    add_to_time_callback, remove_from_time_callback)
 from ncachefactory.optionvars import (
-        FFMPEG_PATH_OPTIONVAR, PLAYBLAST_VIEWPORT_OPTIONVAR,
-        ensure_optionvars_exists)
+    FFMPEG_PATH_OPTIONVAR, PLAYBLAST_VIEWPORT_OPTIONVAR,
+    ensure_optionvars_exists)
 
 
 OUTPUT_RENDER_FILENAME = 'ncache_playblast'

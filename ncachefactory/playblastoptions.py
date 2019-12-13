@@ -1,11 +1,13 @@
 from functools import partial
+import ConfigParser
 from PySide2 import QtCore, QtWidgets, QtGui
 from maya import cmds
+
 from ncachefactory.qtutils import get_icon
 from ncachefactory.playblast import list_render_filter_options
 from ncachefactory.optionvars import (
     RECORD_PLAYBLAST_OPTIONVAR, PLAYBLAST_RESOLUTION_OPTIONVAR,
-    PLAYBLAST_VIEWPORT_OPTIONVAR)
+    PLAYBLAST_VIEWPORT_OPTIONVAR, CONFIGFILE_PATH)
 
 RESOLUTION_PRESETS = {
     "VGA 4:3": (640,480),
@@ -35,6 +37,13 @@ RESOLUTION_PRESETS = {
     "2160p 4K Ultra HD 16:9": (3840, 2160),
     "DCI 4K 256:135": (4096, 2160)
 }
+
+# add custom resolutions from config file
+cfg = ConfigParser.ConfigParser()
+cfg.read(CONFIGFILE_PATH)
+for parameter, value in cfg.items('custom_resolutions'):
+    key = parameter.replace("_", " ")
+    RESOLUTION_PRESETS[key] = map(int, value.split('x'))
 
 
 class PlayblastOptions(QtWidgets.QWidget):

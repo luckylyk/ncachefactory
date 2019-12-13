@@ -28,7 +28,6 @@ PLAYBLAST_EXP_OPTIONVAR = 'ncachefactory_playblast_expanded'
 COMPARISON_EXP_OPTIONVAR = 'ncachefactory_comparison_expanded'
 VERSION_EXP_OPTIONVAR = 'ncachefactory_version_expanded'
 
-
 OPTIONVARS = {
     RANGETYPE_OPTIONVAR: 0,
     CACHE_BEHAVIOR_OPTIONVAR: 0,
@@ -55,10 +54,10 @@ cfg = ConfigParser.ConfigParser()
 cfg.read(CONFIGFILE_PATH)
 _match = (
     ('mayapy_default_path', MAYAPY_PATH_OPTIONVAR),
-    ('ffmpeg_default_path', FFMPEG_PATH_OPTIONVAR)
+    ('ffmpeg_default_path', FFMPEG_PATH_OPTIONVAR),
     ('mediaplayer_default_path', MEDIAPLAYER_PATH_OPTIONVAR))
-for option, optionvar in match:
-    custom_value = cfg.get('default_path', option)
+for option, optionvar in _match:
+    custom_value = cfg.get('default_paths', option)
     OPTIONVARS[optionvar] = custom_value
 
 
