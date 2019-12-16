@@ -17,7 +17,7 @@ class Slider(QtWidgets.QWidget):
         self.setFixedHeight(SLIDER_HEIGHT)
         self._minimum = None
         self._maximum = None
-        self._value = 0
+        self._value = None
         self._maximum_settable_value = None
         self._mouse_is_pressed = False
 
@@ -30,6 +30,8 @@ class Slider(QtWidgets.QWidget):
 
     @minimum.setter
     def minimum(self, value):
+        if self._value is None:
+	        self._value = value
         self._minimum = value
         self.compute_shapes()
         self.repaint()
