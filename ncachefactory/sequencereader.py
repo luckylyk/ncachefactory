@@ -1,21 +1,24 @@
 
-from math import sqrt, ceil
+from math import ceil, sqrt
 from PySide2 import QtCore, QtWidgets, QtGui
+from ncachefactory.slider import Slider
 
 
-SLIDER_COLORS = {
-    "bordercolor": "#111159",
-    "backgroundcolor.filled": "#25AA33",
-    "backgroundcolor.empty": "#334455",
-    "framelinecolor": "#FFCC33"}
+POINT_RADIUS = 8
+POINT_OFFSET = 4
 NOIMAGE_COLORS = {
     "backgroundcolor": "#777777",
     "bordercolor": "#252525",
     "crosscolor": "#ACACAC",
     "textcolor": "#DFDFCC"}
+HANDLERS_COLORS = {
+    "backgroundcolor": "#00FFFF",
+    "backgroundcolor.hovered": "#AAFFFF",
+    "bordercolor": "#CCCCCC"}
 STATUS_COLORS = {
     "approved": "#99FF99",
     "killed": "red"}
+COMPARATOR_TITLE = "Compare versions"
 
 
 class SequenceImageReader(QtWidgets.QWidget):
@@ -23,7 +26,8 @@ class SequenceImageReader(QtWidgets.QWidget):
         super(SequenceImageReader, self).__init__(parent, QtCore.Qt.Window)
         self._pixmaps = []
         self.image = ImageViewer(name)
-        self.slider = SequenceImageSlider()
+        self.image.set_image(None)
+        self.slider = Slider()
         self.slider.minimum = range_[0]
         self.slider.maximum = range_[1]
         self.slider.value = self.slider.minimum
@@ -88,7 +92,7 @@ class ImageViewer(QtWidgets.QWidget):
         painter.begin(self)
         try:
             if self.image is None:
-                draw_empty_imageview(painter, self)
+                draw_empty_image(painter, self.rect(), self.name)
             else:
                 draw_imageview(painter, self)
         except Exception:
@@ -98,120 +102,232 @@ class ImageViewer(QtWidgets.QWidget):
             painter.end()
 
 
-class SequenceImageSlider(QtWidgets.QWidget):
-    valueChanged = QtCore.Signal(int)
+class SequenceStackedImagesReader(QtWidgets.QWidget):
+    def __init__(self, pixmaps1, pixmaps2, frames, parent=None):
+        super(SequenceStackedImagesReader, self).__init__(
+            parent, QtCore.Qt.Window)
+        self.setWindowTitle(COMPARATOR_TITLE)
+        self.isplaying = False
+        self.pixmaps1 = pixmaps1
+        self.pixmaps2 = pixmaps2
+        self.names = [n for n in map(str, frames)]
 
+        self.timer = QtCore.QBasicTimer()
+
+        self.stacked_imagesview = StackedImagesViewer(parent=self)
+        pixmap1, pixmap2 = self.pixmaps1[0], self.pixmaps2[0]
+        self.stacked_imagesview.set_pixmaps(pixmap1, pixmap2)
+        self.stacked_imagesview.name = self.names[0]
+        # find the first pixmap which is not None and use is as reference size
+        for pixmap in pixmaps1 + pixmaps2:
+            if pixmap:
+                self.stacked_imagesview.setFixedSize(pixmap.size())
+        self.stacked_imagesview.update_geometries()
+        self.slider = Slider()
+        self.slider.minimum = 0
+        self.slider.maximum = len(self.pixmaps1)
+        self.slider.maximum_settable_value = self.slider.maximum
+        self.slider.value = self.slider.minimum
+        self.slider.valueChanged.connect(self._call_slider_value_changed)
+
+        self.blender = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.blender.setMinimum(0)
+        self.blender.setMaximum(100)
+        self.blender.setTickInterval(1)
+        self.blender.setSliderPosition(100)
+        self.blender.valueChanged.connect(self._call_blender_value_changed)
+
+        self.playstop = QtWidgets.QPushButton("play")
+        self.playstop.released.connect(self._call_playstop)
+
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        self.layout.addWidget(self.stacked_imagesview)
+        self.layout.addWidget(self.slider)
+        self.layout.addWidget(self.blender)
+        self.layout.addWidget(self.playstop)
+
+    def timerEvent(self, event):
+        if self.slider.value == self.slider.maximum_settable_value:
+            self.slider.value = self.slider.minimum
+        else:
+            self.slider.value += 1
+
+    def _call_slider_value_changed(self, value):
+        i = self.slider.position
+        self.stacked_imagesview.name = self.names[i]
+        pixmap1, pixmap2 = self.pixmaps1[i], self.pixmaps2[i]
+        self.stacked_imagesview.set_pixmaps(pixmap1, pixmap2)
+
+    def _call_blender_value_changed(self, value):
+        self.stacked_imagesview.alpha = value / 100.0
+
+    def _call_playstop(self):
+        if self.isplaying is False:
+            self.playstop.setText('stop')
+            self.isplaying = True
+            self.timer.start(47, self)
+        else:
+            self.playstop.setText('play')
+            self.isplaying = False
+            self.timer.stop()
+
+
+class StackedImagesViewer(QtWidgets.QWidget):
     def __init__(self, parent=None):
-        super(SequenceImageSlider, self).__init__(parent)
-        self.setFixedHeight(10)
-        self._minimum = None
-        self._maximum = None
-        self._value = 0
-        self._maximum_settable_value = None
-        self._mouse_is_pressed = False
-
-        self.filled_rect = None
-        self.value_line = None
+        super(StackedImagesViewer, self).__init__(parent)
+        self.setMouseTracking(True)
+        self.name = ''
+        self._alpha = 1
+        self.mouse_pressed = False
+        self.pixmap1 = None
+        self.pixmap2 = None
+        self.image2_rect = None
+        self.left_resizer = None
+        self.right_resizer = None
+        self.top_resizer = None
+        self.bottom_resizer = None
+        self.handlers = [
+            self.left_resizer,
+            self.right_resizer,
+            self.top_resizer,
+            self.bottom_resizer]
+        self.handler_hovered = None
+        self.handle_direction = None
 
     @property
-    def minimum(self):
-        return self._minimum
+    def alpha(self):
+        return self._alpha
 
-    @minimum.setter
-    def minimum(self, value):
-        self._minimum = value
-        self.compute_shapes()
+    @alpha.setter
+    def alpha(self, value):
+        self._alpha = value
         self.repaint()
-
-    @property
-    def maximum(self):
-        return self._maximum
-
-    @maximum.setter
-    def maximum(self, value):
-        self._maximum = value
-        self.compute_shapes()
-        self.repaint()
-
-    @property
-    def value(self):
-        return self._value
-
-    @property
-    def position(self):
-        return self._value - self._minimum - 1
-
-    @value.setter
-    def value(self, value):
-        if self._mouse_is_pressed is True:
-            return
-        self._value = value
-        self.compute_shapes()
-        self.repaint()
-        self.valueChanged.emit(value)
-
-    @property
-    def maximum_settable_value(self):
-        return self._maximum_settable_value
-
-    @maximum_settable_value.setter
-    def maximum_settable_value(self, value):
-        self._maximum_settable_value = value
-        self.compute_shapes()
-        self.repaint()
-
-    def compute_shapes(self):
-        values = [self.minimum, self.maximum, self.maximum_settable_value]
-        if all([v is not None for v in values]) is False:
-            return
-        self.filled_rect = get_filled_rect(self)
-        self.value_line = get_value_line(self)
 
     def mousePressEvent(self, event):
-        if self._value is None:
-            return
-        self._mouse_is_pressed = True
-        self.set_value_from_point(event.pos())
-
-    def resizeEvent(self, _):
-        self.compute_shapes()
-        self.repaint()
+        self.mouse_pressed = True
+        if self.handler_hovered == self.left_resizer:
+            self.handle_direction = 'left'
+        elif self.handler_hovered == self.right_resizer:
+            self.handle_direction = 'right'
+        elif self.handler_hovered == self.top_resizer:
+            self.handle_direction = 'top'
+        elif self.handler_hovered == self.bottom_resizer:
+            self.handle_direction = 'bottom'
+        else:
+            self.handle_direction = None
 
     def mouseMoveEvent(self, event):
-        if self._value is None:
+        for handler in self.handlers:
+            if handler.contains(event.pos()):
+                self.handler_hovered = handler
+                break
+
+        conditions = (
+            self.mouse_pressed is True and
+            self.handle_direction is not None and
+            self.rect().contains(event.pos()))
+        if not conditions:
             return
-        self._mouse_is_pressed = True
-        self.set_value_from_point(event.pos())
+
+        if self.handle_direction == 'left':
+            self.image2_rect.setLeft(event.pos().x())
+        elif self.handle_direction == 'right':
+            self.image2_rect.setRight(event.pos().x())
+        elif self.handle_direction == 'top':
+            self.image2_rect.setTop(event.pos().y())
+        elif self.handle_direction == 'bottom':
+            self.image2_rect.setBottom(event.pos().y())
+
+        self.update_geometries()
+        self.repaint()
 
     def mouseReleaseEvent(self, event):
-        self._mouse_is_pressed = False
+        self.mouse_pressed = False
+        self.handler_edited = None
 
-    def set_value_from_point(self, point):
-        if not all([self.filled_rect, self.value_line]):
-            self.compute_shapes()
-        if not self.rect().bottom() < point.y() < self.rect().top():
-            point.setY(self.rect().top())
-        if not self.rect().contains(point):
-            return
-        self._value = get_value_from_point(self, point)
-        self.compute_shapes()
+    def update_geometries(self):
+        if self.image2_rect is None:
+            self.image2_rect = QtCore.QRect(self.rect())
+        self.left_resizer = get_left_side_rect(self.image2_rect)
+        self.right_resizer = get_right_side_rect(self.image2_rect)
+        self.top_resizer = get_top_side_rect(self.image2_rect)
+        self.bottom_resizer = get_bottom_side_rect(self.image2_rect)
+        self.handlers = [
+            self.left_resizer,
+            self.right_resizer,
+            self.top_resizer,
+            self.bottom_resizer]
+
+    def set_pixmaps(self, pixmap1, pixmap2):
+        self.pixmap1 = pixmap1
+        self.pixmap2 = pixmap2
         self.repaint()
-        self.valueChanged.emit(self._value)
 
     def paintEvent(self, event):
-        if not all([self.filled_rect, self.value_line]):
-            self.compute_shapes()
+        if self.image2_rect is None:
+            self.update_geometries()
         # if any error append during the paint, all the application freeze
         # to avoid this error, the paint is placed under a global try
         painter = QtGui.QPainter()
         painter.begin(self)
         try:
-            drawslider(painter, self)
+            draw_stacked_imagesview(painter, self, alpha=self._alpha)
         except Exception:
             import traceback
             print(traceback.format_exc())
         finally:
             painter.end()
+
+
+def draw_stacked_imagesview(painter, stacked_imagesview, alpha=1):
+    # Draw the images
+    if stacked_imagesview.pixmap1 is not None:
+        painter.setBrush(QtGui.QBrush())
+        painter.setPen(QtGui.QPen())
+        pixmap = stacked_imagesview.pixmap1
+        painter.drawPixmap(stacked_imagesview.rect(), pixmap)
+    else:
+        draw_empty_image(painter, stacked_imagesview.rect())
+    painter.setOpacity(alpha)
+    if stacked_imagesview.pixmap2 is not None:
+        painter.setPen(QtGui.QPen())
+        pixmap = stacked_imagesview.pixmap2.copy(stacked_imagesview.image2_rect)
+        painter.drawPixmap(stacked_imagesview.image2_rect, pixmap)
+    else:
+        draw_empty_image(painter, stacked_imagesview.image2_rect)
+    painter.setOpacity(1)
+    # Draw the border
+    pen = QtGui.QPen(QtGui.QColor(HANDLERS_COLORS["bordercolor"]))
+    pen.setStyle(QtCore.Qt.DashDotLine)
+    pen.setWidthF(0.5)
+    painter.setPen(pen)
+    brush = QtGui.QBrush(QtGui.QColor(0, 0, 0, 0))
+    painter.setBrush(brush)
+    painter.drawRect(stacked_imagesview.image2_rect)
+    # Draw handlers
+    pen.setColor(QtGui.QColor(0, 0, 0, 0))
+    painter.setPen(pen)
+    hoveredcolor = QtGui.QColor(HANDLERS_COLORS["backgroundcolor.hovered"])
+    normalcolor = QtGui.QColor(HANDLERS_COLORS["backgroundcolor"])
+    for rect in stacked_imagesview.handlers:
+        hovered = rect == stacked_imagesview.handler_hovered
+        color = hoveredcolor if hovered else normalcolor
+        brush = QtGui.QBrush(QtGui.QColor(color))
+        painter.setBrush(brush)
+        painter.drawRect(rect)
+    # Draw image name
+    pen.setColor(QtGui.QColor("#ffffff"))
+    painter.setPen(pen)
+    font = QtGui.QFont()
+    font.setBold(True)
+    font.setItalic(False)
+    font.setPixelSize(15)
+    painter.setFont(font)
+    flags = QtCore.Qt.AlignCenter | QtCore.Qt.AlignBottom
+    textrect = QtCore.QRectF(stacked_imagesview.rect())
+    painter.drawText(textrect, flags, stacked_imagesview.name)
 
 
 def draw_imageview(painter, imageview):
@@ -244,15 +360,22 @@ def draw_imageview(painter, imageview):
     painter.drawText(status_rect, flags, text)
 
 
-def draw_empty_imageview(painter, imageview):
-    rect = imageview.rect()
+def get_status_rect(rect):
+    size = ceil(sqrt((rect.width() ** 2) + (rect.width() ** 2)) / 15)
+    topleft = QtCore.QPointF(
+        rect.bottomRight().x() - size,
+        rect.bottomRight().y() - size)
+    return QtCore.QRectF(topleft, rect.bottomRight())
+
+
+def draw_empty_image(painter, rect, name=''):
     color = QtGui.QColor(NOIMAGE_COLORS["backgroundcolor"])
     brush = QtGui.QBrush(color)
     color = QtGui.QColor(NOIMAGE_COLORS["bordercolor"])
     pen = QtGui.QPen(color)
     painter.setBrush(brush)
     painter.setPen(pen)
-    painter.drawRect(imageview.rect())
+    painter.drawRect(rect)
     color = QtGui.QColor(NOIMAGE_COLORS["crosscolor"])
     pen.setColor(color)
     painter.setPen(pen)
@@ -276,90 +399,78 @@ def draw_empty_imageview(painter, imageview):
     font.setPixelSize(15)
     painter.setFont(font)
     flags = QtCore.Qt.AlignCenter | QtCore.Qt.AlignBottom
-    textrect = QtCore.QRectF(imageview.rect())
-    painter.drawText(textrect, flags, imageview.name)
+    textrect = QtCore.QRectF(rect)
+    painter.drawText(textrect, flags, name)
 
 
-def drawslider(painter, slider, colors=None):
-    colors = get_colors(colors)
-    transparent = QtGui.QColor(0, 0, 0, 0)
-    # draw background
-    backgroundcolor = QtGui.QColor(colors['backgroundcolor.empty'])
-    pen = QtGui.QPen(transparent)
-    brush = QtGui.QBrush(backgroundcolor)
-    painter.setBrush(brush)
-    painter.setPen(pen)
-    painter.drawRect(slider.rect())
-    # draw filled
-    if slider.filled_rect:
-        backgroundcolor = QtGui.QColor(colors['backgroundcolor.filled'])
-        pen.setColor(transparent)
-        brush.setColor(backgroundcolor)
-        painter.setBrush(brush)
-        painter.setPen(pen)
-        painter.drawRect(slider.filled_rect)
-    # draw current
-    if slider.value_line:
-        pen.setWidth(3)
-        linecolor = QtGui.QColor(colors['framelinecolor'])
-        pen.setColor(linecolor)
-        brush.setColor(transparent)
-        painter.setBrush(brush)
-        painter.setPen(pen)
-        painter.drawLine(slider.value_line)
-    # draw border
-    pen.setWidth(5)
-    bordercolor = QtGui.QColor(colors['bordercolor'])
-    pen.setColor(bordercolor)
-    brush.setColor(transparent)
-    painter.setBrush(brush)
-    painter.setPen(pen)
-    painter.drawRect(slider.rect())
-
-
-def get_value_line(slider):
-    rect = slider.rect()
-    horizontal_divisor = float(slider.maximum - slider.minimum)
-    horizontal_unit_size = rect.width() / horizontal_divisor
-    left = (slider.value - slider.minimum) * horizontal_unit_size
-    start = QtCore.QPoint(left, rect.top())
-    end = QtCore.QPoint(left, rect.bottom())
-    return QtCore.QLine(start, end)
-
-
-def get_filled_rect(slider):
-    if slider.maximum_settable_value == slider.minimum:
+def get_left_side_rect(rect):
+    """
+    this function return a manipulator rect for the transform
+    handler.
+       __________________________
+       |                        |
+       |*                       |
+       |________________________|
+    """
+    if not rect:
         return None
-    rect = slider.rect()
-    horizontal_divisor = float(slider.maximum - slider.minimum)
-    horizontal_unit_size = rect.width() / horizontal_divisor
-    width = (slider.maximum_settable_value - slider.minimum) * horizontal_unit_size
-    return QtCore.QRectF(rect.left(), rect.top(), width, rect.height())
+    x = rect.left()
+    y = rect.top() + (rect.height() / 2.0) - (POINT_RADIUS / 2.0)
+    point = QtCore.QPointF(x, y)
+    point2 = QtCore.QPointF(point.x() + POINT_RADIUS, point.y() + POINT_RADIUS)
+    return QtCore.QRectF(point, point2)
 
 
-def get_value_from_point(slider, point):
-    if not slider.filled_rect.contains(point):
-        return slider.maximum_settable_value
-    horizontal_divisor = float(slider.maximum - slider.minimum)
-    horizontal_unit_size = slider.rect().width() / horizontal_divisor
-    value = 0
-    x = 0
-    while x < point.x():
-        value += 1
-        x += horizontal_unit_size
-    return value + slider.minimum
+def get_right_side_rect(rect):
+    """
+    this function return a manipulator rect for the transform
+    handler.
+       __________________________
+       |                        |
+       |                       *|
+       |________________________|
+    """
+    if not rect:
+        return None
+    x = rect.right()
+    y = rect.top() + (rect.height() / 2.0) - (POINT_RADIUS / 2.0)
+    point = QtCore.QPointF(x, y)
+    point2 = QtCore.QPointF(point.x() - POINT_RADIUS, point.y() + POINT_RADIUS)
+    return QtCore.QRectF(point, point2)
 
 
-def get_status_rect(rect):
-    size = ceil(sqrt((rect.width() ** 2) + (rect.width() ** 2)) / 15)
-    topleft = QtCore.QPointF(
-        rect.bottomRight().x() - size,
-        rect.bottomRight().y() - size)
-    return QtCore.QRectF(topleft, rect.bottomRight())
+def get_top_side_rect(rect):
+    """
+    this function return a manipulator rect for the transform
+    handler.
+       __________________________
+       |            *           |
+       |                        |
+       |________________________|
+    """
+    if not rect:
+        return None
+    x = rect.left() + (rect.width() / 2.0) - (POINT_RADIUS / 2.0)
+    y = rect.top()
+    point = QtCore.QPointF(x, y)
+    point2 = QtCore.QPointF(point.x() + POINT_RADIUS, point.y() + POINT_RADIUS)
+    return QtCore.QRectF(point, point2)
 
 
-def get_colors(colors):
-    colorscopy = SLIDER_COLORS.copy()
-    if colors is not None:
-        colorscopy.update(colors)
-    return colorscopy
+def get_bottom_side_rect(rect):
+    """
+    this function return a manipulator rect for the transform
+    handler.
+       __________________________
+       |                        |
+       |                        |
+       |____________*___________|
+    """
+    if not rect:
+        return None
+    x = rect.left() + (rect.width() / 2.0) - (POINT_RADIUS / 2.0)
+    y = rect.bottom()
+    point = QtCore.QPointF(x, y)
+    point2 = QtCore.QPointF(point.x() + POINT_RADIUS, point.y() - POINT_RADIUS)
+    return QtCore.QRectF(point, point2)
+

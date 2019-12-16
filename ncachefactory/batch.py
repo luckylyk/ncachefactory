@@ -190,7 +190,7 @@ def is_temp_folder_empty(workspace):
     return False
 
 
-def list_flashed_scenes(workspace):
+def list_temp_multi_scenes(workspace):
     tempfolder = os.path.join(workspace, TEMPFOLDER_NAME)
     scenes = []
     for scene in os.listdir(tempfolder):

@@ -6,7 +6,7 @@ from ncachefactory.qtutils import get_icon
 from ncachefactory.attributes import (
     list_wedgable_attributes, list_channelbox_highlited_plugs)
 from ncachefactory.batch import (
-    clean_batch_temp_folder, flash_current_scene, list_flashed_scenes,
+    clean_batch_temp_folder, flash_current_scene, list_temp_multi_scenes,
     is_temp_folder_empty, BATCHCACHE_NAME, WEDGINGCACHE_NAME)
 from ncachefactory.optionvars import (
     EXPLOSION_TOLERENCE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
@@ -108,7 +108,7 @@ class BatchCacher(QtWidgets.QWidget):
         self.wedging_layout.addWidget(self.cache_wedging)
 
         self.tabwidget = QtWidgets.QTabWidget()
-        self.tabwidget.addTab(self.multicache, "multi scene")
+        self.tabwidget.addTab(self.multicache, "multi scenes")
         self.tabwidget.addTab(self.wedging, "attribute wedging")
 
         self.options = SimulationKillerOptions()
@@ -130,7 +130,7 @@ class BatchCacher(QtWidgets.QWidget):
         if get_clean_tempfile_confirmation_dialog() is True:
             clean_batch_temp_folder(workspace)
             return
-        for scene in list_flashed_scenes(self.workspace):
+        for scene in list_temp_multi_scenes(self.workspace):
             job = {'name': BATCHCACHE_NAME, 'comment': '', 'scene': scene}
             self.model.add_job(job)
         self.cache.setEnabled(bool(self.model.jobs))

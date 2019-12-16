@@ -4,7 +4,7 @@ mtodo list created from commit 60
 BUGS:
   - timing calculation per frame, look fucked
   - Adapt geo text to cam ratio
-  - unlock attributes before setAttr and relock
+  - unlock attributes before setAttr and relock if necessary
 
   __ done __
   - Fix set next frame on time slider which return to 0 instead of min slider value
@@ -45,9 +45,11 @@ BASIC CONFORT
 
 
 MAIN FEATURES
-  - blend attribute value button is still not implemented
+  - blend attribute value button is still not implemented yet
+  - play custom range in batch timeslider
 
   __ done __
+  - Compare two batch rendering
   - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor
   - For mayapy caches, create a geometry text linked to the camera to fixe the issue.
   - Add text in viewport for rendering (cache name and comment)
@@ -58,6 +60,8 @@ MAIN FEATURES
 
 ACCESIBILITY
   - Set tooltip on every qpushbutton
-  - Update readme with new features
   - Remove pymel usage to optimise nCacheFactory loading
   - create HTML documentation
+
+  __done__
+  - Update readme with new features

@@ -2,21 +2,26 @@ import os
 from math import ceil, sqrt
 from PySide2 import QtWidgets, QtGui, QtCore
 from maya import cmds
-from ncachefactory.sequencereader import SequenceImageReader, ImageViewer
+
 from ncachefactory.playblast import compile_movie
 from ncachefactory.cachemanager import connect_cacheversion
 from ncachefactory.ncache import list_connected_cachefiles
+from ncachefactory.arrayutils import overlap_lists_from_ranges, range_ranges
+from ncachefactory.sequencereader import (
+    SequenceImageReader, ImageViewer, SequenceStackedImagesReader)
 from ncachefactory.versioning import (
     get_log_filename, list_tmp_jpeg_under_cacheversion)
 
 
 WINDOW_TITLE = "Batch cacher monitoring"
+CACHEVERSION_SELECTION_TITLE = "Select cache to compare"
 
 
 class MultiCacheMonitor(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(MultiCacheMonitor, self).__init__(parent, QtCore.Qt.Window)
         self.setWindowTitle(WINDOW_TITLE)
+        self.comparators = []
         self.tab_widget = QtWidgets.QTabWidget()
         self.tab_widget.setTabsClosable(True)
         self.tab_widget.tabCloseRequested.connect(self.tab_closed)
@@ -36,6 +41,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
 
     def add_job(self, cacheversion, process):
         job_panel = JobPanel(cacheversion, process)
+        job_panel.comparisonRequested.connect(self._call_comparison)
         self.job_panels.append(job_panel)
         self.tab_widget.addTab(job_panel, cacheversion.name)
         self.tab_widget.setCurrentIndex(len(self.job_panels) - 1)
@@ -65,6 +71,29 @@ class MultiCacheMonitor(QtWidgets.QWidget):
             for job_panel in self.job_panels:
                 job_panel.update()
 
+    def _call_comparison(self, job_panel):
+        cacheversions = [jp.cacheversion for jp in self.job_panels]
+        names = [cv.name for cv in cacheversions]
+        dialog = CacheVersionSelection(names=names)
+        result = dialog.exec_()
+        if result == QtWidgets.QDialog.Rejected or dialog.index is None:
+            return
+        job_panel2 = self.job_panels[dialog.index]
+        slider = job_panel.images.slider
+        range1 = slider.minimum, slider.maximum_settable_value
+        slider = job_panel2.images.slider
+        range2 = slider.minimum, slider.maximum_settable_value
+        pixmaps1, pixmaps2 = overlap_lists_from_ranges(
+            elements1=job_panel.images._pixmaps,
+            elements2=job_panel2.images._pixmaps,
+            range1=range1,
+            range2=range2)
+        print(len(pixmaps1), len(pixmaps2))
+        frames = range_ranges(range1, range2)
+        comparator = SequenceStackedImagesReader(pixmaps1, pixmaps2, frames)
+        comparator.show()
+        self.comparators.append(comparator)
+
 
 class Monitor(QtWidgets.QWidget):
     def __init__(self, names, imageviewers, parent=None):
@@ -87,6 +116,8 @@ class Monitor(QtWidgets.QWidget):
 
 
 class JobPanel(QtWidgets.QWidget):
+    comparisonRequested = QtCore.Signal(object)
+
     def __init__(self, cacheversion, process, parent=None):
         super(JobPanel, self).__init__(parent)
         self.finished = False
@@ -100,6 +131,9 @@ class JobPanel(QtWidgets.QWidget):
         endframe = cacheversion.infos['end_frame']
         self.images = SequenceImageReader(range_=[startframe, endframe])
         self.log = InteractiveLog(filepath=self.logfile)
+        self.compare = QtWidgets.QPushButton('compare with')
+        self.compare.setEnabled(False)
+        self.compare.released.connect(self._call_compare)
         self.kill_button = QtWidgets.QPushButton('kill')
         self.kill_button.released.connect(self._call_kill)
         self.connect_cache = QtWidgets.QPushButton('connect cache')
@@ -113,6 +147,7 @@ class JobPanel(QtWidgets.QWidget):
         self.log_layout.setContentsMargins(0, 0, 0, 0)
         self.log_layout.setSpacing(2)
         self.log_layout.addWidget(self.log)
+        self.log_layout.addWidget(self.compare)
         self.log_layout.addWidget(self.connect_cache)
         self.log_layout.addWidget(self.kill_button)
         self.log_layout.addWidget(self.playstop)
@@ -143,12 +178,13 @@ class JobPanel(QtWidgets.QWidget):
                 self.images.add_pixmap(pixmap)
 
         if jpegs:
-            # allow to connect a cache only if at least one frame is cached.
+            # allow to use option which need at least one frame cached
             if self.connect_cache.isEnabled() is False:
                 self.connect_cache.setEnabled(True)
-            # allow to set play mode only if at least one frame is cached.
             if self.playstop.isEnabled() is False :
                 self.playstop.setEnabled(True)
+            if self.compare.isEnabled() is False:
+                self.compare.setEnabled(True)
 
         if self.images.isfull() is True:
             self.finished = True
@@ -177,6 +213,9 @@ class JobPanel(QtWidgets.QWidget):
     def _call_playstop(self):
         self.is_playing = not self.is_playing
         self.playstop.setText("stop" if self.is_playing else "play")
+
+    def _call_compare(self):
+        self.comparisonRequested.emit(self)
 
     def kill(self):
         if self.finished is True:
@@ -229,6 +268,27 @@ class InteractiveLog(QtWidgets.QWidget):
         return True
 
 
+class CacheVersionSelection(QtWidgets.QDialog):
+    def __init__(self, names, parent=None):
+        super(CacheVersionSelection, self).__init__(parent, QtCore.Qt.Tool)
+        self.setWindowTitle(CACHEVERSION_SELECTION_TITLE)
+        self.list = QtWidgets.QListWidget()
+        self.list.addItems(names)
+        self.ok = QtWidgets.QPushButton("ok")
+        self.ok.released.connect(self.accept)
+
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.addWidget(self.list)
+        self.layout.addWidget(self.ok)
+
+    @property
+    def index(self):
+        indexes = [i.row() for i in self.list.selectedIndexes()]
+        if not indexes:
+            return
+        return indexes[0]
+
+
 def kill_them_all_confirmation_dialog():
     message = (
         "Some caching processes still running, do you want to kill them all ?")
@@ -243,7 +303,8 @@ def kill_them_all_confirmation_dialog():
 
 
 def wooden_legged_centipede(leg_number):
-    """this is an iterator which return False everytime except when the cycle
+    """ Sorry for the metaphorical name, didn't find something more explicite.
+    This is an iterator which return False everytime except when the cycle
     reach the specified number, then it returns True, and the cycle restart"""
     leg = 0
     while True:
