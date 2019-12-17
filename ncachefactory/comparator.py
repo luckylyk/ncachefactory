@@ -100,8 +100,8 @@ class ComparisonWidget(QtWidgets.QWidget):
 	    namespace = ":".join(self.node.split(":")[:-1])
         for plug, _, cached_value in attributes:
             try:
-	            if namespace:
-		            plug = namespace + ':' + plug
+	        if namespace:
+		    plug = namespace + ':' + plug
                 cmds.setAttr(plug, cached_value)
             except RuntimeError:
                 message = "{} is locked or connected and cannot be modifed"
