@@ -32,7 +32,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
         self.layout.addWidget(self.tab_widget)
 
         self.timer = QtCore.QBasicTimer()
-        self.updater = wooden_legged_centipede(24)
+        self.updater = wooden_legged_centipede(47)
 
     def tab_closed(self, index):
         self.tab_widget.widget(index).kill()
@@ -79,6 +79,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
         if result == QtWidgets.QDialog.Rejected or dialog.index is None:
             return
         job_panel2 = self.job_panels[dialog.index]
+        names = job_panel.cacheversion.name, job_panel2.cacheversion.name
         slider = job_panel.images.slider
         range1 = slider.minimum, slider.maximum_settable_value
         slider = job_panel2.images.slider
@@ -88,9 +89,12 @@ class MultiCacheMonitor(QtWidgets.QWidget):
             elements2=job_panel2.images._pixmaps,
             range1=range1,
             range2=range2)
-        print(len(pixmaps1), len(pixmaps2))
         frames = range_ranges(range1, range2)
-        comparator = SequenceStackedImagesReader(pixmaps1, pixmaps2, frames)
+        comparator = SequenceStackedImagesReader(
+            pixmaps1=pixmaps1,
+            pixmaps2=pixmaps2,
+            frames=frames,
+            names=names)
         comparator.show()
         self.comparators.append(comparator)
 

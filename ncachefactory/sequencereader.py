@@ -18,6 +18,7 @@ HANDLERS_COLORS = {
 STATUS_COLORS = {
     "approved": "#99FF99",
     "killed": "red"}
+STACKED_IMAGE_TEXTCOLOR = "#ffffff"
 COMPARATOR_TITLE = "Compare versions"
 
 
@@ -41,7 +42,8 @@ class SequenceImageReader(QtWidgets.QWidget):
 
     def add_pixmap(self, pixmap):
         self._pixmaps.append(pixmap)
-        self.slider.maximum_settable_value = len(self._pixmaps) + self.slider.minimum
+        value = len(self._pixmaps) + self.slider.minimum
+        self.slider.maximum_settable_value = value
         self.slider.value = self.slider.maximum_settable_value
 
     def _call_slider_value_changed(self, value):
@@ -103,7 +105,7 @@ class ImageViewer(QtWidgets.QWidget):
 
 
 class SequenceStackedImagesReader(QtWidgets.QWidget):
-    def __init__(self, pixmaps1, pixmaps2, frames, parent=None):
+    def __init__(self, pixmaps1, pixmaps2, frames, names=None, parent=None):
         super(SequenceStackedImagesReader, self).__init__(
             parent, QtCore.Qt.Window)
         self.setWindowTitle(COMPARATOR_TITLE)
@@ -114,7 +116,7 @@ class SequenceStackedImagesReader(QtWidgets.QWidget):
 
         self.timer = QtCore.QBasicTimer()
 
-        self.stacked_imagesview = StackedImagesViewer(parent=self)
+        self.stacked_imagesview = StackedImagesViewer(names, self)
         pixmap1, pixmap2 = self.pixmaps1[0], self.pixmaps2[0]
         self.stacked_imagesview.set_pixmaps(pixmap1, pixmap2)
         self.stacked_imagesview.name = self.names[0]
@@ -175,9 +177,10 @@ class SequenceStackedImagesReader(QtWidgets.QWidget):
 
 
 class StackedImagesViewer(QtWidgets.QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, layernames=None, parent=None):
         super(StackedImagesViewer, self).__init__(parent)
         self.setMouseTracking(True)
+        self.layernames = layernames
         self.name = ''
         self._alpha = 1
         self.mouse_pressed = False
@@ -282,6 +285,13 @@ class StackedImagesViewer(QtWidgets.QWidget):
 
 
 def draw_stacked_imagesview(painter, stacked_imagesview, alpha=1):
+    # Prepare font
+    font = QtGui.QFont()
+    font.setBold(True)
+    font.setItalic(False)
+    font.setPixelSize(15)
+    painter.setFont(font)
+    textflags = QtCore.Qt.AlignRight | QtCore.Qt.AlignBottom
     # Draw the images
     if stacked_imagesview.pixmap1 is not None:
         painter.setBrush(QtGui.QBrush())
@@ -290,6 +300,12 @@ def draw_stacked_imagesview(painter, stacked_imagesview, alpha=1):
         painter.drawPixmap(stacked_imagesview.rect(), pixmap)
     else:
         draw_empty_image(painter, stacked_imagesview.rect())
+    if stacked_imagesview.layernames is not None:
+        pen = QtGui.QPen(QtGui.QColor(STACKED_IMAGE_TEXTCOLOR))
+        painter.setPen(pen)
+        textrect = QtCore.QRectF(stacked_imagesview.rect())
+        painter.drawText(textrect, textflags, stacked_imagesview.layernames[0])
+
     painter.setOpacity(alpha)
     if stacked_imagesview.pixmap2 is not None:
         painter.setPen(QtGui.QPen())
@@ -297,6 +313,12 @@ def draw_stacked_imagesview(painter, stacked_imagesview, alpha=1):
         painter.drawPixmap(stacked_imagesview.image2_rect, pixmap)
     else:
         draw_empty_image(painter, stacked_imagesview.image2_rect)
+    if stacked_imagesview.layernames is not None:
+        pen = QtGui.QPen(QtGui.QColor(STACKED_IMAGE_TEXTCOLOR))
+        painter.setPen(pen)
+        textrect = QtCore.QRectF(stacked_imagesview.image2_rect)
+        painter.drawText(textrect, textflags, stacked_imagesview.layernames[1])
+
     painter.setOpacity(1)
     # Draw the border
     pen = QtGui.QPen(QtGui.QColor(HANDLERS_COLORS["bordercolor"]))
@@ -317,14 +339,9 @@ def draw_stacked_imagesview(painter, stacked_imagesview, alpha=1):
         brush = QtGui.QBrush(QtGui.QColor(color))
         painter.setBrush(brush)
         painter.drawRect(rect)
-    # Draw image name
-    pen.setColor(QtGui.QColor("#ffffff"))
+    # draw frames
+    pen = QtGui.QPen(QtGui.QColor(STACKED_IMAGE_TEXTCOLOR))
     painter.setPen(pen)
-    font = QtGui.QFont()
-    font.setBold(True)
-    font.setItalic(False)
-    font.setPixelSize(15)
-    painter.setFont(font)
     flags = QtCore.Qt.AlignCenter | QtCore.Qt.AlignBottom
     textrect = QtCore.QRectF(stacked_imagesview.rect())
     painter.drawText(textrect, flags, stacked_imagesview.name)

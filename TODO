@@ -4,9 +4,9 @@ mtodo list created from commit 60
 BUGS:
   - timing calculation per frame, look fucked
   - Adapt geo text to cam ratio
-  - unlock attributes before setAttr and relock if necessary
 
   __ done __
+  - unlock attributes before setAttr and relock if necessary: actually that was a namespace issue.
   - Fix set next frame on time slider which return to 0 instead of min slider value
   - Fix panel saved visibilities
   - fix slider time line after widget resizing
@@ -26,6 +26,7 @@ BASIC CONFORT
   - set sortable the cacheversions in the explorer panel
 
   __ done __
+  - write cache name in cache monitor comparator
   - Add config system to allow external edit for custom configuration
   - Fix widget sizes
   - dock widget automatically on right panel
