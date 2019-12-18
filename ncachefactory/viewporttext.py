@@ -42,13 +42,39 @@ def link_text_to_non_orthographic_camera(group, camera, text):
     cmds.parent(text, secondary_group)
     cmds.parent(secondary_group, group)
     cmds.setAttr(secondary_group + ".translateZ", -1)
-    multiply = cmds.createNode('multiplyDivide')
-    cmds.setAttr(multiply + '.operation', 2)
-    cmds.setAttr(multiply + '.input1.input1X', REFERENCE_FOCAL)
-    cmds.connectAttr(camera + '.focalLength', multiply + '.input2.input2X')
-    cmds.connectAttr(multiply + '.output.outputX', secondary_group + '.scale.scaleX')
-    cmds.connectAttr(multiply + '.output.outputX', secondary_group + '.scale.scaleY')
-    cmds.connectAttr(multiply + '.output.outputX', secondary_group + '.scale.scaleZ')
+
+    # mutliply out of focal
+    multiply1 = cmds.createNode('multiplyDivide')
+    cmds.setAttr(multiply1 + '.operation', 2)
+    cmds.setAttr(multiply1 + '.input1.input1X', REFERENCE_FOCAL)
+    cmds.connectAttr(camera + '.focalLength', multiply1 + '.input2.input2X')
+
+    # multiply to compute film ratio
+    multiply2 = cmds.createNode('multiplyDivide')
+    cmds.setAttr(multiply2 + '.operation', 2)
+    cmds.connectAttr(
+        camera + '.cameraAperture.horizontalFilmAperture',
+        multiply2 + '.input1.input1X')
+    cmds.connectAttr(
+        camera + '.cameraAperture.verticalFilmAperture',
+        multiply2 + '.input2.input2X')
+
+    # normalize ratio
+    multiply3 = cmds.createNode('multiplyDivide')
+    cmds.setAttr(multiply3 + '.operation', 2)
+    cmds.connectAttr(multiply2 + '.output.outputX', multiply3 + '.input1.input1X')
+    cmds.setAttr(multiply3 + '.input2.input2X', 1.5)
+
+    # divid focal and ratio
+    multiply4 = cmds.createNode('multiplyDivide')
+    cmds.setAttr(multiply4 + '.operation', 2)
+    cmds.connectAttr(multiply3 + '.output.outputX', multiply4 + '.input1.input1X')
+    cmds.connectAttr(multiply1 + '.output.outputX', multiply4 + '.input2.input2X')
+
+    # connect to text scale
+    cmds.connectAttr(multiply4 + '.output.outputX', secondary_group + '.scale.scaleX')
+    cmds.connectAttr(multiply4 + '.output.outputX', secondary_group + '.scale.scaleY')
+    cmds.connectAttr(multiply4 + '.output.outputX', secondary_group + '.scale.scaleZ')
 
 
 def check_type_plugin():
