@@ -5,9 +5,7 @@ scene which is aligned to the camera. That's a bit stupid solution, but I
 doesn't have other for playblast in batch :(.
 """
 
-
 from maya import cmds
-from PySide2 import QtGui
 
 
 VIEWPORT_TEXT_SHADDER_NAME = "ncache_viewport_text_shader"
