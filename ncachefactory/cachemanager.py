@@ -285,8 +285,13 @@ def apply_settings(cacheversion, nodes):
         for key, value in xml_attributes.items():
             attributes = cmds.ls([key, "*" + key, "*:" + key, "*:*:" + key])
             for attribute in attributes:
-                atype = cmds.getAttr(attribute, type=True)
-                cmds.setAttr(attribute, value, type=atype)
+                try:
+                    cmds.setAttr(attribute, value)
+                except RuntimeError:
+                    msg = (
+                        attribute + " is locked, connected, invalid or doesn't "
+                        "in current scene. This attribute is skipped")
+                    cmds.warning(msg)
 
 
 def ensure_original_input_is_stored(dynamicnode):
