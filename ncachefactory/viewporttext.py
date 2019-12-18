@@ -52,29 +52,35 @@ def link_text_to_non_orthographic_camera(group, camera, text):
     # multiply to compute film ratio
     multiply2 = cmds.createNode('multiplyDivide')
     cmds.setAttr(multiply2 + '.operation', 2)
-    cmds.connectAttr(
-        camera + '.cameraAperture.horizontalFilmAperture',
-        multiply2 + '.input1.input1X')
-    cmds.connectAttr(
-        camera + '.cameraAperture.verticalFilmAperture',
-        multiply2 + '.input2.input2X')
+    outplug = camera + '.cameraAperture.horizontalFilmAperture'
+    inplug = multiply2 + '.input1.input1X'
+    cmds.connectAttr(outplug, inplug)
+    outplug = camera + '.cameraAperture.verticalFilmAperture'
+    inplug = multiply2 + '.input2.input2X'
+    cmds.connectAttr(outplug, inplug)
 
     # normalize ratio
     multiply3 = cmds.createNode('multiplyDivide')
     cmds.setAttr(multiply3 + '.operation', 2)
-    cmds.connectAttr(multiply2 + '.output.outputX', multiply3 + '.input1.input1X')
+    outplug = multiply2 + '.output.outputX'
+    inplug = multiply3 + '.input1.input1X'
+    cmds.connectAttr(outplug, inplug)
     cmds.setAttr(multiply3 + '.input2.input2X', 1.5)
 
     # divid focal and ratio
     multiply4 = cmds.createNode('multiplyDivide')
     cmds.setAttr(multiply4 + '.operation', 2)
-    cmds.connectAttr(multiply3 + '.output.outputX', multiply4 + '.input1.input1X')
-    cmds.connectAttr(multiply1 + '.output.outputX', multiply4 + '.input2.input2X')
+    outplug = multiply3 + '.output.outputX'
+    inplug = multiply4 + '.input1.input1X'
+    cmds.connectAttr(outplug, inplug)
+    outplug = multiply1 + '.output.outputX'
+    inplug = multiply4 + '.input2.input2X'
+    cmds.connectAttr(outplug, inplug)
 
     # connect to text scale
-    cmds.connectAttr(multiply4 + '.output.outputX', secondary_group + '.scale.scaleX')
-    cmds.connectAttr(multiply4 + '.output.outputX', secondary_group + '.scale.scaleY')
-    cmds.connectAttr(multiply4 + '.output.outputX', secondary_group + '.scale.scaleZ')
+    for axe in ['X', 'Y', 'Z']:
+        outplug = multiply4 + '.output.outputX'
+        cmds.connectAttr(outplug, secondary_group + '.scale.scale' + axe)
 
 
 def check_type_plugin():
