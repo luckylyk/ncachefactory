@@ -351,6 +351,8 @@ class NodeInfosTableModel(QtCore.QAbstractTableModel):
                 return self.infos['nodes'][node]['namespace'] or 'None'
             if col == 3:
                 seconds = self.infos['nodes'][node]['timespent']
+                if not seconds:
+                    return 'None'
                 delta = datetime.timedelta(seconds=seconds)
                 return str(delta)
 
