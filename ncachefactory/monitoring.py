@@ -32,7 +32,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
         self.layout.addWidget(self.tab_widget)
 
         self.timer = QtCore.QBasicTimer()
-        self.updater = wooden_legged_centipede(47)
+        self.updater = wooden_legged_centipede(24)
 
     def tab_closed(self, index):
         self.tab_widget.widget(index).kill()
