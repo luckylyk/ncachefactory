@@ -3,10 +3,12 @@ mtodo list created from commit 60
 
 BUGS:
   - timing calculation per frame, look fucked
-  - Adapt geo text to cam ratio
+  - fix slider click before first frame cached
 
   __ done __
+  - Adapt geo text to cam ratio
   - unlock attributes before setAttr and relock if necessary: actually that was a namespace issue.
+  - Fix apply settings
   - Fix set next frame on time slider which return to 0 instead of min slider value
   - Fix panel saved visibilities
   - fix slider time line after widget resizing
@@ -24,6 +26,8 @@ BUGS:
 
 BASIC CONFORT
   - set sortable the cacheversions in the explorer panel
+  - apply settings manage namespaces
+  - have choice to apply settings only on selected nodes or all scene (all scene is currently default)
 
   __ done __
   - write cache name in cache monitor comparator

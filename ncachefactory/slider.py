@@ -81,7 +81,7 @@ class Slider(QtWidgets.QWidget):
         self.value_line = get_value_line(self)
 
     def mousePressEvent(self, event):
-        if self._value is None:
+        if self._value is None or self._maximum_settable_value is None:
             return
         self._mouse_is_pressed = True
         self.set_value_from_point(event.pos())
