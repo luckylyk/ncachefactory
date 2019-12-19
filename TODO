@@ -29,9 +29,9 @@ BASIC CONFORT
   - set sortable the cacheversions in the explorer panel
   - apply settings should manage namespaces
   - apply per vertex maps should manage namespaces
-  - have choice to apply settings only on selected nodes or all scene (all scene is currently default)
 
   __ done __
+  - have choice to apply settings only on selected nodes or all scene (all scene is currently default)
   - write cache name in cache monitor comparator
   - Add config system to allow external edit for custom configuration
   - Fix widget sizes
@@ -66,9 +66,9 @@ MAIN FEATURES
 
 
 ACCESIBILITY
-  - Set tooltip on every qpushbutton
   - Remove pymel usage to optimise nCacheFactory loading
   - create HTML documentation
 
   __done__
+  - Set tooltip on every qpushbutton
   - Update readme with new features
