@@ -1,8 +1,9 @@
-mtodo list created from commit 60
+todo list created from commit 60
 
 
 BUGS:
   - timing calculation per frame, look fucked
+  - playblast encoding doesn't work in batch (or when a record in existing cache is done)
 
   __ done __
   - fix slider click before first frame cached
