@@ -106,8 +106,7 @@ class ImageViewer(QtWidgets.QWidget):
 
 class SequenceStackedImagesReader(QtWidgets.QWidget):
     def __init__(self, pixmaps1, pixmaps2, frames, names=None, parent=None):
-        super(SequenceStackedImagesReader, self).__init__(
-            parent, QtCore.Qt.Window)
+        super(SequenceStackedImagesReader, self).__init__(parent, QtCore.Qt.Tool)
         self.setWindowTitle(COMPARATOR_TITLE)
         self.isplaying = False
         self.pixmaps1 = pixmaps1

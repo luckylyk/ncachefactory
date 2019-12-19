@@ -21,7 +21,7 @@ TAGS = [
 ]
 
 PERVERTEX_FILE = 'pervertexmaps.json'
-PERVERTEX_ATTRIBUTE = [
+PERVERTEX_ATTRIBUTES = [
     u'thicknessPerVertex',
     u'bouncePerVertex',
     u'frictionPerVertex',
@@ -68,6 +68,9 @@ SUPPORTED_TYPES = (
 
 
 def save_pervertex_maps(nodes=None, directory=''):
+    """ This function save all the ncloth dynamics vertex maps. Nodes is the
+    node names, directory is the cacheversion directory.
+    """
     nodes = nodes if nodes is not None else cmds.ls(type=DYNAMIC_NODES)
     attributes = {}
     filename = os.path.join(directory, PERVERTEX_FILE)
@@ -76,13 +79,18 @@ def save_pervertex_maps(nodes=None, directory=''):
             attributes.update(json.load(f) or {})
     attributes.update({
         node.split(":")[-1]: {
-            at: cmds.getAttr(node + '.' + at) for at in PERVERTEX_ATTRIBUTE}
+            at: cmds.getAttr(node + '.' + at) for at in PERVERTEX_ATTRIBUTES}
         for node in nodes})
     with open(filename, 'w') as f:
         json.dump(attributes, f, indent=2, sort_keys=True)
 
 
-def set_pervertex_maps(nodes=None, directory=''):
+def set_pervertex_maps(nodes=None, directory='', maps=None):
+    """ This function apply all the ncloth dynamics vertex maps saved in a
+    directory. Nodes is the node names, directory is the cacheversion
+    directory. Attribute filter is a list of attribute to apply. If this is
+    None, function will apply all the maps.
+    """
     nodes = nodes if nodes is not None else cmds.ls(type=DYNAMIC_NODES)
     filename = os.path.join(directory, PERVERTEX_FILE)
     with open(filename, 'r') as f:
@@ -90,6 +98,8 @@ def set_pervertex_maps(nodes=None, directory=''):
     for node in nodes:
         for attribute, values in attributes[node].items():
             if values is None:
+                values = []
+            if maps is not None and attribute not in maps:
                 continue
             cmds.setAttr(node + '.' + attribute, values, type='doubleArray')
 

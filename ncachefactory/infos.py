@@ -13,7 +13,7 @@ from ncachefactory.cachemanager import (
     recover_original_inputmesh)
 from ncachefactory.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
 from ncachefactory.qtutils import get_icon
-from ncachefactory.attributes import set_pervertex_maps
+from ncachefactory.attributessetters import DynamicMapTransferWindow
 
 
 class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
@@ -25,6 +25,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.setFixedHeight(420)
         self.cacheversion = None
         self.nodes = None
+        self.map_setter = None
 
         minpolicy = QtWidgets.QSizePolicy()
         minpolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
@@ -52,34 +53,34 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.layout_cacheversion.setContentsMargins(0, 0, 0, 0)
         self.layout_cacheversion.addWidget(self.cacheversion_infos)
 
-        self.connect_cache = QtWidgets.QPushButton("connect cache")
+        self.connect_cache = QtWidgets.QPushButton("Connect cache")
         self.connect_cache.released.connect(self._call_connect_cache)
-        self.blend_cache = QtWidgets.QPushButton("blend cache")
+        self.blend_cache = QtWidgets.QPushButton("Blend cache")
         self.blend_cache.released.connect(self._call_blend_cache)
         self.connect_layout = QtWidgets.QHBoxLayout()
         self.connect_layout.setContentsMargins(0, 0, 0, 0)
         self.connect_layout.addWidget(self.connect_cache)
         self.connect_layout.addWidget(self.blend_cache)
 
-        self.plug_input = QtWidgets.QPushButton("plug as input shape")
+        self.plug_input = QtWidgets.QPushButton("Plug as input shape")
         self.plug_input.released.connect(self._call_plug_input)
-        self.plug_rest = QtWidgets.QPushButton("plug as rest shape")
+        self.plug_rest = QtWidgets.QPushButton("Plug as rest shape")
         self.plug_rest.released.connect(self._call_plug_rest)
         self.connect_layout2 = QtWidgets.QHBoxLayout()
         self.connect_layout2.setContentsMargins(0, 0, 0, 0)
         self.connect_layout2.addWidget(self.plug_input)
         self.connect_layout2.addWidget(self.plug_rest)
 
-        text = "recover original input"
+        text = "Recover original input"
         self.recover_input = QtWidgets.QPushButton(text)
         self.recover_input.released.connect(self._call_recover_input)
 
-        self.apply_settings = QtWidgets.QPushButton("apply settings")
+        self.apply_settings = QtWidgets.QPushButton("Apply settings")
         self.apply_settings.released.connect(self._call_apply_settings)
         self.blend_attributes = QtWidgets.QPushButton("%")
         self.blend_attributes.setFixedWidth(25)
-        self.apply_maps = QtWidgets.QPushButton("apply maps")
-        self.apply_maps.released.connect(self._call_apply_maps)
+        self.transfer_maps = QtWidgets.QPushButton("Transfer dynamic maps")
+        self.transfer_maps.released.connect(self._call_transfer_maps)
         self.attributes_layout = QtWidgets.QHBoxLayout()
         self.attributes_layout.setContentsMargins(0, 0, 0, 0)
         self.attributes_layout.setSpacing(0)
@@ -87,9 +88,9 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.attributes_layout.addSpacing(1)
         self.attributes_layout.addWidget(self.blend_attributes)
         self.attributes_layout.addSpacing(4)
-        self.attributes_layout.addWidget(self.apply_maps)
+        self.attributes_layout.addWidget(self.transfer_maps)
 
-        self.show_playblasts = QtWidgets.QPushButton("show playblasts")
+        self.show_playblasts = QtWidgets.QPushButton("Show playblasts")
         self.show_playblasts.released.connect(self._call_show_playblasts)
 
         self.layout = QtWidgets.QVBoxLayout(self)
@@ -108,7 +109,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.plug_input.setEnabled(contains_clothnodes)
         self.plug_rest.setEnabled(contains_clothnodes)
         self.recover_input.setEnabled(contains_clothnodes)
-        self.apply_maps.setEnabled(contains_clothnodes)
+        self.transfer_maps.setEnabled(contains_clothnodes)
         if self.cacheversion is not None:
             playblasts_available = bool(self.cacheversion.infos['playblasts'])
             self.show_playblasts.setEnabled(playblasts_available)
@@ -174,9 +175,13 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
     def _call_apply_settings(self):
         apply_settings(self.cacheversion, self.nodes)
 
-    def _call_apply_maps(self):
+    def _call_transfer_maps(self):
+        if self.map_setter is not None:
+            self.map_setter.close()
         nodes = cmds.ls(self.nodes, type='nCloth')
-        set_pervertex_maps(self.nodes, self.cacheversion.directory)
+        self.map_setter = DynamicMapTransferWindow(
+            self.cacheversion, nodes=nodes or None)
+        self.map_setter.show()
 
     def _call_show_playblasts(self):
         mediaplayer = cmds.optionVar(query=MEDIAPLAYER_PATH_OPTIONVAR)
@@ -359,15 +364,15 @@ class CacheversionToolbar(QtWidgets.QToolBar):
         super(CacheversionToolbar, self).__init__(parent)
         self.setIconSize(QtCore.QSize(15, 15))
         self.filter = QtWidgets.QAction(get_icon('filter.png'), '', self)
-        self.filter.setToolTip('filter versions available for selected nodes')
+        self.filter.setToolTip('Filter versions available for selected nodes')
         self.filter.setCheckable(True)
         self.sort = QtWidgets.QAction(get_icon('sort.png'), '', self)
-        self.sort.setToolTip('sort version by')
+        self.sort.setToolTip('Sort version by')
 
         self.sort_menu = QtWidgets.QMenu()
-        self.sort_menu.addAction('name')
-        self.sort_menu.addAction('last modification')
-        self.sort_menu.addAction('creation date')
+        self.sort_menu.addAction('Name')
+        self.sort_menu.addAction('Last modification')
+        self.sort_menu.addAction('Creation date')
         self.sort.setMenu(self.sort_menu)
 
         self.addAction(self.filter)

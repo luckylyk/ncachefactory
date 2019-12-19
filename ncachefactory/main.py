@@ -1,6 +1,7 @@
 
 import os
 from functools import partial
+import webbrowser
 
 from PySide2 import QtCore, QtWidgets
 from maya import cmds
@@ -32,7 +33,9 @@ from ncachefactory.timecallbacks import (
 from ncachefactory.monitoring import MultiCacheMonitor
 
 
-WINDOW_TITLE = "NCache Factory"
+
+HELPFOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'help')
+WINDOW_TITLE = "nCache Factory"
 
 
 class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
@@ -113,14 +116,17 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.layout.addStretch(1)
 
         self.menubar = QtWidgets.QMenuBar(self)
-        self.menufile = QtWidgets.QMenu('misc', self.menubar)
+        self.menufile = QtWidgets.QMenu('Misc', self.menubar)
         self.menubar.addMenu(self.menufile)
-        self.editpath = QtWidgets.QAction('dependencies path', self.menufile)
+        self.editpath = QtWidgets.QAction('Dependencies path', self.menufile)
         self.editpath.triggered.connect(self.pathoptions.show)
         self.menufile.addAction(self.editpath)
-        self.show_monitor = QtWidgets.QAction('batch cache monitor', self.menufile)
+        self.show_monitor = QtWidgets.QAction('Batch cache monitor', self.menufile)
         self.menufile.addAction(self.show_monitor)
         self.show_monitor.triggered.connect(self.batch_monitor.show)
+        self.help = QtWidgets.QAction('Help', self.menufile)
+        self.menufile.addAction(self.help)
+        self.help.triggered.connect(self._call_help)
         self.layout.setMenuBar(self.menubar)
 
         self.scrollarea = QtWidgets.QScrollArea()
@@ -136,6 +142,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.main_layout.addWidget(self.scrollarea)
 
         self.set_workspace(get_default_workspace())
+
+    def _call_help(self):
+        webbrowser.open(os.path.join(HELPFOLDER, 'index.html'))
 
     def show(self, **kwargs):
         super(NCacheManager, self).show(**kwargs)

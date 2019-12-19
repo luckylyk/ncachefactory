@@ -5,6 +5,7 @@ from ncachefactory.main import NCacheManager
 
 import maya.OpenMayaUI as omui
 from maya import cmds
+import os
 
 
 _ncachemanager_window = None

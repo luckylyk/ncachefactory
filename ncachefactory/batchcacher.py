@@ -68,16 +68,16 @@ class BatchCacher(QtWidgets.QWidget):
         self._wedging_name.setText(WEDGINGCACHE_NAME)
         self._attribute = QtWidgets.QLineEdit()
         self._pick = QtWidgets.QPushButton(get_icon("pipette.png"), "")
-        self._pick.setToolTip("pick selected channel in channel editor")
+        self._pick.setToolTip("Pick selected channel in channel editor")
         self._pick.setFixedSize(18, 18)
         self._pick.released.connect(self._call_pick_attribute)
         self._find = QtWidgets.QPushButton(get_icon("magnifyingglass.png"), "")
-        self._find.setToolTip("find attribute in selection")
+        self._find.setToolTip("Find attribute in selection")
         self._find.setFixedSize(18, 18)
         self._find.released.connect(self._call_find_attribute)
         self._values =  QtWidgets.QLineEdit()
         self._values_builder = QtWidgets.QPushButton(get_icon("hammer.png"), "")
-        self._values_builder.setToolTip("build value list")
+        self._values_builder.setToolTip("Build value list")
         self._values_builder.setFixedSize(18, 18)
         self._values_builder.released.connect(self._call_values_builder)
 
@@ -108,8 +108,8 @@ class BatchCacher(QtWidgets.QWidget):
         self.wedging_layout.addWidget(self.cache_wedging)
 
         self.tabwidget = QtWidgets.QTabWidget()
-        self.tabwidget.addTab(self.multicache, "multi scenes")
-        self.tabwidget.addTab(self.wedging, "attribute wedging")
+        self.tabwidget.addTab(self.multicache, "Multi scenes")
+        self.tabwidget.addTab(self.wedging, "Attribute wedging")
 
         self.options = SimulationKillerOptions()
         self.options_layout = QtWidgets.QHBoxLayout()
@@ -182,7 +182,7 @@ class BatchCacher(QtWidgets.QWidget):
     def _call_pick_attribute(self):
         plugs = list_channelbox_highlited_plugs()
         if not plugs:
-            return cmds.warning('no plug selected in channelbox')
+            return cmds.warning('No plug selected in channelbox')
         self._attribute.setText(plugs[-1])
 
     def _call_values_builder(self):
@@ -348,10 +348,10 @@ class SimulationKillerOptions(QtWidgets.QWidget):
 
         self.layout = QtWidgets.QFormLayout(self)
         self.layout.setSpacing(0)
-        self.layout.addRow("stretch limit:", self._detect_explosion)
+        self.layout.addRow("Stretch limit:", self._detect_explosion)
         self.layout.addRow("", self._explosion_widget)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
-        self.layout.addRow("time limit:", self._timelimit_widget)
+        self.layout.addRow("Time limit:", self._timelimit_widget)
 
         self.set_optionvars()
         self.update_ui_states()
@@ -427,9 +427,9 @@ class ValuesBuilder(QtWidgets.QDialog):
         self.ok = QtWidgets.QPushButton("ok")
         self.ok.released.connect(self.accept)
         self.layout = QtWidgets.QFormLayout(self)
-        self.layout.addRow("start value", self._start_value)
-        self.layout.addRow("end value", self._end_value)
-        self.layout.addRow("iteration", self._iterations)
+        self.layout.addRow("Start value", self._start_value)
+        self.layout.addRow("End value", self._end_value)
+        self.layout.addRow("Iteration", self._iterations)
         self.layout.addWidget(self.ok)
 
     @property
