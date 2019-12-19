@@ -48,7 +48,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
 
     def showEvent(self, *events):
         super(MultiCacheMonitor, self).showEvent(*events)
-        self.timer.start(24, self)
+        self.timer.start(47, self)
 
     def closeEvent(self, *events):
         super(MultiCacheMonitor, self).closeEvent(*events)
