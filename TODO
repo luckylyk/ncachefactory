@@ -4,6 +4,7 @@ todo list created from commit 60
 BUGS:
   - timing calculation per frame, look fucked
   - playblast encoding doesn't work in batch (or when a record in existing cache is done)
+  - blend ncache on hair system looks broken
 
   __ done __
   - fix slider click before first frame cached
@@ -26,6 +27,7 @@ BUGS:
 
 
 BASIC CONFORT
+  - rename properly the cache nodes to make blend edit easier
   - Add pipette to set automatically the workspace
   - set sortable the cacheversions in the explorer panel
   - apply settings should manage namespaces
