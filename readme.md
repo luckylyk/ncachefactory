@@ -35,7 +35,7 @@ ncachefactory.launch()
 n.b. if you doesn't have access to edit your maya environment (e.g. special studio launcher). You can interactively add the path in a maya python console and launch the module like this:
 ```python
 import sys
-sys.path.append("r{replace by the ncachemanager location folder}")
+sys.path.append(r"{replace by the ncachemanager location folder}")
 import ncachefactory
 ncachefactory.launch()
 ```
