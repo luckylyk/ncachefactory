@@ -1,5 +1,6 @@
 
 import datetime
+from functools import partial
 import subprocess
 
 from maya import cmds
@@ -11,7 +12,8 @@ from ncachefactory.cachemanager import (
     filter_connected_cacheversions, connect_cacheversion, apply_settings,
     plug_cacheversion_to_inputmesh, plug_cacheversion_to_restshape,
     recover_original_inputmesh)
-from ncachefactory.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
+from ncachefactory.optionvars import (
+    MEDIAPLAYER_PATH_OPTIONVAR, CACHEVERSION_SORTING_STYLE)
 from ncachefactory.qtutils import get_icon
 from ncachefactory.attributessetters import DynamicMapTransferWindow
 
@@ -38,13 +40,15 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.version_selector.setSizePolicy(maxpolicy)
         self.version_selector.setModel(self.version_selector_model)
         self.version_selector.currentIndexChanged.connect(self._call_index_changed)
-        self.version_toolbal = CacheversionToolbar()
-        self.version_toolbal.setSizePolicy(minpolicy)
+        self.version_toolbar = CacheversionToolbar()
+        method = self._update_cacheversions_order
+        self.version_toolbar.sortingOrderModified.connect(method)
+        self.version_toolbar.setSizePolicy(minpolicy)
         self.version_layout = QtWidgets.QHBoxLayout()
         self.version_layout.setContentsMargins(0, 0, 0, 0)
         self.version_layout.addWidget(self.version_label)
         self.version_layout.addWidget(self.version_selector)
-        self.version_layout.addWidget(self.version_toolbal)
+        self.version_layout.addWidget(self.version_toolbar)
 
         self.groupbox_infos = QtWidgets.QGroupBox()
         self.cacheversion_infos = CacheversionInfosWidget()
@@ -122,9 +126,26 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
             self.setEnabled(False)
             self.cacheversion_infos.set_cacheversion(None)
             return
+
         self.setEnabled(True)
-        self.version_selector_model.set_cacheversions(
-            filter_cacheversions_containing_nodes(nodes, cacheversions))
+        key = self.version_toolbar.sorting_key
+        filtered = filter_cacheversions_containing_nodes(nodes, cacheversions)
+        filtered = sorted(filtered, key=lambda x: x.infos[key])
+        self.version_selector_model.set_cacheversions(filtered)
+        cacheversions = filter_connected_cacheversions(nodes[0], cacheversions)
+        if not cacheversions:
+            self.version_selector.setCurrentIndex(0)
+            return
+        index = self.version_selector_model.cacheversions.index(cacheversions[0])
+        self.version_selector.setCurrentIndex(index)
+        self.update_ui_states()
+
+    def _update_cacheversions_order(self):
+        key = self.version_toolbar.sorting_key
+        cacheversions = self.version_selector_model.cacheversions
+        cacheversions = sorted(cacheversions, key=lambda x: x.infos[key])
+        self.version_selector_model.cacheversions = cacheversions
+        nodes = self.nodes
         cacheversions = filter_connected_cacheversions(nodes[0], cacheversions)
         if not cacheversions:
             self.version_selector.setCurrentIndex(0)
@@ -361,21 +382,53 @@ class NodeInfosTableModel(QtCore.QAbstractTableModel):
 
 
 class CacheversionToolbar(QtWidgets.QToolBar):
+    SORTING_KEYS = "name", "modification_time", "creation_time"
+    sortingOrderModified = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(CacheversionToolbar, self).__init__(parent)
         self.setIconSize(QtCore.QSize(15, 15))
-        self.filter = QtWidgets.QAction(get_icon('filter.png'), '', self)
-        self.filter.setToolTip('Filter versions available for selected nodes')
-        self.filter.setCheckable(True)
+        self.sort_type = 0
+
+        # self.filter = QtWidgets.QAction(get_icon('filter.png'), '', self)
+        # self.filter.setToolTip('Filter versions available for selected nodes')
+        # self.filter.setCheckable(True)
         self.sort = QtWidgets.QAction(get_icon('sort.png'), '', self)
         self.sort.setToolTip('Sort version by')
 
         self.sort_menu = QtWidgets.QMenu()
-        self.sort_menu.addAction('Name')
-        self.sort_menu.addAction('Last modification')
-        self.sort_menu.addAction('Creation date')
+        self.name = QtWidgets.QAction("Name", self)
+        self.name.setCheckable(True)
+        self.name.triggered.connect(partial(self.set_sort_type, 0))
+        self.last_modification = QtWidgets.QAction("Last modification", self)
+        self.last_modification.setCheckable(True)
+        method = partial(self.set_sort_type, 1)
+        self.last_modification.triggered.connect(method)
+        self.creation = QtWidgets.QAction("Creation date", self)
+        self.creation.setCheckable(True)
+        self.creation.triggered.connect(partial(self.set_sort_type, 2))
+
+        self.sort_menu.addAction(self.name)
+        self.sort_menu.addAction(self.last_modification)
+        self.sort_menu.addAction(self.creation)
         self.sort.setMenu(self.sort_menu)
 
-        self.addAction(self.filter)
+        # self.addAction(self.filter)
         self.addAction(self.sort)
+        # update chevecked action menu
+        index = cmds.optionVar(query=CACHEVERSION_SORTING_STYLE)
+        self.set_sort_type(index, emit=False)
+
+    def set_sort_type(self, index, emit=True):
+        self.sort_type = index
+        self.name.setChecked(index == 0)
+        self.last_modification.setChecked(index == 1)
+        self.creation.setChecked(index == 2)
+        cmds.optionVar(intValue=[CACHEVERSION_SORTING_STYLE, index])
+        if emit is False:
+            return
+        self.sortingOrderModified.emit()
+
+    @property
+    def sorting_key(self):
+        return self.SORTING_KEYS[self.sort_type]

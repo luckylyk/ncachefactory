@@ -27,7 +27,7 @@ BUGS:
 
 
 BASIC CONFORT
-  - button to select connected cache/blend node (done, but need icon)
+  - button to select connected cache/blend node (done but icon)
   - Add pipette to set automatically the workspace
   - set sortable the cacheversions in the explorer panel
   - apply settings should manage namespaces

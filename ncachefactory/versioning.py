@@ -12,6 +12,8 @@ The module respect a nomenclature:
 example of an infos.json structure
 DEFAULT_INFOS = {
     'name': 'cache manager cache',
+    'creation_time': 65000,
+    'modification_time': 65252,
     'comment': 'comme ci comme ca',
     'playblasts': [],
     'nodes': {
@@ -25,6 +27,7 @@ import os
 import json
 import glob
 import shutil
+import time
 
 INFOS_FILENAME = 'infos.json'
 PLAYBLAST_FILENAME = 'playblast_{}.mp4'
@@ -98,6 +101,10 @@ class CacheVersion(object):
     def update(self):
         self.infos = load_json(self.infos_path)
 
+    def update_modification_time(self):
+        self.infos['modification_time'] = time.time()
+        self.save_infos()
+
     def __eq__(self, cacheversion):
         assert isinstance(cacheversion, CacheVersion)
         return cacheversion.directory == self.directory
@@ -165,9 +172,11 @@ def create_cacheversion(
             'range': (start_frame, end_frame),
             'namespace': namespace,
             'timespent': timespent}
-
+    time_ = time.time()
     infos = {
         'name': name,
+        'creation_time': time_,
+        'modification_time': time_,
         'comment': comment,
         'nodes': nodes_infos,
         'start_frame': start_frame,

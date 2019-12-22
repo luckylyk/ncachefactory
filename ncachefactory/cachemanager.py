@@ -106,6 +106,7 @@ def record_in_existing_cacheversion(
     time = cmds.currentTime(query=True)
     cacheversion.set_range(nodes, start_frame=start_frame, end_frame=time)
     cacheversion.set_timespent(nodes=nodes, seconds=timespent)
+    cacheversion.update_modification_time()
 
     if playblast is True:
         temp_path = stop_playblast_record(cacheversion.directory)
@@ -132,6 +133,7 @@ def append_to_cacheversion(
             continue
         seconds = cacheversion.infos['nodes'][node]["timespent"] + timespent
         cacheversion.set_timespent(nodes=[node], seconds=seconds)
+    cacheversion.update_modification_time()
     # Update the cached range in the cache info if the append cache
     # finished further the original cache
     time = cmds.currentTime(query=True)

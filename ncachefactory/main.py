@@ -144,7 +144,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.set_workspace(get_default_workspace())
 
     def _call_help(self):
-        webbrowser.open(os.path.join(HELPFOLDER, 'index.html'))
+        print os.path.join(HELPFOLDER, 'index.html')
+        webbrowser.open(url=os.path.join(HELPFOLDER, 'index.html'))
 
     def show(self, **kwargs):
         super(NCacheManager, self).show(**kwargs)

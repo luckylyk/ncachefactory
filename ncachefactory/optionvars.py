@@ -21,6 +21,7 @@ TIMELIMIT_OPTIONVAR = 'ncachefactory_timelimit'
 FFMPEG_PATH_OPTIONVAR = 'ncachefactory_ffmpeg_path'
 MEDIAPLAYER_PATH_OPTIONVAR = 'ncachefactory_mediaplayer_path'
 MAYAPY_PATH_OPTIONVAR = 'ncachefactory_mayapy_path'
+CACHEVERSION_SORTING_STYLE = 'ncachefactory_cacherversion_sorting_style'
 
 MULTICACHE_EXP_OPTIONVAR = 'ncachefactory_multicache_expanded'
 CACHEOPTIONS_EXP_OPTIONVAR = 'ncachefactory_cacheoptions_expanded'
@@ -46,7 +47,8 @@ OPTIONVARS = {
     CACHEOPTIONS_EXP_OPTIONVAR: 0,
     COMPARISON_EXP_OPTIONVAR: 0,
     PLAYBLAST_EXP_OPTIONVAR: 0,
-    VERSION_EXP_OPTIONVAR: 0}
+    VERSION_EXP_OPTIONVAR: 0,
+    CACHEVERSION_SORTING_STYLE: 0}
 
 
 # set default values from config file
