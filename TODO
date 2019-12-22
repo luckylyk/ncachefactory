@@ -27,13 +27,14 @@ BUGS:
 
 
 BASIC CONFORT
-  - rename properly the cache nodes to make blend edit easier
+  - button to select connected cache/blend node (done, but need icon)
   - Add pipette to set automatically the workspace
   - set sortable the cacheversions in the explorer panel
   - apply settings should manage namespaces
   - apply per vertex maps should manage namespaces
 
   __ done __
+  - rename properly the cache nodes to make blend edit easier
   - have choice to apply settings only on selected nodes or all scene (all scene is currently default)
   - write cache name in cache monitor comparator
   - Add config system to allow external edit for custom configuration
@@ -60,6 +61,8 @@ MAIN FEATURES
   - create contact sheet
 
   __ done __
+  - Manage locked visibility attribute in nodetableview
+  - Manage locked dynamic attribute in nodetableview
   - Compare two batch rendering
   - Add play button, which allow really time (24f/s) sequence reading in the Multi cache monitor
   - For mayapy caches, create a geometry text linked to the camera to fixe the issue.
@@ -76,3 +79,11 @@ ACCESIBILITY
   __done__
   - Set tooltip on every qpushbutton
   - Update readme with new features
+
+
+TESTS
+  - write test for ncache.py
+  - write test for node.py
+  - write test for cachemanager.py
+  - order arrayutils.py
+  - create a numberutils.py and write test

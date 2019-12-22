@@ -110,15 +110,16 @@ def import_ncache(node, filename, behavior=0):
     else:
         inattrs = node + '.positions'
 
-    cache = cmds.cacheFile(
+    cachefile = cmds.cacheFile(
         attachFile=True,
         fileName=filename,
         inAttr=inattrs)
-    cmds.connectAttr(cache + '.inRange', node + '.playFromCache')
+    cmds.connectAttr(cachefile + '.inRange', node + '.playFromCache')
 
     if connections:
         reconnect_cachenodes(connections)
 
+    return cachefile
 
 def reconnect_cachenodes(connections, nodetypes=None):
     '''
@@ -296,7 +297,6 @@ def clear_cachenodes(nodes=None, cachenames=None, workspace=None):
             continue
         if cmds.getAttr(cachenode + '.cacheName') in cachenames:
             cmds.delete(cachenode)
-
 
 
 if __name__ == "__main__":

@@ -39,6 +39,7 @@ ALTERNATE_INPUTSHAPE_GROUP = "alternative_inputshapes"
 ALTERNATE_RESTSHAPE_GROUP = "alternative_restshapes"
 INPUTSHAPE_SUFFIX = "_alternate_inputshape"
 RESTSHAPE_SUFFIX = "_alternate_restshapes"
+CACHENODENAME_SUFFIX = "_CN000"
 
 
 def create_and_record_cacheversion(
@@ -206,7 +207,8 @@ def connect_cacheversion(cacheversion, nodes=None, behavior=0):
         if not xml_file:
             cmds.warning("no cache to connect for {}".format(xml_file))
             continue
-        import_ncache(node, xml_file, behavior=behavior)
+        cachefile = import_ncache(node, xml_file, behavior=behavior)
+        cmds.rename(cachefile, cacheversion.name +CACHENODENAME_SUFFIX)
 
 
 def delete_cacheversion(cacheversion):
@@ -289,8 +291,8 @@ def apply_settings(cacheversion, nodes):
                     cmds.setAttr(attribute, value)
                 except RuntimeError:
                     msg = (
-                        attribute + " is locked, connected, invalid or doesn't "
-                        "in current scene. This attribute is skipped")
+                        attribute + " is locked, connected, invalid or "
+                        "doesn't in current scene. This attribute is skipped")
                     cmds.warning(msg)
 
 

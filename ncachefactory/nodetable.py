@@ -395,14 +395,32 @@ class SwitcherDelegate(QtWidgets.QStyledItemDelegate):
     given by the table model. It switch the dynamic node state en clic
     """
     ICONSIZE = 24, 24
+    LOCKED_ICON = get_icon("locker.png")
+    LOCKED_CHECK_ATTRIBUTE = None
+    ON_ICON_NAME = None
+    OFF_ICON_NAME = None
+    LOCKED_CHECK_ATTRIBUTE = None
 
     def __init__(self, table):
         super(SwitcherDelegate, self).__init__(table)
         self._model = table.model()
         self.icons = None
+        to_check_attributes = (
+            self.ON_ICON_NAME, self.OFF_ICON_NAME, self.LOCKED_CHECK_ATTRIBUTE)
+        if any([attr is None for attr in to_check_attributes]):
+            raise NotImplementedError
 
     def get_icon(self, dynamic_node):
-        raise NotImplementedError
+        if dynamic_node != self.last_dynamic_node_set:
+            self.last_dynamic_node_set = dynamic_node
+            self.icons = None
+
+        if self.icons is None:
+            self.icons = (
+                get_icon(dynamic_node.ICONS[self.OFF_ICON_NAME]),
+                get_icon(dynamic_node.ICONS[self.ON_ICON_NAME]))
+
+        return self.icons[bool(dynamic_node.visible)]
 
     def paint(self, painter, option, index):
         dynamic_node = self._model.data(index, QtCore.Qt.UserRole)
@@ -415,11 +433,27 @@ class SwitcherDelegate(QtWidgets.QStyledItemDelegate):
         rect = QtCore.QRect(left, top, 16, 16)
         painter.drawPixmap(rect, pixmap)
 
+        # draw Locker
+        if self.LOCKED_CHECK_ATTRIBUTE is None:
+            return
+        if getattr(dynamic_node, self.LOCKED_CHECK_ATTRIBUTE) is False:
+            return
+        pixmap = self.LOCKED_ICON.pixmap(15, 15).scaled(
+            QtCore.QSize(15, 15),
+            transformMode=QtCore.Qt.SmoothTransformation)
+        left = option.rect.right() - 15
+        top = option.rect.bottom() - 15
+        rect = QtCore.QRect(left, top, 15, 15)
+        painter.drawPixmap(rect, pixmap)
+
     def sizeHint(self, *args):
         return QtCore.QSize(24, 24)
 
 
 class VisibilityDelegate(SwitcherDelegate):
+    LOCKED_CHECK_ATTRIBUTE = 'visibility_locked'
+    ON_ICON_NAME = 'visible'
+    OFF_ICON_NAME = 'hidden'
 
     def __init__(self, table):
         super(VisibilityDelegate, self).__init__(table)
@@ -431,20 +465,11 @@ class VisibilityDelegate(SwitcherDelegate):
         dynamic_node.set_visible(state)
         return
 
-    def get_icon(self, dynamic_node):
-        if dynamic_node != self.last_dynamic_node_set:
-            self.last_dynamic_node_set = dynamic_node
-            self.icons = None
-
-        if self.icons is None:
-            self.icons = (
-                get_icon(dynamic_node.ICONS['hidden']),
-                get_icon(dynamic_node.ICONS['visible']))
-
-        return self.icons[bool(dynamic_node.visible)]
-
 
 class EnableDelegate(SwitcherDelegate):
+    LOCKED_CHECK_ATTRIBUTE = 'locked'
+    ON_ICON_NAME = 'on'
+    OFF_ICON_NAME = 'off'
 
     def __init__(self, table):
         super(EnableDelegate, self).__init__(table)
@@ -563,6 +588,9 @@ class TableToolBar(QtWidgets.QToolBar):
         self.selection = QtWidgets.QAction(get_icon('select.png'), '', self)
         self.selection.setToolTip('select maya dynamic shapes')
         self.selection.triggered.connect(self.select_nodes)
+        self.select_cache = QtWidgets.QAction(get_icon('select.png'), '', self)
+        self.select_cache.setToolTip('select connected cache/blend nodes')
+        self.select_cache.triggered.connect(self.select_cache_nodes)
         self.interactive = QtWidgets.QAction(get_icon('link.png'), '', self)
         self.interactive.setCheckable(True)
         self.interactive.setToolTip('interactive selection')
@@ -581,6 +609,7 @@ class TableToolBar(QtWidgets.QToolBar):
         self.filter.triggered.connect(self.showFilterRequested.emit)
 
         self.addAction(self.selection)
+        self.addAction(self.select_cache)
         self.addAction(self.interactive)
         self.addSeparator()
         self.addAction(self.switch)
@@ -617,6 +646,23 @@ class TableToolBar(QtWidgets.QToolBar):
         if not nodes:
             return
         cmds.select(nodes)
+
+    def select_cache_nodes(self):
+        if not self.table.selected_nodes:
+            return
+        nodes = [node.name for node in self.table.selected_nodes]
+        if not nodes:
+            return
+        cachenodes = []
+        for node in nodes:
+            cachefiles = list_connected_cachefiles(node)
+            cacheblends = list_connected_cachefiles(node)
+            if cachefiles:
+                cachenodes.extend(cachefiles)
+            if cacheblends:
+                cachenodes.extend(cachefiles)
+        if cachenodes:
+            cmds.select(cachenodes)
 
 
 def get_connected_cache_names(node, cacheversions):

@@ -54,6 +54,19 @@ def is_mesh_visible(mesh):
     return cmds.getAttr(mesh + ".intermediateObject") is False
 
 
+def is_mesh_visibility_locked(mesh):
+    visibility = mesh + '.visibility'
+    intermediate = mesh + '.intermediateObject'
+    visibility_connected = bool(cmds.listConnections(visibility))
+    intermediate_connected = bool(cmds.listConnections(intermediate))
+    visibility_locked = cmds.getAttr(visibility, lock=True)
+    intermediate_locked = cmds.getAttr(intermediate, lock=True)
+    return any([
+        visibility_connected,
+        visibility_locked,
+        intermediate_connected,
+        intermediate_locked])
+
 def switch_meshes_visibilities(mesh_to_show, mesh_to_hide):
     cmds.setAttr(mesh_to_show + '.visibility', True)
     cmds.setAttr(mesh_to_show + '.intermediateObject', False)

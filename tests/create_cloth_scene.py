@@ -13,6 +13,10 @@ for key in sys.modules.keys():
 
 def create_ncloth_test_scene():
     cmds.file(new=True, force=True)
+
+    cmds.namespace(add='namespaceTest')
+    cmds.namespace(set='namespaceTest')
+
     sphere_1 = cmds.polySphere()[0]
     cmds.setAttr(sphere_1 + '.t', -3, 0, 1)
 
@@ -20,7 +24,8 @@ def create_ncloth_test_scene():
     cmds.setAttr(sphere_2 + '.t', -3, 0, -1)
 
     cmds.select([sphere_1, sphere_2])
-    mel.eval('createNCloth 0')
+    ncloth = mel.eval('createNCloth 0')
+    cmds.connectAttr(ncloth[0] + ".depthSort", ncloth[0] + ".isDynamic")
 
     cmds.select([sphere_1 + ".vtx[381]", sphere_2 + ".vtx[381]"])
     mel.eval('createNConstraint("transform", "")')
@@ -44,6 +49,10 @@ def create_ncloth_test_scene():
 
     cmds.select([sphere_1, sphere_2 + ".vtx[381]"])
     mel.eval('createNConstraint("pointToSurface", "")')
+
+    nucleus = cmds.ls(type="nucleus")[0]
+    cmds.setAttr(nucleus + '.startFrame', 10)
+    cmds.playbackOptions(minTime=10)
 
 
 if __name__ == "__main__":

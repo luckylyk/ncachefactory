@@ -8,7 +8,7 @@ import maya.api.OpenMaya as om2
 from ncachefactory.ncloth import (
     find_input_mesh_dagpath, find_output_mesh_dagpath)
 from ncachefactory.mesh import (
-    set_mesh_color, get_mesh_color, is_mesh_visible,
+    set_mesh_color, get_mesh_color, is_mesh_visible, is_mesh_visibility_locked,
     switch_meshes_visibilities)
 from ncachefactory.attributes import (
     ensure_node_has_ncachemanager_tags, FILTERED_FOR_NCACHEMANAGER)
@@ -52,10 +52,18 @@ class DynamicNode(object):
         return cmds.nodeType(connections[0])
 
     @property
+    def locked(self):
+        plug = self.name + '.' + self.ENABLE_ATTRIBUTE
+        locked = cmds.getAttr(plug, lock=True)
+        return bool(cmds.listConnections(plug)) or locked
+
+    @property
     def enable(self):
         return cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE)
 
     def switch(self):
+        if self.locked:
+            return
         value = not self.enable
         cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
 
@@ -86,6 +94,12 @@ class HairNode(DynamicNode):
     @property
     def visible(self):
         return cmds.getAttr(self.name + '.solverDisplay')
+
+    @property
+    def visibility_locked(self):
+        connections = cmds.listConnections(self.name + '.solverDisplay')
+        locked = cmds.getAttr(self.name + '.solverDisplay', lock=True)
+        return bool(connections) or locked
 
     def set_visible(self, state):
         return cmds.setAttr(self.name + '.solverDisplay', state)
@@ -169,8 +183,16 @@ class ClothNode(DynamicNode):
             return False
         return is_mesh_visible(self.out_mesh.name())
 
-    def set_visible(self, state):
+    @property
+    def visibility_locked(self):
         if not self.out_mesh or not self.in_mesh:
+            return
+        in_mesh_locked = is_mesh_visibility_locked(self.in_mesh.name())
+        out_mesh_locked = is_mesh_visibility_locked(self.out_mesh.name())
+        return in_mesh_locked or out_mesh_locked
+
+    def set_visible(self, state):
+        if not self.out_mesh or not self.in_mesh or self.visibility_locked:
             return
         mesh_to_show = self.out_mesh if state else self.in_mesh
         mesh_to_hide = self.in_mesh if state else self.out_mesh
