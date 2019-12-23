@@ -96,7 +96,8 @@ def set_pervertex_maps(nodes=None, directory='', maps=None):
     with open(filename, 'r') as f:
         attributes = json.load(f)
     for node in nodes:
-        for attribute, values in attributes[node].items():
+        key = node.split(":")[-1]
+        for attribute, values in attributes[key].items():
             if values is None:
                 values = []
             if maps is not None and attribute not in maps:

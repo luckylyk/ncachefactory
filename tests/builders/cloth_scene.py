@@ -11,11 +11,12 @@ for key in sys.modules.keys():
         del sys.modules[key]
 
 
-def create_ncloth_test_scene():
+def built_ncloth_test_scene(with_namespace=True):
     cmds.file(new=True, force=True)
 
-    cmds.namespace(add='namespaceTest')
-    cmds.namespace(set='namespaceTest')
+    if with_namespace is True:
+        cmds.namespace(add='namespaceTest')
+        cmds.namespace(set='namespaceTest')
 
     sphere_1 = cmds.polySphere()[0]
     cmds.setAttr(sphere_1 + '.t', -3, 0, 1)

@@ -5,8 +5,10 @@ BUGS:
   - timing calculation per frame, look fucked
   - playblast encoding doesn't work in batch (or when a record in existing cache is done)
   - blend ncache on hair system looks broken
+  - apply settings should manage namespaces
 
   __ done __
+  - apply per vertex maps should manage namespaces
   - fix slider click before first frame cached
   - Adapt geo text to cam ratio
   - unlock attributes before setAttr and relock if necessary: actually that was a namespace issue.
@@ -28,9 +30,7 @@ BUGS:
 
 BASIC CONFORT
   - button to select connected cache/blend node (done but icon)
-  - Add pipette to set automatically the workspace
-  - apply settings should manage namespaces
-  - apply per vertex maps should manage namespaces
+  - Add pipette button or callback to update automatically the workspace
 
   __ done __
   - set sortable the cacheversions in the explorer panel
