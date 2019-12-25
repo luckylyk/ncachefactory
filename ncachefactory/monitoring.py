@@ -229,14 +229,21 @@ class JobPanel(QtWidgets.QWidget):
         self.images.kill()
         images = list_tmp_jpeg_under_cacheversion(self.cacheversion)
         # if the cache is not started yet, no images are already recorded
+        # otherwise, this compil the partial playblast and set the good range
+        start_frame = self.cacheversion.infos["start_frame"]
         if not images:
+            # edit the range at the current frame stop
+            self.cacheversion.set_range(end_frame=start_frame)
             return
+        # edit the range at the current frame stop
+        self.cacheversion.set_range(end_frame=start_frame + len(images))
         source = compile_movie(images)
         for image in images:
             os.remove(image)
         directory = self.cacheversion.directory
         destination = os.path.join(directory, os.path.basename(source))
         os.rename(source, destination)
+        self.cacheversion.add_playblast(destination)
 
 
 class InteractiveLog(QtWidgets.QWidget):

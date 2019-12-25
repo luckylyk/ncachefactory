@@ -170,7 +170,7 @@ def plug_cacheversion(cacheversion, groupname, suffix, inattr, nodes=None):
         input_mesh = get_orignial_input_mesh(node)
         mesh = create_mesh_for_geo_cache(input_mesh, suffix)
         new_input_meshes.append(cmds.listRelatives(mesh, parent=True)[0])
-        xml_file = find_file_match(node, cacheversion, extention='xml')
+        xml_file = find_file_match(node, cacheversion, extension='xml')
         attach_geo_cache(mesh, xml_file)
         clean_inputmesh_connection(node, inattr)
         cmds.connectAttr(mesh + '.worldMesh[0]', node + '.' + inattr)
@@ -205,7 +205,7 @@ def plug_cacheversion_to_restshape(cacheversion, nodes=None):
 def connect_cacheversion(cacheversion, nodes=None, behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     for node in nodes:
-        xml_file = find_file_match(node, cacheversion, extention='xml')
+        xml_file = find_file_match(node, cacheversion, extension='xml')
         if not xml_file:
             cmds.warning("no cache to connect for {}".format(xml_file))
             continue
@@ -233,7 +233,7 @@ def filter_connected_cacheversions(nodes=None, cacheversions=None):
 
 
 def compare_node_and_version(node, cacheversion):
-    filename = find_file_match(node, cacheversion, extention='xml')
+    filename = find_file_match(node, cacheversion, extension='xml')
     xml_attributes = extract_xml_attributes(filename)
     xml_attributes = clean_namespaces_in_attributes_dict(xml_attributes)
     node_attributes = list_node_attributes_values(node)
@@ -283,7 +283,7 @@ def recover_original_inputmesh(nodes):
 
 def apply_settings(cacheversion, nodes):
     for node in nodes:
-        filename = find_file_match(node, cacheversion, extention='xml')
+        filename = find_file_match(node, cacheversion, extension='xml')
         xml_attributes = extract_xml_attributes(filename)
         xml_attributes = clean_namespaces_in_attributes_dict(xml_attributes)
         for key, value in xml_attributes.items():

@@ -48,10 +48,10 @@ class CacheVersion(object):
     def save_infos(self):
         save_json(self.infos_path, self.infos)
 
-    def get_files(self, extention_filter=None):
+    def get_files(self, extension_filter=None):
         return [
             os.path.join(self.directory, f) for f in os.listdir(self.directory)
-            if extention_filter is None or f.endswith('.' + extention_filter)]
+            if extension_filter is None or f.endswith('.' + extension_filter)]
 
     def get_available_playblast_filename(self):
         return get_available_playblast_filename(self.directory)
@@ -205,14 +205,16 @@ def cacheversion_contains_node(node, cacheversion, same_namespace=False):
 
 def split_namespace_nodename(node):
     names = node.split(":")
-    if len(names) > 1:
+    if len(names) == 2:
         return names[0], names[-1]
+    elif len(names) >= 2:
+        return ":".join(names[:-1]), names[-1]
     return None, names[0]
 
 
-def find_file_match(node, cacheversion, extention='mcc'):
+def find_file_match(node, cacheversion, extension='mcc'):
     _, nodename = split_namespace_nodename(node)
-    filename = nodename + '.' + extention
+    filename = nodename + '.' + extension
     cached_namespace = cacheversion.infos["nodes"][nodename]["namespace"]
     if cached_namespace:
         filename = cached_namespace + '_' + filename

@@ -15,7 +15,8 @@ from ncachefactory.cachemanager import (
 from ncachefactory.optionvars import (
     MEDIAPLAYER_PATH_OPTIONVAR, CACHEVERSION_SORTING_STYLE)
 from ncachefactory.qtutils import get_icon
-from ncachefactory.attributessetters import DynamicMapTransferWindow
+from ncachefactory.attributessetters import (
+    DynamicMapTransferWindow, AttributesTransferWindow)
 
 
 class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
@@ -28,6 +29,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.cacheversion = None
         self.nodes = None
         self.map_setter = None
+        self.attribute_setter = None
 
         minpolicy = QtWidgets.QSizePolicy()
         minpolicy.setHorizontalPolicy(QtWidgets.QSizePolicy.Minimum)
@@ -79,18 +81,14 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.recover_input = QtWidgets.QPushButton(text)
         self.recover_input.released.connect(self._call_recover_input)
 
-        self.apply_settings = QtWidgets.QPushButton("Apply settings")
-        self.apply_settings.released.connect(self._call_apply_settings)
-        self.blend_attributes = QtWidgets.QPushButton("%")
-        self.blend_attributes.setFixedWidth(25)
+        self.apply_settings = QtWidgets.QPushButton("Transfer settings")
+        self.apply_settings.released.connect(self._call_transfer_settings)
         self.transfer_maps = QtWidgets.QPushButton("Transfer dynamic maps")
         self.transfer_maps.released.connect(self._call_transfer_maps)
         self.attributes_layout = QtWidgets.QHBoxLayout()
         self.attributes_layout.setContentsMargins(0, 0, 0, 0)
         self.attributes_layout.setSpacing(0)
         self.attributes_layout.addWidget(self.apply_settings)
-        self.attributes_layout.addSpacing(1)
-        self.attributes_layout.addWidget(self.blend_attributes)
         self.attributes_layout.addSpacing(4)
         self.attributes_layout.addWidget(self.transfer_maps)
 
@@ -193,15 +191,19 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         nodes = cmds.ls(self.nodes, type='nCloth')
         recover_original_inputmesh(nodes)
 
-    def _call_apply_settings(self):
-        apply_settings(self.cacheversion, self.nodes)
+    def _call_transfer_settings(self):
+        if self.attribute_setter is not None:
+            self.attribute_setter.close()
+        self.attribute_setter = AttributesTransferWindow(
+            cacheversion=self.cacheversion, nodes=self.nodes, parent=self)
+        self.attribute_setter.show()
 
     def _call_transfer_maps(self):
         if self.map_setter is not None:
             self.map_setter.close()
         nodes = cmds.ls(self.nodes, type='nCloth')
         self.map_setter = DynamicMapTransferWindow(
-            self.cacheversion, nodes=nodes or None)
+            self.cacheversion, nodes=nodes or None, parent=self)
         self.map_setter.show()
 
     def _call_show_playblasts(self):

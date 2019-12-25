@@ -4,6 +4,7 @@ import json
 import xml.etree.ElementTree
 from maya import cmds
 from ncachefactory.ncache import DYNAMIC_NODES
+from ncachefactory.versioning import split_namespace_nodename
 
 
 FILTERED_FOR_NCACHEMANAGER = 'isFilteredForNCacheManager'
@@ -117,13 +118,32 @@ def to_maya_value(string):
 def extract_xml_attributes(xml_file):
     tree = xml.etree.ElementTree.parse(xml_file).getroot()
     attributes = [element.text.split("=") for element in tree.findall('extra')]
-    return {a[0]: to_maya_value(a[1]) for a in attributes if len(a) == 2}
+    return {
+        split_namespace_nodename(a[0])[1]: to_maya_value(a[1])
+        for a in attributes if len(a) == 2}
 
 
 def clean_namespaces_in_attributes_dict(attributes):
     for key in attributes:
         attributes[key.split(":")[-1]] = attributes.pop(key)
     return attributes
+
+
+def apply_attibutes_dict(attributes_dict, blend=1.0):
+    for key, value in attributes_dict.items():
+        # find matching plugs in
+        found_attributes = cmds.ls([key, "*" + key, "*:" + key, "*:*:" + key])
+        for attribute in found_attributes:
+            try:
+                if blend != 1:
+                    reference_value = cmds.getAttr(attribute)
+                    value = (reference_value * (1 - blend)) + (value * blend)
+                cmds.setAttr(attribute, value)
+            except RuntimeError:
+                msg = (
+                    attribute + " is locked, connected, invalid or "
+                    "doesn't in current scene. This attribute is skipped")
+                cmds.warning(msg)
 
 
 def list_node_attributes_values(node):
