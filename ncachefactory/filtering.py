@@ -4,7 +4,7 @@ from ncachefactory.ncache import DYNAMIC_NODES
 from ncachefactory.attributes import FILTERED_FOR_NCACHEMANAGER
 
 
-WINDOW_TITLE = "Visible for cachemanager"
+WINDOW_TITLE = "Visible for the factory"
 
 
 class FilterDialog(QtWidgets.QWidget):

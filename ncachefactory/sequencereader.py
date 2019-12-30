@@ -489,4 +489,3 @@ def get_bottom_side_rect(rect):
     point = QtCore.QPointF(x, y)
     point2 = QtCore.QPointF(point.x() + POINT_RADIUS, point.y() - POINT_RADIUS)
     return QtCore.QRectF(point, point2)
-

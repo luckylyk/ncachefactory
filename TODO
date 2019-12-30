@@ -29,6 +29,8 @@ BUGS:
 
 
 BASIC CONFORT
+  - Disable cache button in attribute wedging tabs, web options set aren't valid
+  - Mutli switcher in the nodetableview toolbar have to skip the locked items
   - button to select connected cache/blend node (done but icon)
   - Add pipette button or callback to update automatically the workspace
 

@@ -1,1 +1,191 @@
-TODO
+<table style="height: 22px;" width="800" cellpadding="9" align="center" bgcolor="#EFEFEF">
+    <tbody>
+    <tr>
+    <td style="width: 670px;">
+    <h1 style="text-align: justify;"><strong>nCache factory help</strong></h1>
+    <p style="text-align: justify;">&nbsp;</p>
+    <h2 style="padding-left: 30px; text-align: justify;"><strong>Table of Content</strong></h2>
+    <ol style="text-align: justify;">
+    <li><strong><a href="#introduction">Introduction</a></strong></li>
+    <li><strong><a href="#start">Let's start with nCache Factory</a></strong></li>
+    <li><strong><a href="#workspace">Set your workspace</a></strong></li>
+    <li><strong><a href="#nodetable">Dynamic node table</a></strong>
+    <ol>
+    <li><strong><a href="#toolbar">Toolbar</a></strong></li>
+    <li><strong><a href="#cachebuttons">Cache buttons</a></strong></li>
+    </ol>
+    </li>
+    <li><strong><a href="#versions">Available versions (panel)</a></strong>
+    <ol>
+    <li><strong><a href="#infos">Cache infos</a></strong></li>
+    <li><strong><a href="#transfer1">Attribute transfer window</a></strong></li>
+    <li><strong><a href="#transfer2">Dynamic maps transfer window</a></strong></li>
+    </ol>
+    </li>
+    <li><strong><a href="#batchcacher">Batch cacher (panel)</a></strong>
+    <ol>
+    <li><strong><a href="#multiscenes">Multi scenes</a></strong></li>
+    <li><strong><a href="#wedging">Attribute wedging</a></strong></li>
+    <li><strong><a href="#killoptions">Auto-kill simulation options</a></strong></li>
+    </ol>
+    </li>
+    </ol>
+    <p style="text-align: justify;">&nbsp;</p>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="introduction"></a>1. Introduction</strong></h3>
+    <p style="text-align: justify;">The nCache Factory is an open source toolkit for Autodesk Maya dedicated to manage a proper simulation versioning. The factory has for goal to improve productivity, quality but also comfort for CFX artists during a CGI production.</p>
+    <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
+    <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="start"></a>2. Let's start with nCache Factory<br /></strong></h3>
+    <p style="text-align: justify;">The nCache Factory is an open source toolkit for Autodesk Maya dedicated to manage a proper simulation versioning. The factory has for goal to improve productivity, quality but also comfort for CFX artists during a CGI production.</p>
+    <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
+    <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="workspace"></a>3. Set youre workspace<br /></strong></h3>
+    <p style="text-align: justify;"><strong>[PLACE IMAGE OF WORKSPACE WIDGET]</strong></p>
+    <p style="text-align: justify;">On top of the nCache Factory window, this text line is your workspace. The workspace is the folder where will be stored all your different versions. All the versions has to be saved in a folder named "ncaches". When a workspace is set, if the last subfolder isn't named "ncaches", the subfolder is automatically created.</p>
+    <p style="text-align: justify;">By default, the workspace is a subfolder of the current maya scene. This is automatically set at the ncachemanager opening. The workspace is NOT automatically changed when a new scene is created or when a scene is opened. Take care to change manually you workspace when it's necessary.</p>
+    <p style="text-align: justify;">N.B. : the workspace define the context for the whole ui and panels.</p>
+    <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
+    <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="nodetable"></a>4. Dynamic nodes table<br /></strong></h3>
+    <p style="text-align: justify;"><strong>[PLACE IMAGE OF NODETABLEVIEWWIDGET]</strong></p>
+    <p style="text-align: justify;">This table list all the dynamic nodes contained by the maya scene which can be cached: "hair system" and "ncloth".&nbsp; Every rows are split in six column.</p>
+    <p style="text-align: justify;"><strong>Important: </strong>Everything related to "selection" in the nCache Factory rapport to this table and not to the maya scene. e.g. The button "Cache selection" will create a cache for the selected node in the table, whatever is currently selection in the maya outliner.</p>
+    <ul style="text-align: justify;">
+    <li style="text-align: justify;"><em>Color</em>: This items is the color of the object represented in the scene. For the ncloth, that's the shader color assigned on the current visible geometry (input or output mesh). For the hair systems, that's the display color of the collision hull solver.&nbsp; This column is interactive. Click on it will open a color selector dialog box. You will be able to select a new color for the node. For cloth, this operation will create and apply a basic shader on current displayed geometry. N.B. That same nCloth may have two differents color depends if the input mesh is visible or the output mesh one.</li>
+    <li style="text-align: justify;"><em>State(*)</em>: This item contains the node type icon of the node. The item is also interactive. When the icon in shades of grey, that means the node is disabled. Click on the item will interactively switch the state.</li>
+    <li style="text-align: justify;"><em>Display(*)</em>: This item manage the node display state. That behave differently depending the node type. For ncloth, the icon is the standard icon for "display current mesh" and "display input mesh". Click on that item switch between current and input mesh. For hair systems, the icon is an eye. That enable/disable the collision hull display.</li>
+    <li style="text-align: justify;"><em>Node</em>: This field display the dynamic node name with the namespace stripped.</li>
+    <li style="text-align: justify;"><em>Cache(s)</em>: This file display the cache(s) connected to the dynamic nodes. Multiple caches can be connected by a cacheBlend node. If no cache are connected, the field display: "no cache". If the field display "out of workspace", that mean that a cache is connected to the node but it's not located into the workspace set.</li>
+    <li style="text-align: justify;"><em>Range</em>: This is a graphic field which represent the cached frames on the current time line.</li>
+    </ul>
+    <p style="text-align: justify;"><em>* Those interactive fields may contain a locker icon (<img  src="../icons/locker.png" width="16" height="16" />). That mean they can't be edited from the table. The attributes that the action affect are locked or connected.</em></p>
+    <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="toolbar"></a>4.1Toolbar<br /></strong></h4>
+    <table style="height: 256px; width: 100%;">
+    <tbody>
+    <tr>
+    <td style="width: 10%;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/select.png" width="25" height="25" /></center></td>
+    <td style="width: 86%;">Select in the maya outliner the dynamic nodes selected in ncache factory dynamic node table.</td>
+    </tr>
+    <tr>
+    <td style="width: 10%;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/select.png" width="25" height="25" /></center></td>
+    <td style="width: 86%;">Select in maya outliner the cacheFile or cacheBlend node attached to the selected dynamic nodes in the ncache factory dynamic node table.</td>
+    </tr>
+    <tr>
+    <td style="width: 10%;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/link.png" width="25" height="25" /></center></td>
+    <td style="width: 86%;">Link the ncache factory dynamic node table selection to the maya selection.</td>
+    </tr>
+    <tr>
+    <td style="width: 10%;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/on_off.png" width="25" height="25" /></center></td>
+    <td style="width: 86%;">Switch the dynamic nodes selected simulation state.</td>
+    </tr>
+    <tr>
+    <td style="width: 10%;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/visibility.png" width="25" height="25" /></center></td>
+    <td style="width: 86%;">Switch the dynamic nodes selected visibility state;</td>
+    </tr>
+    <tr>
+    <td style="width: 10%;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/trash.png" width="25" height="25" /></center></td>
+    <td style="width: 86%;">Remove the cache connected to the selected dynamic node. This remove the cacheFile and cacheBlend nodes. The version is not removed from the disk.</td>
+    </tr>
+    <tr>
+    <td style="width: 10%;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/filter.png" width="25" height="25" /></center></td>
+    <td style="width: 86%;">Filter the dynamic nodes visible in the table. This open a dialog box which allow to flag some dynamic node has invisible for the ncache factory.</td>
+    </tr>
+    </tbody>
+    </table>
+    <h4 style="padding-left: 60px; text-align: justify;"><strong><a name="cachebuttons"></a>4.2 Cache buttons</strong></h4>
+    <p style="text-align: justify;">This section is a collection of button to create ncache versionin the maya live. All those buttons use the options set in the option panel below.</p>
+    <ul style="text-align: justify;">
+    <li><em>Cache selection</em>. Cache the selected dynamic nodes erasing the current connected version, except if : - the selected node aren't connected to the same version. - No cache are connected to the selected nodes. In those situations, a new version is automatically created.</li>
+    <li><em>Cache selection +</em>: Cache the selected dynamic nodes and in a new version.</li>
+    <li><em>Cache all</em>: same as "Cache selection" but cache all the enabled nodes.</li>
+    <li><em>Cache all +</em>: same as "Cache selection +" but cache all the enabled nodes</li>
+    <li><em>Append selection</em>: Append the selected cache using the timeline (warning: this doesn't use the custom range set in the options panel)</li>
+    <li><em>all </em>: same as "Append selection" but cache all the enabled nodes</li>
+    </ul>
+    <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="versions"></a>5. Available Versions (panel)</strong></h3>
+    <p style="text-align: justify;">This panel is use to explore and manage the versions contained by the workspace folder. This panel is interactively updated when the dynamic node table selection is changed. The version combo filter all the available versions for selection.</p>
+    <p style="padding-left: 60px; text-align: justify;"><strong><a name="infos"></a>5.1 Cache infos</strong></p>
+    <ul style="text-align: justify;">
+    <li style="text-align: justify;"><em>Connect cache</em>: Connect the current version to the selected dynamic nodes</li>
+    <li style="text-align: justify;"><em>Blend cache</em>: Blend the current version to the caches connected to the selected dynamic nodes</li>
+    <li style="text-align: justify;"><em>Plug as input shape</em>: Import the cache as geo cache and use this new geometry has new input.</li>
+    <li style="text-align: justify;"><em>Plug as rest shape</em>: Import the cache as geo cache and use this new geometry has rest shape.</li>
+    <li style="text-align: justify;"><em>Recover original input</em>: If the button "Plug as input shape" has been used, this button is usefull to cancel this operation. That reconnect the shape which was originally connected into the input.</li>
+    <li style="text-align: justify;"><em>Transfer settings</em>: Open the <a href="#transfer1">"Attribute transfer window"</a> (see below 5.2).</li>
+    <li style="text-align: justify;"><em>Transfer dynamic map</em>: Open the <a href="#transfer2">"Dynamic map transfer window"</a> (see below 5.3).</li>
+    <li style="text-align: justify;"><em>Show playblasts</em>: Open the recorded playblasts under the cache version in the media player set (see path options).</li>
+    </ul>
+    <p style="padding-left: 60px; text-align: justify;"><strong><a name="transfer1"></a>5.2 Attribute transfer window<br /></strong></p>
+    <p style="text-align: justify;">Natively, maya export an xml file recording all the plug value which influence a ncache record. This tool parse the settings used to create the current cache version to the selected node. This window contain multiple items, a list of influenced nodes, a table which display all the plugs and values.</p>
+    <ul style="text-align: justify;">
+    <li style="text-align: justify;"><em>Apply all settings</em>: Transfer (or blend) all settings visible in the tool to the scene.</li>
+    <li style="text-align: justify;"><em>Apply all settings on selected nodes</em>: Transfer (or blend) all settings on all selected nodes in the left node list.</li>
+    <li style="text-align: justify;"><em>Apply selected settings</em>: Transfer (or blend) all the selected settings in the attributes table to the scene.</li>
+    <li style="text-align: justify;"><em>Blend with scene (slider)</em>: This slider allow to blend the cached settings with the current scene settings. If the value is full, the tool apply at 100% the cached values</li>
+    </ul>
+    <p style="padding-left: 60px; text-align: justify;"><strong><a name="transfer2"></a>5.3 Dynamic maps transfer window</strong></p>
+    <p style="text-align: justify;">For every cache version created, the dynamic maps are backed up. This tool allow to transfer the backed up map to the current scene.</p>
+    <ul style="text-align: justify;">
+    <li style="text-align: justify;"><em>Apply all maps</em>: Transfer all maps contained by the tool</li>
+    <li style="text-align: justify;"><em>Apply all maps on selection</em>: Transfer all maps on the selected nodes in the left list.</li>
+    <li style="text-align: justify;"><em>Apply selected maps</em>: Transfer only selected maps on selected nodes.</li>
+    </ul>
+    <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="batchcacher"></a>6. Batch cacher (panel)</strong></h3>
+    <p style="text-align: justify;">This panel provide toolkit to create ncache version in background, using a external mayapy. This allow to launch multiple concurrency caches. There's two systems to launch batch cache, <a href="#multiscenes">the multi scenes</a> and the <a href="wedging">attribute wedging.</a> All the caches are sent through the Batch cacher moniter.</p>
+    <p style="text-align: justify;">N.B. Every cache sent in the Batch cacher monitor will provide a real-time feedback. The feedback options will use the settings set in the Playblast options panel !</p>
+    <p style="text-align: justify;"><strong>Important: </strong>Theoritically, the numbers of ncache processed in concurency is unlitited but depending of your memory available, your scene size and you available CPU, pay attention to not exagerate.</p>
+    <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="multiscenes"></a>6.1 Multi scenes<br /></strong></h4>
+    <p style="text-align: justify;">The multi scenes give the possibilty to save you save in multiples states and send multiple cache together. This tab contains a table. This table contains the scenes which will send in batch cache. The first and the second table's column are editable. N.B. when those must be validated (pressing return or moving the focus) before launching the cache. If it's not, the field value is not changed.</p>
+    <table style="width: 770px;">
+    <tbody>
+    <tr style="height: 31.8167px;">
+    <td style="width: 75.5px; height: 31.8167px;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/flash.png" width="25" height="25" /></center></td>
+    <td style="width: 678.5px; height: 31.8167px;">This button create a save of your scene in the current state. All the edits you will do after won't be used for when you will send the caches.</td>
+    </tr>
+    <tr style="height: 38px;">
+    <td style="width: 75.5px; height: 38px;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/trash.png" width="25" height="25" /></center></td>
+    <td style="width: 678.5px; height: 38px;">This button will remove all the selected scenes backed up for batch cache.</td>
+    </tr>
+    </tbody>
+    </table>
+    <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="wedging"></a>6.2 Attribute wedging<br /></strong></h4>
+    <p style="text-align: justify;">&nbsp;The attribute wedging concept allow to send multiple cache of the same scene with one overrided attribute value.</p>
+    <ul style="text-align: justify;">
+    <li><em>Name</em>: This field is the name of the cached version. The comment is generated automatically with the attribute override value.</li>
+    <li><em>Attribute</em>: This field has to contains the full plug name which will be overrided. e.i. nClothShape1.thickness</li>
+    </ul>
+    <table style="width: 770px;">
+    <tbody>
+    <tr style="height: 31.8167px;">
+    <td style="width: 75.5px; height: 31.8167px;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/pipette.png" width="25" height="25" /></center></td>
+    <td style="width: 678.5px; height: 31.8167px;">This button gather the attribute higlighted in the channel box.</td>
+    </tr>
+    <tr style="height: 38px;">
+    <td style="width: 75.5px; height: 38px;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/magnifyingglass.png" width="25" height="25" /></center></td>
+    <td style="width: 678.5px; height: 38px;">
+    <p>This button open a dialog which help to find an attribute in the current maya selection.</p>
+    </td>
+    </tr>
+    </tbody>
+    </table>
+    <ul style="text-align: justify;">
+    <li><em>Values</em>: that's a value list. The format must be floats separated by comas: <em>0.5, 1, 2, 3.0. </em> The number of values is unlimited.</li>
+    </ul>
+    <table style="width: 770px;">
+    <tbody>
+    <tr style="height: 31.8167px;">
+    <td style="width: 75.5px; height: 31.8167px;"><center><img style="background-color: #888888; padding: 5px;" src="../icons/hammer.png" width="25" height="25" /></center></td>
+    <td style="width: 678.5px; height: 31.8167px;">This button open a dialog helper to create automatically a list of values.</td>
+    </tr>
+    </tbody>
+    </table>
+    <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="killoptions"></a>6.3 Auto-kill simulation options<br /></strong></h4>
+    <p style="text-align: justify;">This part provide options to kill automatically your cache if that's detect an issue. Two options are available to auto kill a simulation.</p>
+    <ul style="text-align: justify;">
+    <li>&nbsp;<em>Stretch limit</em>: The cache will evaluate the input and output geometry after every frame simulated. That will compare the edge lengths on both geometries. If the output geo edge length is longer than the input geometry one multiplicated by the factor given, the cache process is killed.</li>
+    <li><em>Time limit</em>: The calculation time is evaluated between everyframe, if the is higher than the limit given in seconds, the cache process is killed.</li>
+    </ul>
+    </td>
+    </tr>
+    </tbody>
+    </table>
+    <p style="text-align: justify;">&nbsp;</p>

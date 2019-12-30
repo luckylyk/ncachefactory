@@ -34,7 +34,7 @@ from ncachefactory.monitoring import MultiCacheMonitor
 
 
 
-HELPFOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'help')
+HELPFOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'help')
 WINDOW_TITLE = "nCache Factory"
 
 
@@ -144,8 +144,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.set_workspace(get_default_workspace())
 
     def _call_help(self):
-        print os.path.join(HELPFOLDER, 'index.html')
-        webbrowser.open(url=os.path.join(HELPFOLDER, 'index.html'))
+        path = os.path.join(HELPFOLDER, 'index.html')
+        webbrowser.open(url=path)
 
     def show(self, **kwargs):
         super(NCacheManager, self).show(**kwargs)
