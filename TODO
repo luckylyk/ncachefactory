@@ -29,12 +29,12 @@ BUGS:
 
 
 BASIC CONFORT
-  - Disable cache button in attribute wedging tabs, web options set aren't valid
   - Mutli switcher in the nodetableview toolbar have to skip the locked items
   - button to select connected cache/blend node (done but icon)
   - Add pipette button or callback to update automatically the workspace
 
   __ done __
+  - Disable cache button in attribute wedging tabs, web options set aren't valid
   - set sortable the cacheversions in the explorer panel
   - rename properly the cache nodes to make blend edit easier
   - have choice to apply settings only on selected nodes or all scene (all scene is currently default)
