@@ -39,13 +39,13 @@ class AttributesTransferWindow(QtWidgets.QWidget):
         self.attributestable.setAlternatingRowColors(True)
         self.attributestable.setHorizontalHeaderLabels(self.HEADER_LABELS)
 
-        self.apply_all = QtWidgets.QPushButton("Apply all attributes")
+        self.apply_all = QtWidgets.QPushButton("Apply all settings")
         self.apply_all.released.connect(self._call_apply_all)
-        text = "Apply all attributes on selected nodes"
+        text = "Apply all settings on selected nodes"
         self.apply_all_on_selected_nodes = QtWidgets.QPushButton(text)
         method = self._call_apply_on_nodes_selected
         self.apply_all_on_selected_nodes.released.connect(method)
-        text = "Apply selected attributes"
+        text = "Apply selected settings"
         self.apply_attributes_selected = QtWidgets.QPushButton(text)
         method = self._call_apply_attributes_selected
         self.apply_attributes_selected.released.connect(method)

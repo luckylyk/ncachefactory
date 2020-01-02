@@ -29,6 +29,8 @@
     <li><strong><a href="#killoptions">Auto-kill simulation options</a></strong></li>
     </ol>
     </li>
+    <li><strong><a href="#options">Options (panel)</a></strong></li>
+    <li><strong><a href="#comparison">Comparison (panel)</a></strong></li>
     </ol>
     <p style="text-align: justify;">&nbsp;</p>
     <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="introduction"></a>1. Introduction</strong></h3>
@@ -55,7 +57,7 @@
     <li style="text-align: justify;"><em>Cache(s)</em>: This file display the cache(s) connected to the dynamic nodes. Multiple caches can be connected by a cacheBlend node. If no cache are connected, the field display: "no cache". If the field display "out of workspace", that mean that a cache is connected to the node but it's not located into the workspace set.</li>
     <li style="text-align: justify;"><em>Range</em>: This is a graphic field which represent the cached frames on the current time line.</li>
     </ul>
-    <p style="text-align: justify;"><em>* Those interactive fields may contain a locker icon (<img  src="../icons/locker.png" width="16" height="16" />). That mean they can't be edited from the table. The attributes that the action affect are locked or connected.</em></p>
+    <p style="text-align: justify;"><em>* Those interactive fields may contain a locker icon (<img src="../icons/locker.png" width="16" height="16" />). That mean they can't be edited from the table. The attributes that the action affect are locked or connected.</em></p>
     <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="toolbar"></a>4.1Toolbar<br /></strong></h4>
     <table style="height: 256px; width: 100%;">
     <tbody>
@@ -182,8 +184,25 @@
     <p style="text-align: justify;">This part provide options to kill automatically your cache if that's detect an issue. Two options are available to auto kill a simulation.</p>
     <ul style="text-align: justify;">
     <li>&nbsp;<em>Stretch limit</em>: The cache will evaluate the input and output geometry after every frame simulated. That will compare the edge lengths on both geometries. If the output geo edge length is longer than the input geometry one multiplicated by the factor given, the cache process is killed.</li>
-    <li><em>Time limit</em>: The calculation time is evaluated between everyframe, if the is higher than the limit given in seconds, the cache process is killed.</li>
     </ul>
+    <p><em>Time limit</em>: The calculation time is evaluated between everyframe, if the is higher than the limit given in seconds, the cache process is killed.</p>
+    <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="options"></a>7. Options (panel)</strong></h3>
+    <p style="text-align: justify;">This panel contains options use for ncache</p>
+    <ul>
+    <li style="text-align: justify;"><em>Verbose</em>: Activate a special verbose. That log time spent between every frame. That interesting for os which has the maya ui frozen during the cache but use a external terminal as console. That help the user to see where is the caching process.</li>
+    <li style="text-align: justify;"><em>Range</em>: selected the cached range (current time line or a custom one).</li>
+    <li style="text-align: justify;"><em>Attach method</em>: This is how maya will behave to manage the cache nodes already in the scene. Originally, maya is a bit dum with this. If nothing in the scene maya cache the node, but if there's a connected cache, maya ask every time if you want to blend or erase the cache file. If a cache is already connected, maya become dum and is not able to create one file per node anymore. That make the manual reconnection almost impossible. For those reason, the ncache factory clear all the cache nodes before every cache. The attach method define how the cleared caches will be reconnected after the process. Two kind of cache nodes can be connected to the dynamic nodes. The cache file is a node which read a ncache file saved in disk. His output can be directly connected in the dynmic node. The second one is the blend cache. Multiple cache files can be connected in the cache blend inputs. The cache blend will act as a blend shape for the caches.<br />
+    <ul>
+    <li style="text-align: justify;"><em>default</em>: remove all cache file and cache blend connected to dynamic nodes. Those nodes are deleted and replaced by a new cache file using the new ncache version.</li>
+    <li style="text-align: justify;"><em>keep blend</em>: keep all blend nodes already connected to the dynamic nodes. The new cache files will be added to the cache blend inputs. The dynamic nodes who have a cache file connected will be clear like in the default method.</li>
+    <li style="text-align: justify;"><em>keep all</em>: this method act like the "keep blend" for the dynamic nodes with a blend node connected. That will create automatically a blend node if a cache file is connected.</li>
+    </ul>
+    </li>
+    </ul>
+    <p>&nbsp;</p>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="comparison"></a>8. Comparison (panel)</strong></h3>
+    <p>&nbsp;</p>
     </td>
     </tr>
     </tbody>
