@@ -144,15 +144,12 @@ class BatchCacher(QtWidgets.QWidget):
         self.cache.setEnabled(False)
 
     def update_wedging_tabs_states(self, *signals_args):
-        conditions = (
-            self._wedging_name.text() == "" or
-            not cmds.objExists(self._attribute.text()) or
-            not self._values.text().split(":") or
-            not all([is_float(n) for n in self._values.text().split(":")]))
-        if conditions:
-            self.cache_wedging.setEnabled(False)
-            return            
-        self.cache_wedging.setEnabled(True)
+        enable = all([
+            self._wedging_name.text() != "",
+            cmds.objExists(self._attribute.text()),
+            self._values.text().split(",") != [""],
+            all([is_float(n) for n in self._values.text().split(",")]))
+        self.cache_wedging.setEnabled(enable)
         
     @property
     def jobs(self):
