@@ -148,7 +148,7 @@ class BatchCacher(QtWidgets.QWidget):
             self._wedging_name.text() != "",
             cmds.objExists(self._attribute.text()),
             self._values.text().split(",") != [""],
-            all([is_float(n) for n in self._values.text().split(",")]))
+            all([is_float(n) for n in self._values.text().split(",")])])
         self.cache_wedging.setEnabled(enable)
         
     @property
