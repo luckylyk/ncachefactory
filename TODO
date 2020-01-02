@@ -29,7 +29,8 @@ BUGS:
 
 
 BASIC CONFORT
-  - Mutli switcher in the nodetableview toolbar have to skip the locked items
+  - Display cache creation/modification date in the cache info panel
+  - Multi switcher in the nodetableview toolbar have to skip the locked items
   - button to select connected cache/blend node (done but icon)
   - Add pipette button or callback to update automatically the workspace
 
