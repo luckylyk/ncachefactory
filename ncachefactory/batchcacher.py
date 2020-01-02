@@ -86,7 +86,7 @@ class BatchCacher(QtWidgets.QWidget):
 
         self.cache_wedging = QtWidgets.QPushButton("Cache")
         self.cache_wedging.released.connect(self._send_wedging_cache)
-        self.cache_wedging.setEnable(False)
+        self.cache_wedging.setEnabled(False)
 
         self.attribute_layout = QtWidgets.QHBoxLayout()
         self.attribute_layout.setContentsMargins(0, 0, 0, 0)
@@ -150,9 +150,9 @@ class BatchCacher(QtWidgets.QWidget):
             not self._values.split(":") or
             not all([is_float(n) for n in self._values.split(":")]))
         if conditions:
-            self.cache_wedging.setEnable(False)
+            self.cache_wedging.setEnabled(False)
             return            
-        self.cache_wedging.setEnable(True)
+        self.cache_wedging.setEnabled(True)
         
     @property
     def jobs(self):
