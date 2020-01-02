@@ -65,8 +65,10 @@ class BatchCacher(QtWidgets.QWidget):
         self.multicache_layout.addWidget(self.cache)
 
         self._wedging_name = QtWidgets.QLineEdit()
+        self._wedging_name.textEdited.connect(self.update_wedging_tabs_states)
         self._wedging_name.setText(WEDGINGCACHE_NAME)
         self._attribute = QtWidgets.QLineEdit()
+        self._attribute.textEdited.connect(self.update_wedging_tabs_states)
         self._pick = QtWidgets.QPushButton(get_icon("pipette.png"), "")
         self._pick.setToolTip("Pick selected channel in channel editor")
         self._pick.setFixedSize(18, 18)
@@ -75,7 +77,8 @@ class BatchCacher(QtWidgets.QWidget):
         self._find.setToolTip("Find attribute in selection")
         self._find.setFixedSize(18, 18)
         self._find.released.connect(self._call_find_attribute)
-        self._values =  QtWidgets.QLineEdit()
+        self._values = QtWidgets.QLineEdit()
+        self._values.textEdited.connect(self.update_wedging_tabs_states)
         self._values_builder = QtWidgets.QPushButton(get_icon("hammer.png"), "")
         self._values_builder.setToolTip("Build value list")
         self._values_builder.setFixedSize(18, 18)
@@ -83,6 +86,7 @@ class BatchCacher(QtWidgets.QWidget):
 
         self.cache_wedging = QtWidgets.QPushButton("Cache")
         self.cache_wedging.released.connect(self._send_wedging_cache)
+        self.cache_wedging.setEnable(False)
 
         self.attribute_layout = QtWidgets.QHBoxLayout()
         self.attribute_layout.setContentsMargins(0, 0, 0, 0)
@@ -139,6 +143,17 @@ class BatchCacher(QtWidgets.QWidget):
         self.model.clear_jobs()
         self.cache.setEnabled(False)
 
+    def update_wedging_tabs_states(self, *signals_args):
+        conditions = (
+            self._wedging_name.text() == "" or
+            not cmds.objExists(self._attribute.text()) or
+            not self._values.split(":") or
+            not all([is_float(n) for n in self._values.split(":")]))
+        if conditions:
+            self.cache_wedging.setEnable(False)
+            return            
+        self.cache_wedging.setEnable(True)
+        
     @property
     def jobs(self):
         return self.model.jobs
@@ -476,3 +491,11 @@ class AttributePicker(QtWidgets.QDialog):
             return
         attribute = items[0].text()
         return node + "." + attribute
+
+
+def is_float(string):
+    try:
+        float(string)
+        return True
+    except ValueError:
+        return False
