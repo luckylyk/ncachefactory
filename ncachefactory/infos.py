@@ -19,6 +19,9 @@ from ncachefactory.attributessetters import (
     DynamicMapTransferWindow, AttributesTransferWindow)
 
 
+TIMEFORMAT = " %H:%M - %d/%m/%Y"
+
+
 class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
     cacheApplied = QtCore.Signal()
     infosModified = QtCore.Signal()
@@ -245,6 +248,8 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         super(CacheversionInfosWidget, self).__init__(parent)
 
         self.cacheversion = None
+        self.creation_date = QtWidgets.QLabel("---")
+        self.modification_date = QtWidgets.QLabel("---")
         self.name = QtWidgets.QLineEdit()
         self.name.setEnabled(False)
         self.name.textEdited.connect(self._call_name_changed)
@@ -258,8 +263,10 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
 
         self.form_layout = QtWidgets.QFormLayout()
         self.form_layout.setContentsMargins(0, 0, 0, 0)
-        self.form_layout.addRow("name", self.name)
-        self.form_layout.addRow("comment", self.comment)
+        self.form_layout.addRow("Created:", self.creation_date)
+        self.form_layout.addRow("Modified:", self.modification_date)
+        self.form_layout.addRow("Name:", self.name)
+        self.form_layout.addRow("Comment:", self.comment)
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addLayout(self.form_layout)
@@ -274,8 +281,15 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         if cacheversion is None:
             self.name.setText("")
             self.comment.setText("")
+            self.creation_date.setText("---")
+            self.modification_date.setText("---")
             return
-        self.name.setText(cacheversion.name)
+        creation = cacheversion.infos["creation_time"]
+        creation = datetime.datetime.fromtimestamp(creation)
+        modification = cacheversion.infos["modification_time"]
+        modification = datetime.datetime.fromtimestamp(modification)
+        self.creation_date.setText(creation.strftime(TIMEFORMAT))
+        self.modification_date.setText(modification.strftime(TIMEFORMAT))
         self.comment.setText(cacheversion.infos["comment"])
         self.nodes_table_view.update_header()
         self.blockSignals(False)
