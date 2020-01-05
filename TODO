@@ -2,6 +2,7 @@ todo list created from commit 60
 
 
 BUGS:
+  - Fix show playblast which open only the first one on linux
   - timing calculation per frame, look fucked
   - blend ncache on hair system looks broken
 
