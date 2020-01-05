@@ -135,15 +135,15 @@ class JobPanel(QtWidgets.QWidget):
         endframe = cacheversion.infos['end_frame']
         self.images = SequenceImageReader(range_=[startframe, endframe])
         self.log = InteractiveLog(filepath=self.logfile)
-        self.compare = QtWidgets.QPushButton('compare with')
-        self.compare.setEnabled(False)
-        self.compare.released.connect(self._call_compare)
-        self.kill_button = QtWidgets.QPushButton('kill')
-        self.kill_button.released.connect(self._call_kill)
-        self.connect_cache = QtWidgets.QPushButton('connect cache')
+        self.connect_cache = QtWidgets.QPushButton('Connect cache')
         self.connect_cache.released.connect(self._call_connect_cache)
         self.connect_cache.setEnabled(False)
-        self.playstop = QtWidgets.QPushButton("play")
+        self.kill_button = QtWidgets.QPushButton('Kill')
+        self.kill_button.released.connect(self._call_kill)
+        self.compare = QtWidgets.QPushButton('Compare with')
+        self.compare.setEnabled(False)
+        self.compare.released.connect(self._call_compare)
+        self.playstop = QtWidgets.QPushButton("Play")
         self.playstop.setEnabled(False)
         self.playstop.released.connect(self._call_playstop)
         self.log_widget = QtWidgets.QWidget()
@@ -151,9 +151,9 @@ class JobPanel(QtWidgets.QWidget):
         self.log_layout.setContentsMargins(0, 0, 0, 0)
         self.log_layout.setSpacing(2)
         self.log_layout.addWidget(self.log)
-        self.log_layout.addWidget(self.compare)
         self.log_layout.addWidget(self.connect_cache)
         self.log_layout.addWidget(self.kill_button)
+        self.log_layout.addWidget(self.compare)
         self.log_layout.addWidget(self.playstop)
 
         self.splitter = QtWidgets.QSplitter()
@@ -216,7 +216,7 @@ class JobPanel(QtWidgets.QWidget):
 
     def _call_playstop(self):
         self.is_playing = not self.is_playing
-        self.playstop.setText("stop" if self.is_playing else "play")
+        self.playstop.setText("Stop" if self.is_playing else "Play")
 
     def _call_compare(self):
         self.comparisonRequested.emit(self)

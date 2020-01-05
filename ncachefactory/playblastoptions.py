@@ -50,7 +50,7 @@ class PlayblastOptions(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(PlayblastOptions, self).__init__(parent=parent)
         self.setFixedHeight(250)
-        self._record_playblast = QtWidgets.QCheckBox('record playblast')
+        self._record_playblast = QtWidgets.QCheckBox('Record playblast')
         self._camera = CamerasCombo()
         self._resolution = ResolutionSelecter()
         self._viewport_options = DisplayOptions()
@@ -61,10 +61,10 @@ class PlayblastOptions(QtWidgets.QWidget):
         self.layout.setSpacing(0)
         self.layout.addRow('', self._record_playblast)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
-        self.layout.addRow('camera: ', self._camera)
-        self.layout.addRow('resolution: ', self._resolution)
+        self.layout.addRow('Camera: ', self._camera)
+        self.layout.addRow('Resolution: ', self._resolution)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
-        text = 'viewport options: '
+        text = 'Viewport options: '
         self.layout.addRow(text, self._viewport_optios_scroll_area)
 
         self.set_states()
@@ -143,7 +143,7 @@ class CamerasCombo(QtWidgets.QComboBox):
 class ResolutionSelecter(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(ResolutionSelecter, self).__init__(parent=parent)
-        self.select_preset = QtWidgets.QPushButton('select presets')
+        self.select_preset = QtWidgets.QPushButton('Select presets')
         self.resolution_preset_menu = ResolutionPresetsMenu(self.select_preset)
         func = self.set_resolution
         self.resolution_preset_menu.widthHeightTriggered.connect(func)

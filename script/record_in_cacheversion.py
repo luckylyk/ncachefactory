@@ -83,6 +83,7 @@ try:
         arguments.attribute_override_value = None
     force_log_info(INFOS.format(arguments=arguments))
 
+    force_log_info("initializing maya ...")
     from maya import cmds, mel
     import maya.OpenMaya as om2
     from ncachefactory.versioning import CacheVersion
@@ -95,6 +96,7 @@ try:
 
     import maya.standalone
     maya.standalone.initialize(name='python')
+    force_log_info("... maya initialized")
 
     def simulation_sanity_checks(nodes, timelimit, stretchmax):
         """ this function is a time changed callback which kill the
