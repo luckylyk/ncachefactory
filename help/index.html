@@ -2,7 +2,7 @@
     <tbody>
     <tr>
     <td style="width: 670px;">
-    <h1 style="text-align: justify;"><strong>nCache factory help</strong></h1>
+    <h1 style="text-align: center;"><strong>nCache factory help</strong></h1>
     <p style="text-align: justify;">&nbsp;</p>
     <h2 style="padding-left: 30px; text-align: justify;"><strong>Table of Content</strong></h2>
     <ol style="text-align: justify;">
@@ -31,6 +31,9 @@
     </li>
     <li><strong><a href="#options">Options (panel)</a></strong></li>
     <li><strong><a href="#comparison">Comparison (panel)</a></strong></li>
+    <li><strong><a href="#playblast">Playblast (panel)</a></strong></li>
+    <li><strong><a href="#batchmonitor">Batch cache monitor</a></strong></li>
+    <li><strong><a href="#comparator">Version comparator</a></strong></li>
     </ol>
     <p style="text-align: justify;">&nbsp;</p>
     <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="introduction"></a>1. Introduction</strong></h3>
@@ -39,14 +42,14 @@
     <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="start"></a>2. Let's start with nCache Factory<br /></strong></h3>
     <p style="text-align: justify;">The nCache Factory is an open source toolkit for Autodesk Maya dedicated to manage a proper simulation versioning. The factory has for goal to improve productivity, quality but also comfort for CFX artists during a CGI production.</p>
     <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
-    <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="workspace"></a>3. Set youre workspace<br /></strong></h3>
-    <p style="text-align: justify;"><strong>[PLACE IMAGE OF WORKSPACE WIDGET]</strong></p>
+    <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="workspace"></a>3. Set your workspace<br /></strong></h3>
+    <p style="text-align: justify;"><strong><img src="workspace.png" alt="" /><br /></strong></p>
     <p style="text-align: justify;">On top of the nCache Factory window, this text line is your workspace. The workspace is the folder where will be stored all your different versions. All the versions has to be saved in a folder named "ncaches". When a workspace is set, if the last subfolder isn't named "ncaches", the subfolder is automatically created.</p>
     <p style="text-align: justify;">By default, the workspace is a subfolder of the current maya scene. This is automatically set at the ncachemanager opening. The workspace is NOT automatically changed when a new scene is created or when a scene is opened. Take care to change manually you workspace when it's necessary.</p>
     <p style="text-align: justify;">N.B. : the workspace define the context for the whole ui and panels.</p>
     <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
     <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="nodetable"></a>4. Dynamic nodes table<br /></strong></h3>
-    <p style="text-align: justify;"><strong>[PLACE IMAGE OF NODETABLEVIEWWIDGET]</strong></p>
+    <p style="text-align: justify;"><strong><img src="nodetable.png" alt="" /><br /></strong></p>
     <p style="text-align: justify;">This table list all the dynamic nodes contained by the maya scene which can be cached: "hair system" and "ncloth".&nbsp; Every rows are split in six column.</p>
     <p style="text-align: justify;"><strong>Important: </strong>Everything related to "selection" in the nCache Factory rapport to this table and not to the maya scene. e.g. The button "Cache selection" will create a cache for the selected node in the table, whatever is currently selection in the maya outliner.</p>
     <ul style="text-align: justify;">
@@ -113,7 +116,7 @@
     <li style="text-align: justify;"><em>Recover original input</em>: If the button "Plug as input shape" has been used, this button is usefull to cancel this operation. That reconnect the shape which was originally connected into the input.</li>
     <li style="text-align: justify;"><em>Transfer settings</em>: Open the <a href="#transfer1">"Attribute transfer window"</a> (see below 5.2).</li>
     <li style="text-align: justify;"><em>Transfer dynamic map</em>: Open the <a href="#transfer2">"Dynamic map transfer window"</a> (see below 5.3).</li>
-    <li style="text-align: justify;"><em>Show playblasts</em>: Open the recorded playblasts under the cache version in the media player set (see path options).</li>
+    <li style="text-align: justify;"><em>Show playblasts</em>: Open the recorded <a href="#playblast">playblasts</a> under the cache version in the media player set (see path options).</li>
     </ul>
     <p style="padding-left: 60px; text-align: justify;"><strong><a name="transfer1"></a>5.2 Attribute transfer window<br /></strong></p>
     <p style="text-align: justify;">Natively, maya export an xml file recording all the plug value which influence a ncache record. This tool parse the settings used to create the current cache version to the selected node. This window contain multiple items, a list of influenced nodes, a table which display all the plugs and values.</p>
@@ -133,7 +136,7 @@
     <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
     <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="batchcacher"></a>6. Batch cacher (panel)</strong></h3>
     <p style="text-align: justify;">This panel provide toolkit to create ncache version in background, using a external mayapy. This allow to launch multiple concurrency caches. There's two systems to launch batch cache, <a href="#multiscenes">the multi scenes</a> and the <a href="wedging">attribute wedging.</a> All the caches are sent through the Batch cacher moniter.</p>
-    <p style="text-align: justify;">N.B. Every cache sent in the Batch cacher monitor will provide a real-time feedback. The feedback options will use the settings set in the Playblast options panel !</p>
+    <p style="text-align: justify;">N.B. Every cache sent in the <a href="#btachmonitor">Batch cacher monitor</a> will provide a real-time feedback. The feedback options will use the settings set in the Playblast options panel !</p>
     <p style="text-align: justify;"><strong>Important: </strong>Theoritically, the numbers of ncache processed in concurency is unlitited but depending of your memory available, your scene size and you available CPU, pay attention to not exagerate.</p>
     <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="multiscenes"></a>6.1 Multi scenes<br /></strong></h4>
     <p style="text-align: justify;">The multi scenes give the possibilty to save you save in multiples states and send multiple cache together. This tab contains a table. This table contains the scenes which will send in batch cache. The first and the second table's column are editable. N.B. when those must be validated (pressing return or moving the focus) before launching the cache. If it's not, the field value is not changed.</p>
@@ -202,9 +205,47 @@
     </ul>
     <p>&nbsp;</p>
     <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="comparison"></a>8. Comparison (panel)</strong></h3>
-    <p>&nbsp;</p>
+    <p style="text-align: justify;">&nbsp;This panel is an interactive comparison between the settings applied in the maya scene for a dynamic node and the setting used for the cache connected to it. The list display only the differences.</p>
+    <ul style="text-align: justify;">
+    <li style="text-align: justify;"><em>Revert selected</em>: set back selected attributes value used in the connected cache.</li>
+    <li><em>Revert all</em>: set back all attributes value used in the connected cache.</li>
+    </ul>
+    <p style="text-align: justify;">&nbsp;</p>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="playblast"></a>9. Playblast (panel)</strong></h3>
+    <p style="text-align: justify;">During all cache done by the manager, a playblast can be done in concurency. This avoid to parse a second time the time line after the cache. This panel manage the playblast option's.<em> <br /></em></p>
+    <p style="text-align: justify;"><em>Warning</em>: to do the playblast, the factory render everyframe using the hardware render engine which encounter issues to render nurbs curves. Then even if the nurbs display option is checked, it may not rendered.</p>
+    <p style="text-align: justify;">&nbsp;</p>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="batchmonitor"></a>10. Batch cache monitor</strong></h3>
+    <p style="text-align: justify;"><strong><img src="batchmonitor.png" alt="" /></strong></p>
+    <p style="text-align: justify;">This window display all the cache currently sent in batch mode during the maya session. Every tab has the version name has label. On the left of the window, the render done are updated in real time. The "no image" status means that the no frame are cached yet.&nbsp; Two statuses icons can appear on the render:</p>
+    <table style="width: 770px;">
+    <tbody>
+    <tr style="height: 31.8167px;">
+    <td style="width: 75.5px; height: 31.8167px;"><center><img style="background-color: #888888; padding: 2px;" src="finished.png" width="50" height="50" /></center></td>
+    <td style="width: 678.5px; height: 31.8167px;">The cache is succesfully done.</td>
+    </tr>
+    <tr style="height: 38px;">
+    <td style="width: 75.5px; height: 38px;"><center><img style="background-color: #888888; padding: 2px;" src="killed.png" width="50" height="50" /></center></td>
+    <td style="width: 678.5px; height: 38px;">The cache has been killed by user.</td>
+    </tr>
+    </tbody>
+    </table>
+    <p style="text-align: justify;">N.B. If the cache is stop by external way: crash, terminal closed, etc... the factory can't catch the event and won't display any special status icon.</p>
+    <p style="text-align: justify;">On the window left, the mayapy log is available. This log is updated in real time an receive the status of the current cache in progress.</p>
+    <ul style="text-align: justify;">
+    <li style="text-align: justify;"><em>Connect cache</em>: Connect the current version. If the cache is connected during the process, maya will interactively update the cache file when a frame is added to the cache.</li>
+    <li style="text-align: justify;"><em>Kill</em>: Kill the background process and stop caching.</li>
+    <li style="text-align: justify;"><em>Compare with</em>: Open a dialog to select an other cache in progress. This open the <a href="#comparator">version comparator</a>.</li>
+    <li style="text-align: justify;"><em>Play/Stop</em>: Play/stop the renders animation in 24 f/s.</li>
+    </ul>
+    <p style="text-align: justify;">&nbsp;</p>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="comparator"></a>11. Version comparator</strong><strong>&nbsp;</strong></h3>
+    <p style="text-align: justify;"><strong><img src="nodetable.png" alt="" /></strong></p>
+    <h3 style="padding-left: 30px; text-align: justify;"><strong>&nbsp;</strong></h3>
+    <p style="text-align: justify;">During all cache done by the manager, a playblast can be done in concurency. This avoid to parse a second time the time line after the cache. This panel manage the playblast option's.<em> <br /></em></p>
+    <p style="text-align: justify;"><em>Warning</em>: to do the playblast, t</p>
     </td>
     </tr>
     </tbody>
     </table>
-    <p style="text-align: justify;">&nbsp;</p>
+    <p>&nbsp;</p>
