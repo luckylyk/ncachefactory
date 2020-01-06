@@ -1,4 +1,4 @@
-<table style="height: 22px;" width="800" cellpadding="9" align="center" bgcolor="#EFEFEF">
+<table style="height: 22px; font: normal 14px Verdana, Arial, sans-serif;" width="800" cellpadding="9" align="center" bgcolor="#EFEFEF">
     <tbody>
     <tr>
     <td style="width: 670px;">
@@ -40,7 +40,7 @@
     <p style="text-align: justify;">The nCache Factory is an open source toolkit for Autodesk Maya dedicated to manage a proper simulation versioning. The factory has for goal to improve productivity, quality but also comfort for CFX artists during a CGI production.</p>
     <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
     <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="start"></a>2. Let's start with nCache Factory<br /></strong></h3>
-    <p style="text-align: justify;">The nCache Factory is an open source toolkit for Autodesk Maya dedicated to manage a proper simulation versioning. The factory has for goal to improve productivity, quality but also comfort for CFX artists during a CGI production.</p>
+    <p style="text-align: justify;">To install the nCache factory, refere to the readme on the <a href="https://github.com/luckylyk/ncachefactory">github tool home page</a>.</p>
     <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
     <h3 style="text-align: justify; padding-left: 30px;"><strong><a name="workspace"></a>3. Set your workspace<br /></strong></h3>
     <p style="text-align: justify;"><strong><img src="workspace.png" alt="" /><br /></strong></p>
@@ -60,6 +60,30 @@
     <li style="text-align: justify;"><em>Cache(s)</em>: This file display the cache(s) connected to the dynamic nodes. Multiple caches can be connected by a cacheBlend node. If no cache are connected, the field display: "no cache". If the field display "out of workspace", that mean that a cache is connected to the node but it's not located into the workspace set.</li>
     <li style="text-align: justify;"><em>Range</em>: This is a graphic field which represent the cached frames on the current time line.</li>
     </ul>
+    <table style="width: 100%;">
+    <tbody>
+    <tr>
+    <td style="width: 50px;"><img style="background-color: #888888; padding: 5px; display: block; margin-left: auto; margin-right: auto;" src="../icons/ncloth.png" width="25" height="25" /></td>
+    <td style="width: 50px;"><img style="background-color: #888888; padding: 5px; display: block; margin-left: auto; margin-right: auto;" src="../icons/ncloth_off.png" width="25" height="25" /></td>
+    <td>&nbsp;Enable/disable nCloth</td>
+    </tr>
+    <tr>
+    <td style="width: 50px;"><img style="background-color: #888888; padding: 5px; display: block; margin-left: auto; margin-right: auto;" src="../icons/current.png" width="25" height="25" /></td>
+    <td style="width: 50px;"><img style="background-color: #888888; padding: 5px; display: block; margin-left: auto; margin-right: auto;" src="../icons/input.png" width="25" height="25" /></td>
+    <td>&nbsp;Display current/input mesh</td>
+    </tr>
+    <tr>
+    <td style="width: 50px;"><img style="background-color: #888888; padding: 5px; display: block; margin-left: auto; margin-right: auto;" src="../icons/hairsystem.png" width="25" height="25" /></td>
+    <td style="width: 50px;"><img style="background-color: #888888; padding: 5px; display: block; margin-left: auto; margin-right: auto;" src="../icons/hairsystem_off.png" width="25" height="25" /></td>
+    <td>&nbsp;nHair simulation method all follicles/static</td>
+    </tr>
+    <tr>
+    <td style="width: 50px;"><img style="background-color: #888888; padding: 5px; display: block; margin-left: auto; margin-right: auto;" src="../icons/visibility.png" width="25" height="25" /></td>
+    <td style="width: 50px;"><img style="background-color: #888888; padding: 5px; display: block; margin-left: auto; margin-right: auto;" src="../icons/visibility_off.png" width="25" height="25" /></td>
+    <td>&nbsp;Display collision solver on/off</td>
+    </tr>
+    </tbody>
+    </table>
     <p style="text-align: justify;"><em>* Those interactive fields may contain a locker icon (<img src="../icons/locker.png" width="16" height="16" />). That mean they can't be edited from the table. The attributes that the action affect are locked or connected.</em></p>
     <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="toolbar"></a>4.1Toolbar<br /></strong></h4>
     <table style="height: 256px; width: 100%;">
@@ -216,7 +240,8 @@
     <p style="text-align: justify;"><em>Warning</em>: to do the playblast, the factory render everyframe using the hardware render engine which encounter issues to render nurbs curves. Then even if the nurbs display option is checked, it may not rendered.</p>
     <p style="text-align: justify;">&nbsp;</p>
     <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="batchmonitor"></a>10. Batch cache monitor</strong></h3>
-    <p style="text-align: justify;"><strong><img src="batchmonitor.png" alt="" /></strong></p>
+    <p style="text-align: justify;">Menu &gt;&gt; Misc &gt;&gt; Batch cache monitor</p>
+    <p style="text-align: justify;"><strong><img src="batchmonitor.png" alt="" width="75%" height="75%/" /></strong></p>
     <p style="text-align: justify;">This window display all the cache currently sent in batch mode during the maya session. Every tab has the version name has label. On the left of the window, the render done are updated in real time. The "no image" status means that the no frame are cached yet.&nbsp; Two statuses icons can appear on the render:</p>
     <table style="width: 770px;">
     <tbody>
@@ -240,10 +265,8 @@
     </ul>
     <p style="text-align: justify;">&nbsp;</p>
     <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="comparator"></a>11. Version comparator</strong><strong>&nbsp;</strong></h3>
-    <p style="text-align: justify;"><strong><img src="nodetable.png" alt="" /></strong></p>
-    <h3 style="padding-left: 30px; text-align: justify;"><strong>&nbsp;</strong></h3>
-    <p style="text-align: justify;">During all cache done by the manager, a playblast can be done in concurency. This avoid to parse a second time the time line after the cache. This panel manage the playblast option's.<em> <br /></em></p>
-    <p style="text-align: justify;"><em>Warning</em>: to do the playblast, t</p>
+    <p style="text-align: justify;"><strong><img src="versioncompare.png" alt="" width="75%" height="75%/" /></strong></p>
+    <p style="text-align: justify;">This window is a media player which read concurrency two jpeg sequences. The two versions can be compared with wipes and transparency comparison.</p>
     </td>
     </tr>
     </tbody>

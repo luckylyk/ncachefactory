@@ -57,6 +57,6 @@ def built_ncloth_test_scene(with_namespace=True):
 
 
 if __name__ == "__main__":
-    create_ncloth_test_scene()
+    built_ncloth_test_scene()
     import ncachefactory
     ncachefactory.launch()
