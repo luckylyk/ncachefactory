@@ -85,7 +85,6 @@ try:
 
     force_log_info("initializing maya ...")
     from maya import cmds, mel
-    import maya.OpenMaya as om2
     from ncachefactory.versioning import CacheVersion
     from ncachefactory.cachemanager import record_in_existing_cacheversion
     from ncachefactory.ncloth import is_output_too_streched
@@ -93,7 +92,6 @@ try:
     from ncachefactory.timecallbacks import (
         add_to_time_callback, get_timespent_since_last_frame_set, time_verbose,
         register_time_callback)
-
     import maya.standalone
     maya.standalone.initialize(name='python')
     force_log_info("... maya initialized")
