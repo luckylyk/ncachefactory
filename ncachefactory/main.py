@@ -69,8 +69,14 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.cacheoptions_expander = Expander("Options", self.cacheoptions)
         self.cacheoptions_expander.released.connect(self.save_optionvars)
         self.batchcacher = BatchCacher()
-        self.batchcacher.sendMultiCacheRequested.connect(self.send_multi_cache)
-        self.batchcacher.sendWedgingCacheRequested.connect(self.send_wedging_cache)
+        method = partial(self.send_multi_cache, selection=False)
+        self.batchcacher.sendMultiCacheRequested.connect(method)
+        method = partial(self.send_multi_cache, selection=True)
+        self.batchcacher.sendMultiCacheSelectionRequested.connect(method)
+        method = partial(self.send_wedging_cache, selection=False)
+        self.batchcacher.sendWedgingCacheRequested.connect(method)
+        method = partial(self.send_wedging_cache, selection=True)
+        self.batchcacher.sendWedgingCacheSelectionRequested.connect(method)
         self.batchcacher_expander = Expander('Batch Cacher', self.batchcacher)
         self.batchcacher_expander.released.connect(self.save_optionvars)
         self.playblast = PlayblastOptions()
@@ -320,12 +326,18 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         unregister_time_callback()
         clear_time_callback_functions()
 
-    def send_multi_cache(self):
+    def send_multi_cache(self, selection=False):
         if self.workspace is None:
             return cmds.warning("invalid workspace set")
         mayapy = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
         if os.path.exists(mayapy) is False:
             return cmds.warning("invalid mayapy path set")
+        if selection is True:
+            nodes = self.nodetable.selected_nodes or []
+        else:
+            nodes = cmds.ls(type=DYNAMIC_NODES)
+        if not nodes:
+            return cmds.warning("no nodes selected")
 
         start_frame, end_frame = self.cacheoptions.range
         cacheversions, processes = send_batch_ncache_jobs(
@@ -333,7 +345,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             jobs=self.batchcacher.jobs,
             start_frame=start_frame,
             end_frame=end_frame,
-            nodes=cmds.ls(type=DYNAMIC_NODES),
+            nodes=nodes,
             playblast_viewport_options=self.playblast.viewport_options,
             timelimit=self.batchcacher.options.timelimit,
             stretchmax=self.batchcacher.options.explosion_detection_tolerance)
@@ -346,12 +358,18 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.nodetable.update_layout()
         self.selection_changed()
 
-    def send_wedging_cache(self):
+    def send_wedging_cache(self, selection=False):
         if self.workspace is None:
             return cmds.warning("invalid workspace set")
         mayapy = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
         if os.path.exists(mayapy) is False:
             return cmds.warning("invalid mayapy path set")
+        if selection is True:
+            nodes = self.nodetable.selected_nodes or []
+        else:
+            nodes = cmds.ls(type=DYNAMIC_NODES)
+        if not nodes:
+            return cmds.warning("no nodes selected")
 
         start_frame, end_frame = self.cacheoptions.range
         cacheversions, processes = send_wedging_ncaches_jobs(
@@ -359,7 +377,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             name=self.batchcacher.wedging_name,
             start_frame=start_frame,
             end_frame=end_frame,
-            nodes=cmds.ls(type=DYNAMIC_NODES),
+            nodes=nodes,
             playblast_viewport_options=self.playblast.viewport_options,
             timelimit=self.batchcacher.options.timelimit,
             stretchmax=self.batchcacher.options.explosion_detection_tolerance,

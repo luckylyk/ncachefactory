@@ -1,7 +1,10 @@
 
 import os
+from functools import partial
+
 from PySide2 import QtWidgets, QtCore, QtGui
 from maya import cmds
+
 from ncachefactory.qtutils import get_icon
 from ncachefactory.attributes import (
     list_wedgable_attributes, list_channelbox_highlited_plugs)
@@ -28,7 +31,9 @@ def compute_wedging_values(start_value, end_value, iterations):
 
 class BatchCacher(QtWidgets.QWidget):
     sendMultiCacheRequested = QtCore.Signal()
+    sendMultiCacheSelectionRequested = QtCore.Signal()
     sendWedgingCacheRequested = QtCore.Signal()
+    sendWedgingCacheSelectionRequested = QtCore.Signal()
 
     def __init__(self, parent=None):
         super(BatchCacher, self).__init__(parent)
@@ -49,9 +54,13 @@ class BatchCacher(QtWidgets.QWidget):
         self.toolbar.setIconSize(QtCore.QSize(15, 15))
         self.toolbar.addAction(self.flash)
         self.toolbar.addAction(self.remove)
-        self.cache = QtWidgets.QPushButton('Cache')
-        self.cache.setEnabled(False)
-        self.cache.released.connect(self.sendMultiCacheRequested.emit)
+        self.cache_selection = QtWidgets.QPushButton('Cache selection')
+        self.cache_selection.setEnabled(False)
+        method = self.sendMultiCacheSelectionRequested.emit
+        self.cache_selection.released.connect(method)
+        self.cache_all = QtWidgets.QPushButton('Cache all')
+        self.cache_all.setEnabled(False)
+        self.cache_all.released.connect(self.sendMultiCacheRequested.emit)
 
         self.menu_layout = QtWidgets.QHBoxLayout()
         self.menu_layout.addStretch(1)
@@ -62,7 +71,8 @@ class BatchCacher(QtWidgets.QWidget):
         self.multicache_layout.addWidget(self.table)
         self.multicache_layout.addLayout(self.menu_layout)
         self.multicache_layout.addSpacing(4)
-        self.multicache_layout.addWidget(self.cache)
+        self.multicache_layout.addWidget(self.cache_selection)
+        self.multicache_layout.addWidget(self.cache_all)
 
         self._wedging_name = QtWidgets.QLineEdit()
         self._wedging_name.textEdited.connect(self.update_wedging_tabs_states)
@@ -84,9 +94,14 @@ class BatchCacher(QtWidgets.QWidget):
         self._values_builder.setFixedSize(18, 18)
         self._values_builder.released.connect(self._call_values_builder)
 
-        self.cache_wedging = QtWidgets.QPushButton("Cache")
-        self.cache_wedging.released.connect(self._send_wedging_cache)
+        self.cache_wedging = QtWidgets.QPushButton("Cache all")
+        method = partial(self._send_wedging_cache, selection=False)
+        self.cache_wedging.released.connect(method)
         self.cache_wedging.setEnabled(False)
+        self.cache_wedging_selection = QtWidgets.QPushButton("Cache selection")
+        method = partial(self._send_wedging_cache, selection=True)
+        self.cache_wedging_selection.released.connect(method)
+        self.cache_wedging_selection.setEnabled(False)
 
         self.attribute_layout = QtWidgets.QHBoxLayout()
         self.attribute_layout.setContentsMargins(0, 0, 0, 0)
@@ -108,7 +123,9 @@ class BatchCacher(QtWidgets.QWidget):
         self.wedging_form.addRow("Attribute", self.attribute_layout)
         self.wedging_form.addRow("Values", self.values_layout)
         self.wedging_layout = QtWidgets.QVBoxLayout(self.wedging)
+        self.wedging_layout.setSpacing(2)
         self.wedging_layout.addLayout(self.wedging_form)
+        self.wedging_layout.addWidget(self.cache_wedging_selection)
         self.wedging_layout.addWidget(self.cache_wedging)
 
         self.tabwidget = QtWidgets.QTabWidget()
@@ -137,11 +154,13 @@ class BatchCacher(QtWidgets.QWidget):
         for scene in list_temp_multi_scenes(self.workspace):
             job = {'name': BATCHCACHE_NAME, 'comment': '', 'scene': scene}
             self.model.add_job(job)
-        self.cache.setEnabled(bool(self.model.jobs))
+        self.cache_all.setEnabled(bool(self.model.jobs))
+        self.cache_selection.setEnabled(bool(self.model.jobs))
 
     def clear(self):
         self.model.clear_jobs()
-        self.cache.setEnabled(False)
+        self.cache_all.setEnabled(False)
+        self.cache_selection.setEnabled(False)
 
     def update_wedging_tabs_states(self, *signals_args):
         enable = all([
@@ -150,7 +169,8 @@ class BatchCacher(QtWidgets.QWidget):
             self._values.text().split(",") != [""],
             all([is_float(n) for n in self._values.text().split(",")])])
         self.cache_wedging.setEnabled(enable)
-        
+        self.cache_wedging_selection.setEnabled(enable)
+
     @property
     def jobs(self):
         return self.model.jobs
@@ -174,7 +194,8 @@ class BatchCacher(QtWidgets.QWidget):
         for job in jobs:
             self.model.remove_job(job)
             os.remove(job['scene'])
-        self.cache.setEnabled(bool(self.model.jobs))
+        self.cache_all.setEnabled(bool(self.model.jobs))
+        self.cache_selection.setEnabled(bool(self.model.jobs))
 
     def _call_flash_scene(self):
         if self.workspace is None:
@@ -182,7 +203,8 @@ class BatchCacher(QtWidgets.QWidget):
         scene = flash_current_scene(self.workspace)
         job = {'name': BATCHCACHE_NAME, 'comment': '', 'scene': scene}
         self.model.add_job(job)
-        self.cache.setEnabled(bool(self.model.jobs))
+        self.cache_all.setEnabled(bool(self.model.jobs))
+        self.cache_selection.setEnabled(bool(self.model.jobs))
 
     def _call_find_attribute(self):
         dialog = AttributePicker()
@@ -204,7 +226,7 @@ class BatchCacher(QtWidgets.QWidget):
             return
         self._values.setText(", ".join(map(str, dialog.values)))
 
-    def _send_wedging_cache(self):
+    def _send_wedging_cache(self, selection=False):
         if not cmds.objExists(self._attribute.text()):
             return QtWidgets.QMessageBox.warning(
                 None, "Error", "Attribute specified doesn't exists.")
@@ -213,7 +235,10 @@ class BatchCacher(QtWidgets.QWidget):
         except:
             return QtWidgets.QMessageBox.warning(
                 None, "Error", "Invalid wedging values. Must be list of float")
-        self.sendWedgingCacheRequested.emit()
+        if selection is True:
+            self.sendWedgingCacheSelectionRequested.emit()
+        else:
+            self.sendWedgingCacheRequested.emit()
 
 
 class MultiCacheTableView(QtWidgets.QTableView):

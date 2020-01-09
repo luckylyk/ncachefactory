@@ -35,6 +35,7 @@ BASIC CONFORT
   - Add pipette button or callback to update automatically the workspace
 
   __ done __
+  - Allow to cache only selected nodes in batch
   - Display creation and last modification date
   - Disable cache button in attribute wedging tabs, web options set aren't valid
   - set sortable the cacheversions in the explorer panel
@@ -89,5 +90,5 @@ TESTS
   - write test for ncache.py
   - write test for node.py
   - write test for cachemanager.py
-  - order arrayutils.py
+  - arrange arrayutils.py
   - create a numberutils.py and write test
