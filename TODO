@@ -3,10 +3,12 @@ todo list created from commit 60
 
 BUGS:
   - Fix show playblast which open only the first one on linux
-  - timing calculation per frame, look fucked
+  - timing calculation per frame, look fucked in batch
   - blend ncache on hair system looks broken
 
   __ done __
+  - Ignore in anyway the nodes filtered for the factory
+  - Fix no input cloth color management
   - apply settings should manage namespaces
   - playblast encoding doesn't work in batch (or when a record in existing cache is done)
   - apply per vertex maps should manage namespaces

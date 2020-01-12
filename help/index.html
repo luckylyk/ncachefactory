@@ -210,13 +210,15 @@
                     <li><em>all </em>: same as "Append selection" but cache all the enabled nodes</li>
                 </ul>
                 <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
-                <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="versions"></a>5. Available
-                        Versions (panel)</strong></h3>
-                <p style="text-align: justify;">This panel is to explore and manage the versions available in the current workspace.
-                    The Versions are automatically filtered to display only the version which contain the factory selection. The filtering
-                    is based on the node names. If the nodes are renammed after caching, the tool will not be able to match it with versions available.
-                    But on another side, the namespace are used to do the match. If the cache is done with a different namespace, that should work.
-                    This panel is interactively updated when the dynamic node table selection is changed.</p>
+                <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="versions"></a>5. Available Versions (panel)</strong></h3>
+                <p style="text-align: justify;">This panel helps to explore and manage the versions available in the workspace set.
+                    The listed versions are automatically filtered, that displays only the versions which contain the selected nodes. The filtering
+                    is based on the node names. If a nodes is renammed after caching, the tool will not be able find a match the available versions.
+                    <i>Important:</i> the namespaces aren't used to do the match. If the cache is done with a different namespace, that should work.
+                    That allow user to cache in scene and reconnect it in an other scene which contains the rig in reference.  This also create a limit,
+                    if the scene contain multiple nodes with the same name but differents namespace, that won't work. Example: multiple instances of
+                    one asset.
+                </p>
                 <p style="padding-left: 60px; text-align: justify;"><strong><a name="infos"></a>5.1 Cache infos</strong>
                 </p>
                 <ul style="text-align: justify;">
@@ -225,22 +227,21 @@
                     <li style="text-align: justify;"><em>Blend cache</em>: Blend the current version to the caches
                         connected to the selected dynamic nodes</li>
                     <li style="text-align: justify;"><em>Plug as input shape</em>: Import the cache as geo cache and use
-                        this new geometry has new input.</li>
+                        this new geometry as new input.</li>
                     <li style="text-align: justify;"><em>Plug as rest shape</em>: Import the cache as geo cache and use
-                        this new geometry has rest shape.</li>
+                        this new geometry as rest shape.</li>
                     <li style="text-align: justify;"><em>Recover original input</em>: If the button "Plug as input
                         shape" has been used, this button is usefull to cancel the operation. That reconnect the shape
                         which was originally connected into the input.</li>
                     <li style="text-align: justify;"><em>Transfer settings</em>: Open the <a
                             href="#transfer1">"Attribute transfer window"</a>.</li>
-                    <li style="text-align: justify;"><em>Transfer dynamic map</em>: Open the <a
+                    <li style="text-align: justify;"><em>Transfer dynamic maps</em>: Open the <a
                             href="#transfer2">"Dynamic map transfer window"</a>.</li>
                     <li style="text-align: justify;"><em>Show playblasts</em>: Open the recorded <a
                             href="#playblast">playblasts</a> under the cache version with the media player set (see path
                         options).</li>
                 </ul>
-                <p style="padding-left: 60px; text-align: justify;"><strong><a name="transfer1"></a>5.2 Attribute
-                        transfer window<br /></strong></p>
+                <p style="padding-left: 60px; text-align: justify;"><strong><a name="transfer1"></a>5.2 Attribute transfer window<br /></strong></p>
                 <p style="text-align: justify;">Natively, maya export a xml file recording all the plug value which
                     influence a ncache record. This tool parse the settings used to create the current cache version to
                     the selected node. This window contain multiple items, a list of influenced nodes, a table which

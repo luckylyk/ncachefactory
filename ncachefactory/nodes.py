@@ -146,6 +146,8 @@ class ClothNode(DynamicNode):
     def current_mesh(self):
         if self._current_mesh is not None:
             return self._current_mesh
+        if self.in_mesh is None or self.out_mesh is None:
+            return None
         if is_mesh_visible(self.out_mesh.name()):
             self._current_mesh = self.out_mesh
         else:
@@ -170,10 +172,14 @@ class ClothNode(DynamicNode):
     @property
     def color(self):
         if self._color is None:
+            if self.current_mesh is None:
+                return 0, 0, 0
             self._color = get_mesh_color(self.current_mesh.name())
         return self._color
 
     def set_color(self, red, green, blue):
+        if self.current_mesh is None:
+            return cmds.warning("no mesh connected found")
         set_mesh_color(self.current_mesh.name(), red, green, blue)
         self._color = red, green, blue
 
@@ -208,6 +214,8 @@ def list_dynamic_nodes():
 
 def filtered_dynamic_nodes():
     return [n for n in list_dynamic_nodes() if not n.filtered]
+
+
 
 
 def create_dynamic_node(nodename):

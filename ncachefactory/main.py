@@ -26,6 +26,7 @@ from ncachefactory.optionvars import (
     MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
     MULTICACHE_EXP_OPTIONVAR, ensure_optionvars_exists)
 from ncachefactory.batchcacher import BatchCacher
+from ncachefactory.attributes import filter_invisible_nodes_for_manager
 from ncachefactory.batch import send_batch_ncache_jobs, send_wedging_ncaches_jobs
 from ncachefactory.timecallbacks import (
     register_time_callback, add_to_time_callback, unregister_time_callback,
@@ -180,7 +181,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         workspace = self.workspace_widget.workspace
         all_cacheversions = list_available_cacheversions(workspace)
         available_cacheversions = filter_cacheversions_containing_nodes(
-            cmds.ls(type=DYNAMIC_NODES), all_cacheversions)
+            filter_invisible_nodes_for_manager(cmds.ls(type=DYNAMIC_NODES)),
+            all_cacheversions)
 
         connected_cacheversions = filter_connected_cacheversions(
             nodes, available_cacheversions)
@@ -236,6 +238,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             nodes = self.nodetable.selected_nodes or []
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
+            nodes = filter_invisible_nodes_for_manager(nodes)
 
         create_and_record_cacheversion(
             workspace=workspace,
@@ -265,6 +268,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             nodes = self.nodetable.selected_nodes or []
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
+            nodes = filter_invisible_nodes_for_manager(nodes)
         cacheversions = filter_connected_cacheversions(
             nodes, list_available_cacheversions(workspace))
 
@@ -300,6 +304,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             nodes = self.nodetable.selected_nodes or []
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
+            nodes = filter_invisible_nodes_for_manager(nodes)
         if not nodes:
             return cmds.warning("no nodes selected")
 
@@ -336,6 +341,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             nodes = self.nodetable.selected_nodes or []
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
+            nodes = filter_invisible_nodes_for_manager(nodes)
         if not nodes:
             return cmds.warning("no nodes selected")
 
@@ -368,6 +374,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             nodes = self.nodetable.selected_nodes or []
         else:
             nodes = cmds.ls(type=DYNAMIC_NODES)
+            nodes = filter_invisible_nodes_for_manager(nodes)
         if not nodes:
             return cmds.warning("no nodes selected")
 

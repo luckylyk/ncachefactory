@@ -19,7 +19,7 @@ The module respect a nomenclature:
 
 """
 from maya import cmds, mel
-
+from ncachefactory.attributes import filter_invisible_nodes_for_manager
 
 DYNAMIC_NODES = 'nCloth', 'hairSystem'
 CACHE_COMMAND_TEMPLATE = """
@@ -41,6 +41,7 @@ def record_ncache(
         2: blend all existing cachenodes with new cache
     '''
     nodes = nodes or cmds.ls(DYNAMIC_NODES)
+    nodes = filter_invisible_nodes_for_manager(nodes)
     output = output or ''
 
     if behavior == 0:
@@ -64,6 +65,7 @@ def record_ncache(
 
 def append_ncache(nodes=None):
     nodes = nodes or cmds.ls(DYNAMIC_NODES)
+    nodes = filter_invisible_nodes_for_manager(nodes)
     cmds.cacheFile(
         refresh=True,
         noBackup=True,
@@ -152,7 +154,7 @@ def list_connected_cachefiles(nodes=None):
     '''
     :nodes: one or list of dynamic nodes as string ('hairSystem' and 'nCloth')
     '''
-    nodes = nodes or cmds.ls(DYNAMIC_NODES)
+    nodes = nodes or filter_invisible_nodes_for_manager(cmds.ls(DYNAMIC_NODES))
     if not nodes:
         return []
     cachenodes = cmds.listConnections(nodes, type='cacheFile')
@@ -164,7 +166,7 @@ def list_connected_cacheblends(nodes=None):
     '''
     :nodes: one or list of dyna,ic nodes as string ('hairSystem' and 'nCloth')
     '''
-    nodes = nodes or cmds.ls(DYNAMIC_NODES)
+    nodes = nodes or filter_invisible_nodes_for_manager(cmds.ls(DYNAMIC_NODES))
     if not nodes:
         return []
     blendnodes = cmds.listConnections(nodes, type='cacheBlend')

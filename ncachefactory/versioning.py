@@ -28,6 +28,8 @@ import json
 import glob
 import shutil
 import time
+import xml.etree.ElementTree
+
 
 INFOS_FILENAME = 'infos.json'
 PLAYBLAST_FILENAME = 'playblast_{}.mp4'
@@ -281,6 +283,28 @@ def list_tmp_jpeg_under_cacheversion(cacheversion):
         jpegs.extend(glob.glob(os.path.join(directory, "*.jpg")))
         directory = os.path.join(directory, "*")
     return sorted(jpegs)
+
+
+def extract_xml_attributes(xml_file):
+    """ Read an xml file save maya the maya cacheFile command, and convert it
+    to a python dictionnary of {"maya_plug": value}
+    """
+    tree = xml.etree.ElementTree.parse(xml_file).getroot()
+    attributes = [element.text.split("=") for element in tree.findall('extra')]
+    return {
+        split_namespace_nodename(a[0])[1]: string_to_maya_value(a[1])
+        for a in attributes if len(a) == 2}
+
+
+def string_to_maya_value(string):
+    """ Convert a value saved in string to a numerical type understood by maya
+    """
+    if string.isdigit():
+        return int(string)
+    if '.' in string or ',' in string:
+        if string.replace(',', '').replace('.', '').isdigit():
+            return float(string)
+    return string
 
 
 if __name__ == "__main__":

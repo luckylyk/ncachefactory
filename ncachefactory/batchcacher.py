@@ -225,6 +225,7 @@ class BatchCacher(QtWidgets.QWidget):
         if result == QtWidgets.QDialog.Rejected:
             return
         self._values.setText(", ".join(map(str, dialog.values)))
+        self.update_wedging_tabs_states()
 
     def _send_wedging_cache(self, selection=False):
         if not cmds.objExists(self._attribute.text()):

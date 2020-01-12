@@ -17,7 +17,7 @@ import maya.api.OpenMaya as om2
 from ncachefactory.versioning import (
     create_cacheversion, ensure_workspace_exists, find_file_match,
     clear_cacheversion_content, cacheversion_contains_node,
-    move_playblast_to_cacheversion)
+    move_playblast_to_cacheversion, extract_xml_attributes)
 from ncachefactory.mesh import (
     create_mesh_for_geo_cache, attach_geo_cache,
     is_deformed_mesh_too_stretched)
@@ -30,8 +30,9 @@ from ncachefactory.ncache import (
 from ncachefactory.playblast import (
     start_playblast_record, stop_playblast_record)
 from ncachefactory.attributes import (
-    save_pervertex_maps, extract_xml_attributes, list_node_attributes_values,
-    clean_namespaces_in_attributes_dict, ORIGINAL_INPUTSHAPE_ATTRIBUTE)
+    save_pervertex_maps, list_node_attributes_values,
+    clean_namespaces_in_attributes_dict, ORIGINAL_INPUTSHAPE_ATTRIBUTE,
+    filter_invisible_nodes_for_manager)
 from ncachefactory.optionvars import MEDIAPLAYER_PATH_OPTIONVAR
 
 
@@ -50,6 +51,7 @@ def create_and_record_cacheversion(
     cloth_nodes = cmds.ls(nodes, type="nCloth")
 
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
+    nodes = filter_invisible_nodes_for_manager(nodes)
     workspace = ensure_workspace_exists(workspace)
     cacheversion = create_cacheversion(
         workspace=workspace,
@@ -89,10 +91,12 @@ def record_in_existing_cacheversion(
 
     if playblast is True:
         start_playblast_record(
-            directory=cacheversion.directory,**playblast_viewport_options)
+            directory=cacheversion.directory,
+            **playblast_viewport_options)
 
     cloth_nodes = cmds.ls(nodes, type="nCloth")
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
+    nodes = filter_invisible_nodes_for_manager(nodes)
     save_pervertex_maps(nodes=cloth_nodes, directory=cacheversion.directory)
     start_time = datetime.now()
     record_ncache(
@@ -119,9 +123,11 @@ def append_to_cacheversion(
 
     if playblast is True:
         start_playblast_record(
-            directory=cacheversion.directory,**playblast_viewport_options)
+            directory=cacheversion.directory,
+            **playblast_viewport_options)
 
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
+    nodes = filter_invisible_nodes_for_manager(nodes)
     start_time = datetime.now()
     append_ncache(nodes=nodes)
     end_time = datetime.now()
@@ -204,6 +210,7 @@ def plug_cacheversion_to_restshape(cacheversion, nodes=None):
 
 def connect_cacheversion(cacheversion, nodes=None, behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
+    nodes = filter_invisible_nodes_for_manager(nodes)
     for node in nodes:
         xml_file = find_file_match(node, cacheversion, extension='xml')
         if not xml_file:

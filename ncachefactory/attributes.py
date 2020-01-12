@@ -1,12 +1,11 @@
 
 import os
 import json
-import xml.etree.ElementTree
 from maya import cmds
-from ncachefactory.ncache import DYNAMIC_NODES
 from ncachefactory.versioning import split_namespace_nodename
 
 
+DYNAMIC_NODES = 'nCloth', 'hairSystem'
 FILTERED_FOR_NCACHEMANAGER = 'isFilteredForNCacheManager'
 ORIGINAL_INPUTSHAPE_ATTRIBUTE = 'originalInputShape'
 TAGS = [
@@ -72,7 +71,8 @@ def save_pervertex_maps(nodes=None, directory=''):
     """ This function save all the ncloth dynamics vertex maps. Nodes is the
     node names, directory is the cacheversion directory.
     """
-    nodes = nodes if nodes is not None else cmds.ls(type=DYNAMIC_NODES)
+    nodes = nodes if nodes is not None else cmds.ls(type=(DYNAMIC_NODES))
+    nodes = filter_invisible_nodes_for_manager(nodes)
     attributes = {}
     filename = os.path.join(directory, PERVERTEX_FILE)
     if os.path.exists(filename):
@@ -93,6 +93,7 @@ def set_pervertex_maps(nodes=None, directory='', maps=None):
     None, function will apply all the maps.
     """
     nodes = nodes if nodes is not None else cmds.ls(type=DYNAMIC_NODES)
+    nodes = filter_invisible_nodes_for_manager(nodes)
     filename = os.path.join(directory, PERVERTEX_FILE)
     with open(filename, 'r') as f:
         attributes = json.load(f)
@@ -104,23 +105,6 @@ def set_pervertex_maps(nodes=None, directory='', maps=None):
             if maps is not None and attribute not in maps:
                 continue
             cmds.setAttr(node + '.' + attribute, values, type='doubleArray')
-
-
-def to_maya_value(string):
-    if string.isdigit():
-        return int(string)
-    if '.' in string or ',' in string:
-        if string.replace(',', '').replace('.', '').isdigit():
-            return float(string)
-    return string
-
-
-def extract_xml_attributes(xml_file):
-    tree = xml.etree.ElementTree.parse(xml_file).getroot()
-    attributes = [element.text.split("=") for element in tree.findall('extra')]
-    return {
-        split_namespace_nodename(a[0])[1]: to_maya_value(a[1])
-        for a in attributes if len(a) == 2}
 
 
 def clean_namespaces_in_attributes_dict(attributes):
@@ -186,6 +170,18 @@ def list_wedgable_attributes(node):
             continue
         attributes.append(attribute)
     return sorted(attributes)
+
+
+def filter_invisible_nodes_for_manager(nodes):
+    filtered = []
+    for node in nodes:
+        if cmds.nodeType(node) not in DYNAMIC_NODES:
+            continue
+        ensure_node_has_ncachemanager_tags(node)
+        if cmds.getAttr(node + '.' + FILTERED_FOR_NCACHEMANAGER) is True:
+            continue
+        filtered.append(node)
+    return sorted(filtered)
 
 
 def list_channelbox_highlited_plugs():

@@ -1,7 +1,8 @@
 from PySide2 import QtCore, QtWidgets
 from maya import cmds
 from ncachefactory.ncache import DYNAMIC_NODES
-from ncachefactory.attributes import FILTERED_FOR_NCACHEMANAGER
+from ncachefactory.attributes import (
+    FILTERED_FOR_NCACHEMANAGER, filter_invisible_nodes_for_manager)
 
 
 WINDOW_TITLE = "Visible for the factory"
@@ -25,7 +26,9 @@ class FilterDialog(QtWidgets.QWidget):
     def fill_list(self):
         self.list.clear()
         flags = QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled
-        for node in sorted(cmds.ls(type=DYNAMIC_NODES)):
+        nodes = cmds.ls(type=DYNAMIC_NODES)
+        nodes = filter_invisible_nodes_for_manager(nodes)
+        for node in sorted(nodes):
             name = cmds.listRelatives(node, parent=True)[0]
             state = not cmds.getAttr(node + '.' + FILTERED_FOR_NCACHEMANAGER)
             checkstate = QtCore.Qt.Checked if state else QtCore.Qt.Unchecked
