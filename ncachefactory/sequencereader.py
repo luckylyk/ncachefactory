@@ -51,8 +51,8 @@ class SequenceImageReader(QtWidgets.QWidget):
         self.image.set_image(self._pixmaps[self.slider.position])
 
     def set_next_image(self):
-        if self.slider.value == self.slider.maximum_settable_value:
-            self.slider.value = self.slider.minimum
+        if not (self.slider.start <= self.slider.value < self.slider.end):
+            self.slider.value = self.slider.start
         else:
             self.slider.value += 1
 
@@ -150,8 +150,8 @@ class SequenceStackedImagesReader(QtWidgets.QWidget):
         self.layout.addWidget(self.playstop)
 
     def timerEvent(self, event):
-        if self.slider.value == self.slider.maximum_settable_value:
-            self.slider.value = self.slider.minimum
+        if not (self.slider.start <= self.slider.value < self.slider.end):
+            self.slider.value = self.slider.start
         else:
             self.slider.value += 1
 

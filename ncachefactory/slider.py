@@ -6,7 +6,8 @@ SLIDER_COLORS = {
     "bordercolor": "#111159",
     "backgroundcolor.filled": "#25AA33",
     "backgroundcolor.empty": "#334455",
-    "framelinecolor": "#FFCC33"}
+    "framelinecolor": "#FFCC33",
+    "frameplayrangecolor": "#AA8800"}
 
 
 class Slider(QtWidgets.QWidget):
@@ -17,12 +18,17 @@ class Slider(QtWidgets.QWidget):
         self.setFixedHeight(SLIDER_HEIGHT)
         self._minimum = None
         self._maximum = None
+        self._start = None
+        self._end = None
         self._value = None
         self._maximum_settable_value = None
-        self._mouse_is_pressed = False
+        self._mouse_lb_is_pressed = False
+        self._mouse_rb_edit_mode = None
 
         self.filled_rect = None
         self.value_line = None
+        self.start_line = None
+        self.end_line = None
 
     @property
     def minimum(self):
@@ -31,7 +37,9 @@ class Slider(QtWidgets.QWidget):
     @minimum.setter
     def minimum(self, value):
         if self._value is None:
-	        self._value = value
+           self._value = value
+        if self._start is None:
+            self._start = value
         self._minimum = value
         self.compute_shapes()
         self.repaint()
@@ -47,16 +55,38 @@ class Slider(QtWidgets.QWidget):
         self.repaint()
 
     @property
+    def start(self):
+        return self._start
+
+    @start.setter
+    def start(self, value):
+        self._start = value
+        self.compute_shapes()
+        self.repaint()
+
+    @property
+    def end(self):
+        return self._end
+
+    @end.setter
+    def end(self, value):
+        self._end = value
+        self.compute_shapes()
+        self.repaint()
+
+    @property
     def value(self):
         return self._value
 
     @property
     def position(self):
+        if self._value is None:
+            return None
         return self._value - self._minimum - 1
 
     @value.setter
     def value(self, value):
-        if self._mouse_is_pressed is True:
+        if self._mouse_lb_is_pressed is True:
             return
         self._value = value
         self.compute_shapes()
@@ -69,6 +99,8 @@ class Slider(QtWidgets.QWidget):
 
     @maximum_settable_value.setter
     def maximum_settable_value(self, value):
+        if self._end is None or self._end == self._maximum_settable_value:
+            self._end = value
         self._maximum_settable_value = value
         self.compute_shapes()
         self.repaint()
@@ -78,12 +110,17 @@ class Slider(QtWidgets.QWidget):
         if all([v is not None for v in values]) is False:
             return
         self.filled_rect = get_filled_rect(self)
-        self.value_line = get_value_line(self)
+        self.value_line = get_value_line(self, self.value)
+        self.start_line = get_value_line(self, self.start)
+        self.end_line = get_value_line(self, self.end)
 
     def mousePressEvent(self, event):
         if self._value is None or self._maximum_settable_value is None:
             return
-        self._mouse_is_pressed = True
+        if event.button() == QtCore.Qt.LeftButton:
+            self._mouse_lb_is_pressed = True
+        elif event.button() == QtCore.Qt.RightButton:
+            self._mouse_rb_edit_mode = self.get_mouse_rb_edit_mode(event.pos())
         self.set_value_from_point(event.pos())
 
     def resizeEvent(self, _):
@@ -93,11 +130,20 @@ class Slider(QtWidgets.QWidget):
     def mouseMoveEvent(self, event):
         if self._value is None:
             return
-        self._mouse_is_pressed = True
-        self.set_value_from_point(event.pos())
+        if self._mouse_lb_is_pressed is True:
+            self.set_value_from_point(event.pos())
+        if self._mouse_rb_edit_mode is not None:
+            self.set_value_from_point(event.pos())
 
     def mouseReleaseEvent(self, event):
-        self._mouse_is_pressed = False
+        self._mouse_lb_is_pressed = False
+        self._mouse_rb_edit_mode = None
+
+    def get_mouse_rb_edit_mode(self, point):
+        value = get_value_from_point(self, point)
+        if abs(self.maximum - value) > abs(self.minimum - value):
+            return 'start'
+        return 'end'
 
     def set_value_from_point(self, point):
         if not all([self.filled_rect, self.value_line]):
@@ -106,7 +152,15 @@ class Slider(QtWidgets.QWidget):
             point.setY(self.rect().top())
         if not self.rect().contains(point):
             return
-        self._value = get_value_from_point(self, point)
+        value = get_value_from_point(self, point)
+        if self._mouse_lb_is_pressed is True or self._mouse_rb_edit_mode:
+            self._value = value
+        if self._mouse_rb_edit_mode == 'start':
+            if value < self._end:
+                self._start = value
+        elif self._mouse_rb_edit_mode == 'end':
+            if value > self._start:
+                self._end = get_value_from_point(self, point)
         self.compute_shapes()
         self.repaint()
         self.valueChanged.emit(self._value)
@@ -145,6 +199,16 @@ def drawslider(painter, slider, colors=None):
         painter.setBrush(brush)
         painter.setPen(pen)
         painter.drawRect(slider.filled_rect)
+    # draw start/end
+    if slider.start_line and slider.end_line:
+        pen.setWidth(3)
+        linecolor = QtGui.QColor(colors['frameplayrangecolor'])
+        pen.setColor(linecolor)
+        brush.setColor(transparent)
+        painter.setBrush(brush)
+        painter.setPen(pen)
+        painter.drawLine(slider.start_line)
+        painter.drawLine(slider.end_line)
     # draw current
     if slider.value_line:
         pen.setWidth(3)
@@ -164,11 +228,11 @@ def drawslider(painter, slider, colors=None):
     painter.drawRect(slider.rect())
 
 
-def get_value_line(slider):
+def get_value_line(slider, value):
     rect = slider.rect()
     horizontal_divisor = float(slider.maximum - slider.minimum)
     horizontal_unit_size = rect.width() / horizontal_divisor
-    left = (slider.value - slider.minimum) * horizontal_unit_size
+    left = (value - slider.minimum) * horizontal_unit_size
     start = QtCore.QPoint(left, rect.top())
     end = QtCore.QPoint(left, rect.bottom())
     return QtCore.QLine(start, end)
