@@ -212,12 +212,14 @@ class BatchCacher(QtWidgets.QWidget):
         if result == QtWidgets.QDialog.Rejected:
             return
         self._attribute.setText(dialog.plug)
+        self.update_wedging_tabs_states()
 
     def _call_pick_attribute(self):
         plugs = list_channelbox_highlited_plugs()
         if not plugs:
             return cmds.warning('No plug selected in channelbox')
         self._attribute.setText(plugs[-1])
+        self.update_wedging_tabs_states()
 
     def _call_values_builder(self):
         dialog = ValuesBuilder()

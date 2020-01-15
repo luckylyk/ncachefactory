@@ -24,12 +24,13 @@ from ncachefactory.attributes import filter_invisible_nodes_for_manager
 DYNAMIC_NODES = 'nCloth', 'hairSystem'
 CACHE_COMMAND_TEMPLATE = """
 doCreateNclothCache 5 {{ "0", "{start_frame}", "{end_frame}", \
-"OneFilePerFrame", "1", "{output}", "1", "", "0", "replace", "1", "1", "1", \
-"0", "1","mcc"}}"""
+"OneFilePerFrame", "1", "{output}", "1", "", "0", "replace", "1", \
+"{evaluate_every_frame}", "{save_every_evaluation}", "0", "1","mcc"}}"""
 
 
 def record_ncache(
-        nodes=None, start_frame=0, end_frame=100, output=None, behavior=0):
+        nodes=None, start_frame=0, end_frame=100, output=None, behavior=0,
+        evaluate_every_frame=1.0, save_every_evaluation=1):
     '''
     this function is a wrap around the mel command doCreateNclothCache
     it force an cache with one cache per geometry (containing all frame).
@@ -39,6 +40,8 @@ def record_ncache(
         0: replace all old connected cachenodes and blendnodes
         1: replace all old connected cachenodes but add new cache in blendnodes
         2: blend all existing cachenodes with new cache
+    :evaluate: eveluate every frames
+    :evaluation: record every samples
     '''
     nodes = nodes or cmds.ls(DYNAMIC_NODES)
     nodes = filter_invisible_nodes_for_manager(nodes)
@@ -55,7 +58,11 @@ def record_ncache(
 
     cmds.select(nodes)
     command = CACHE_COMMAND_TEMPLATE.format(
-        start_frame=start_frame, end_frame=end_frame, output=output)
+        start_frame=start_frame,
+        end_frame=end_frame,
+        output=output,
+        evaluate_every_frame=evaluate_every_frame,
+        save_every_evaluation=save_every_evaluation)
     cache_nodes = mel.eval(command)
 
     if behavior:
@@ -63,14 +70,14 @@ def record_ncache(
     return cache_nodes
 
 
-def append_ncache(nodes=None):
+def append_ncache(nodes=None, evaluate_every_frame=1.0, save_every_evaluation=1):
     nodes = nodes or cmds.ls(DYNAMIC_NODES)
     nodes = filter_invisible_nodes_for_manager(nodes)
     cmds.cacheFile(
         refresh=True,
         noBackup=True,
-        simulationRate=1,
-        sampleMultiplier=1,
+        simulationRate=evaluate_every_frame,
+        sampleMultiplier=save_every_evaluation,
         cacheableNode=nodes,
         startTime=cmds.currentTime(query=True),
         endTime=cmds.playbackOptions(max=True, query=True))

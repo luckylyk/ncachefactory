@@ -45,8 +45,8 @@ CACHENODENAME_SUFFIX = "_CN000"
 
 def create_and_record_cacheversion(
         workspace, start_frame, end_frame, comment=None, name=None,
-        nodes=None, behavior=0, playblast=False,
-        playblast_viewport_options=None):
+        nodes=None, behavior=0, evaluate_every_frame=1.0, save_every_evaluation=1,
+        playblast=False, playblast_viewport_options=None):
 
     cloth_nodes = cmds.ls(nodes, type="nCloth")
 
@@ -72,7 +72,9 @@ def create_and_record_cacheversion(
         start_frame=start_frame,
         end_frame=end_frame,
         output=cacheversion.directory,
-        behavior=behavior)
+        behavior=behavior,
+        evaluate_every_frame=evaluate_every_frame,
+        save_every_evaluation=save_every_evaluation)
     end_time = datetime.now()
     timespent = (end_time - start_time).total_seconds()
     time = cmds.currentTime(query=True)
@@ -87,7 +89,8 @@ def create_and_record_cacheversion(
 
 def record_in_existing_cacheversion(
         cacheversion, start_frame, end_frame, nodes=None, behavior=0,
-        playblast=False, playblast_viewport_options=None):
+        evaluate_every_frame=1.0, save_every_evaluation=1, playblast=False,
+        playblast_viewport_options=None):
 
     if playblast is True:
         start_playblast_record(
@@ -104,7 +107,9 @@ def record_in_existing_cacheversion(
         start_frame=start_frame,
         end_frame=end_frame,
         output=cacheversion.directory,
-        behavior=behavior)
+        behavior=behavior,
+        evaluate_every_frame=evaluate_every_frame,
+        save_every_evaluation=save_every_evaluation)
     end_time = datetime.now()
     timespent = (end_time - start_time).total_seconds()
     time = cmds.currentTime(query=True)
@@ -118,8 +123,8 @@ def record_in_existing_cacheversion(
 
 
 def append_to_cacheversion(
-        cacheversion, nodes=None, playblast=False,
-        playblast_viewport_options=None):
+        cacheversion, nodes=None, evaluate_every_frame=1.0,
+        save_every_evaluation=1, playblast=False, playblast_viewport_options=None):
 
     if playblast is True:
         start_playblast_record(
@@ -129,7 +134,10 @@ def append_to_cacheversion(
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     nodes = filter_invisible_nodes_for_manager(nodes)
     start_time = datetime.now()
-    append_ncache(nodes=nodes)
+    append_ncache(
+        nodes=nodes,
+        evaluate_every_frame=evaluate_every_frame,
+        save_every_evaluation=save_every_evaluation)
     end_time = datetime.now()
     # Add up the second spent for the append cache to the cache time spent
     # already recorded.
@@ -212,6 +220,8 @@ def connect_cacheversion(cacheversion, nodes=None, behavior=0):
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     nodes = filter_invisible_nodes_for_manager(nodes)
     for node in nodes:
+        if not cacheversion_contains_node(node, cacheversion):
+            continue
         xml_file = find_file_match(node, cacheversion, extension='xml')
         if not xml_file:
             cmds.warning("no cache to connect for {}".format(xml_file))

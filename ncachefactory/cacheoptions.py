@@ -2,8 +2,8 @@ from maya import cmds
 from PySide2 import QtWidgets, QtGui, QtCore
 from ncachefactory.optionvars import (
     RANGETYPE_OPTIONVAR, CACHE_BEHAVIOR_OPTIONVAR, VERBOSE_OPTIONVAR,
-    VERBOSE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
-    EXPLOSION_TOLERENCE_OPTIONVAR, ensure_optionvars_exists)
+    VERBOSE_OPTIONVAR, SAMPLES_EVALUATED_OPTIONVAR, SAMPLES_SAVED_OPTIONVAR,
+    ensure_optionvars_exists)
 
 
 BLENDMODE_LABELS = (
@@ -40,6 +40,12 @@ class CacheOptions(QtWidgets.QWidget):
         self._behavior.addButton(self._behavior_clear, 0)
         self._behavior.addButton(self._behavior_blend, 1)
         self._behavior.addButton(self._behavior_force_blend, 2)
+        self._samples_evaluated = QtWidgets.QLineEdit()
+        self._samples_evaluated.setValidator(QtGui.QDoubleValidator())
+        self._samples_evaluated.setFixedWidth(60)
+        self._samples_recorded = QtWidgets.QLineEdit()
+        self._samples_recorded.setValidator(QtGui.QIntValidator())
+        self._samples_recorded.setFixedWidth(60)
 
         self._custom_range = QtWidgets.QWidget()
         self._range_layout = QtWidgets.QHBoxLayout(self._custom_range)
@@ -58,6 +64,9 @@ class CacheOptions(QtWidgets.QWidget):
         self.layout.addRow("Attach method: ", self._behavior_clear)
         self.layout.addRow("", self._behavior_blend)
         self.layout.addRow("", self._behavior_force_blend)
+        self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
+        self.layout.addRow("Evaluation sample: ", self._samples_evaluated)
+        self.layout.addRow("Save every evaluation(s): ", self._samples_recorded)
 
         self.set_optionvars()
         self.update_ui_states()
@@ -65,6 +74,8 @@ class CacheOptions(QtWidgets.QWidget):
         self._rangetype.buttonToggled.connect(self.save_optionvars)
         self._rangetype.buttonToggled.connect(self.update_ui_states)
         self._behavior.buttonToggled.connect(self.save_optionvars)
+        self._samples_evaluated.textEdited.connect(self.save_optionvars)
+        self._samples_recorded.textEdited.connect(self.save_optionvars)
 
     def update_ui_states(self, *signals_args):
         self._custom_range.setEnabled(bool(self._rangetype.checkedId()))
@@ -79,6 +90,10 @@ class CacheOptions(QtWidgets.QWidget):
         id_ = cmds.optionVar(query=CACHE_BEHAVIOR_OPTIONVAR)
         button = self._behavior.button(id_)
         button.setChecked(True)
+        value = cmds.optionVar(query=SAMPLES_EVALUATED_OPTIONVAR)
+        self._samples_evaluated.setText(str(value))
+        value = cmds.optionVar(query=SAMPLES_SAVED_OPTIONVAR)
+        self._samples_recorded.setText(str(value))
 
     def save_optionvars(self, *signals_args):
         value = self._verbose.isChecked()
@@ -87,6 +102,10 @@ class CacheOptions(QtWidgets.QWidget):
         cmds.optionVar(intValue=[RANGETYPE_OPTIONVAR, value])
         value = self._behavior.checkedId()
         cmds.optionVar(intValue=[CACHE_BEHAVIOR_OPTIONVAR, value])
+        value = float(self._samples_recorded.text())
+        cmds.optionVar(floatValue=[SAMPLES_EVALUATED_OPTIONVAR, value])
+        value = int(self._samples_recorded.text())
+        cmds.optionVar(intValue=[SAMPLES_SAVED_OPTIONVAR, value])
 
     @property
     def range(self):
@@ -105,3 +124,11 @@ class CacheOptions(QtWidgets.QWidget):
     @property
     def verbose(self):
         return self._verbose.isChecked()
+
+    @property
+    def samples_evaluated(self):
+        return float(self._samples_evaluated.text())
+
+    @property
+    def samples_recorded(self):
+        return int(self._samples_recorded.text())

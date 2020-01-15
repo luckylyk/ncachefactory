@@ -10,6 +10,8 @@ CONFIGFILE_PATH = os.path.join(_current_dir, '..', 'config.cfg')
 
 RANGETYPE_OPTIONVAR = 'ncachefactory_rangetype'
 CACHE_BEHAVIOR_OPTIONVAR = 'ncachefactory_behavior'
+SAMPLES_EVALUATED_OPTIONVAR = 'ncachefactory_samples_evaluated'
+SAMPLES_SAVED_OPTIONVAR = 'ncachefactory_samples_saved'
 VERBOSE_OPTIONVAR = 'ncachefactory_verbose'
 RECORD_PLAYBLAST_OPTIONVAR = 'ncachefactory_record_playblast'
 PLAYBLAST_RESOLUTION_OPTIONVAR = 'ncachefactory_resolution_playblast'
@@ -34,6 +36,8 @@ OPTIONVARS = {
     CACHE_BEHAVIOR_OPTIONVAR: 0,
     VERBOSE_OPTIONVAR: 0,
     RECORD_PLAYBLAST_OPTIONVAR: 1,
+    SAMPLES_EVALUATED_OPTIONVAR: 1.0,
+    SAMPLES_SAVED_OPTIONVAR: 1,
     PLAYBLAST_RESOLUTION_OPTIONVAR: '1024x640',
     EXPLOSION_DETECTION_OPTIONVAR: 0,
     EXPLOSION_TOLERENCE_OPTIONVAR: 3,
@@ -64,10 +68,9 @@ for option, optionvar in _match:
 
 
 def ensure_optionvars_exists():
+    types = {int: 'intValue', float: 'floatValue', str: 'stringValue'}
     for optionvar, default_value in OPTIONVARS.items():
         if cmds.optionVar(exists=optionvar):
             continue
-        if isinstance(default_value, str):
-            cmds.optionVar(stringValue=[optionvar, default_value])
-            continue
-        cmds.optionVar(intValue=[optionvar, default_value])
+        kwargs = {types.get(type(default_value)): [optionvar, default_value]}
+        cmds.optionVar(**kwargs)

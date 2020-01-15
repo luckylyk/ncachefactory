@@ -246,6 +246,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             end_frame=end_frame,
             nodes=nodes,
             behavior=self.cacheoptions.behavior,
+            evaluate_every_frame=self.cacheoptions.samples_evaluated,
+            save_every_evaluation=self.cacheoptions.samples_recorded,
             playblast=self.playblast.record_playblast,
             playblast_viewport_options=self.playblast.viewport_options)
 
@@ -285,6 +287,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             end_frame=end_frame,
             nodes=nodes,
             behavior=self.cacheoptions.behavior,
+            evaluate_every_frame=self.cacheoptions.samples_evaluated,
+            save_every_evaluation=self.cacheoptions.samples_recorded,
             playblast=self.playblast.record_playblast,
             playblast_viewport_options=self.playblast.viewport_options)
         self.nodetable.update_layout()
@@ -324,6 +328,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         append_to_cacheversion(
             nodes=nodes,
             cacheversion=cacheversion,
+            evaluate_every_frame=self.cacheoptions.samples_evaluated,
+            save_every_evaluation=self.cacheoptions.samples_recorded,
             playblast=self.playblast.record_playblast,
             playblast_viewport_options=self.playblast.viewport_options)
         self.nodetable.update_layout()
@@ -352,6 +358,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=nodes,
+            evaluate_every_frame=self.cacheoptions.samples_evaluated,
+            save_every_evaluation=self.cacheoptions.samples_recorded,
             playblast_viewport_options=self.playblast.viewport_options,
             timelimit=self.batchcacher.options.timelimit,
             stretchmax=self.batchcacher.options.explosion_detection_tolerance)
@@ -385,6 +393,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
             start_frame=start_frame,
             end_frame=end_frame,
             nodes=nodes,
+            evaluate_every_frame=self.cacheoptions.samples_evaluated,
+            save_every_evaluation=self.cacheoptions.samples_recorded,
             playblast_viewport_options=self.playblast.viewport_options,
             timelimit=self.batchcacher.options.timelimit,
             stretchmax=self.batchcacher.options.explosion_detection_tolerance,

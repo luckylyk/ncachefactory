@@ -216,8 +216,6 @@ def filtered_dynamic_nodes():
     return [n for n in list_dynamic_nodes() if not n.filtered]
 
 
-
-
 def create_dynamic_node(nodename):
     if cmds.nodeType(nodename) == 'hairSystem':
         return HairNode(nodename)

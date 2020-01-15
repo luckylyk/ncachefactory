@@ -65,8 +65,9 @@ def flash_current_scene(workspace):
 
 
 def send_batch_ncache_jobs(
-        workspace, jobs, start_frame, end_frame, nodes,
-        playblast_viewport_options, timelimit, stretchmax):
+        workspace, jobs, start_frame, end_frame, nodes, evaluate_every_frame,
+        save_every_evaluation, playblast_viewport_options, timelimit,
+        stretchmax):
     ''' this function precreate the python script and the folder where will
     be cached the giver jobs. A job is a dict containing tree key:
     {'name': str, 'comment': str, 'scene': str}
@@ -76,7 +77,8 @@ def send_batch_ncache_jobs(
     # build the arguments list. The two None values are differents for every
     # job and will be redefine during the loop
     arguments = build_batch_script_arguments(
-        start_frame, end_frame, nodes, playblast_viewport_options, timelimit,
+        start_frame, end_frame, nodes, evaluate_every_frame,
+        save_every_evaluation, playblast_viewport_options, timelimit,
         stretchmax)
     environment = copy_current_environment()
     for job in jobs:
@@ -104,8 +106,9 @@ def send_batch_ncache_jobs(
 
 
 def send_wedging_ncaches_jobs(
-        workspace, name, start_frame, end_frame, nodes,
-        playblast_viewport_options, timelimit, stretchmax, attribute, values):
+        workspace, name, start_frame, end_frame, nodes, evaluate_every_frame,
+        save_every_evaluation, playblast_viewport_options, timelimit,
+        stretchmax, attribute, values):
     ''' this function send on a maya batch multiple cache based on a wedging
     attribute test. An attribute is specified and a list of values. The
     launch one maya per value to process to create a cache version.
@@ -125,7 +128,8 @@ def send_wedging_ncaches_jobs(
             end_frame=end_frame)
         cacheversions.append(cacheversion)
         arguments = build_batch_script_arguments(
-            start_frame, end_frame, nodes, playblast_viewport_options,
+            start_frame, end_frame, nodes, evaluate_every_frame,
+            save_every_evaluation, playblast_viewport_options,
             timelimit, stretchmax, attribute_override_name=attribute,
             attribute_override_value=value, scene=scene,
             directory=cacheversion.directory)
@@ -138,7 +142,8 @@ def send_wedging_ncaches_jobs(
 
 
 def build_batch_script_arguments(
-        start_frame, end_frame, nodes, playblast_viewport_options, timelimit,
+        start_frame, end_frame, nodes, evaluate_every_frame,
+        save_every_evaluation, playblast_viewport_options, timelimit,
         stretchmax, scene=None, directory=None, attribute_override_name="",
         attribute_override_value=0.0):
     arguments = []
@@ -156,6 +161,10 @@ def build_batch_script_arguments(
     arguments.append(str(start_frame))
     # end frame
     arguments.append(str(end_frame))
+    # evaluation frames
+    arguments.append(str(evaluate_every_frame))
+    # evaluation record
+    arguments.append(str(save_every_evaluation))
     # playblast resolution
     width = playblast_viewport_options['width']
     height = playblast_viewport_options['height']

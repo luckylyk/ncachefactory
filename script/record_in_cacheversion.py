@@ -42,6 +42,8 @@ Scripts Arguments:
     - Maya scene = {arguments.scene}
     - Nodes = {arguments.nodes}
     - Range = {arguments.start_frame} to {arguments.end_frame}
+    - Evaluate every frame(s) = {arguments.evaluate_every_frame}
+    - Save every evaluation(s) = {arguments.save_every_evaluation}
     - Resolution = {arguments.playblast_resolution}
     - Viewport display = {arguments.viewport_display_values}
     - Blasted camera = {arguments.playblast_camera}
@@ -58,6 +60,8 @@ try:
     parser.add_argument('nodes', help="Dynamic nodes to cache")
     parser.add_argument('start_frame', help="NCache start frame", type=int)
     parser.add_argument('end_frame', help="NCache end frame", type=int)
+    parser.add_argument('evaluate_every_frame', help="Evaluate every frame", type=float)
+    parser.add_argument('save_every_evaluation', help="Save every evaluation(s)", type=int)
     parser.add_argument('playblast_resolution', help=PLAYBLAST_RES_HELP)
     parser.add_argument('viewport_display_values', help=PLAYBLAST_DISPLAY_HELP)
     parser.add_argument('playblast_camera', help="camershape name")
@@ -171,6 +175,8 @@ try:
         start_frame=arguments.start_frame,
         end_frame=arguments.end_frame,
         nodes=arguments.nodes.split(', '),
+        evaluate_every_frame=arguments.evaluate_every_frame,
+        save_every_evaluation=arguments.save_every_evaluation,
         behavior=0,
         playblast=True,
         playblast_viewport_options=playblast_viewport_options)

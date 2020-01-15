@@ -4,9 +4,11 @@ todo list created from commit 60
 BUGS:
   - Fix show playblast which open only the first one on linux
   - timing calculation per frame, look fucked in batch
-  - blend ncache on hair system looks broken
 
   __ done __
+  - blend ncache on hair system looks broken (temporarily disabled)
+  - fix wedging cache button update
+  - connect partial cache from batch
   - Ignore in anyway the nodes filtered for the factory
   - Fix no input cloth color management
   - apply settings should manage namespaces
@@ -32,11 +34,13 @@ BUGS:
 
 
 BASIC CONFORT
+  - Add nameclash check before cache
   - Multi switcher in the nodetableview toolbar have to skip the locked items
   - button to select connected cache/blend node (done but icon)
   - Add pipette button or callback to update automatically the workspace
 
   __ done __
+  - Support the subframe caching
   - Allow to cache only selected nodes in batch
   - Display creation and last modification date
   - Disable cache button in attribute wedging tabs, web options set aren't valid

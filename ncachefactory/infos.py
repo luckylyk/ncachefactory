@@ -28,7 +28,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(WorkspaceCacheversionsExplorer, self).__init__(parent)
-        self.setFixedHeight(420)
+        self.setFixedHeight(435)
         self.cacheversion = None
         self.nodes = None
         self.map_setter = None
@@ -111,6 +111,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
     def update_ui_states(self):
         contains_clothnodes = bool(cmds.ls(self.nodes, type='nCloth'))
+        self.blend_cache.setEnabled(contains_clothnodes)
         self.plug_input.setEnabled(contains_clothnodes)
         self.plug_rest.setEnabled(contains_clothnodes)
         self.recover_input.setEnabled(contains_clothnodes)
@@ -254,7 +255,7 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         self.name.setEnabled(False)
         self.name.textEdited.connect(self._call_name_changed)
         self.comment = QtWidgets.QTextEdit()
-        self.comment.setFixedHeight(50)
+        self.comment.setFixedHeight(65)
         self.comment.setEnabled(False)
         self.comment.textChanged.connect(self._call_comment_changed)
         self.nodes_table_model = NodeInfosTableModel()
@@ -277,6 +278,7 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         self.cacheversion = cacheversion
         self.nodes_table_model.set_cacheversion(cacheversion)
         self.name.setEnabled(bool(cacheversion))
+        self.name.setText(cacheversion.infos["name"])
         self.comment.setEnabled(bool(cacheversion))
         if cacheversion is None:
             self.name.setText("")
