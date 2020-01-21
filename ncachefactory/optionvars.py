@@ -23,7 +23,8 @@ TIMELIMIT_OPTIONVAR = 'ncachefactory_timelimit'
 FFMPEG_PATH_OPTIONVAR = 'ncachefactory_ffmpeg_path'
 MEDIAPLAYER_PATH_OPTIONVAR = 'ncachefactory_mediaplayer_path'
 MAYAPY_PATH_OPTIONVAR = 'ncachefactory_mayapy_path'
-CACHEVERSION_SORTING_STYLE = 'ncachefactory_cacherversion_sorting_style'
+CACHEVERSION_SORTING_TYPE_OPTIONVAR = 'ncachefactory_cacherversion_sorting_type'
+WORKSPACES_RECENTLY_USED_OPTIONVAR = 'ncachefactory_recent_workspaces_used'
 
 MULTICACHE_EXP_OPTIONVAR = 'ncachefactory_multicache_expanded'
 CACHEOPTIONS_EXP_OPTIONVAR = 'ncachefactory_cacheoptions_expanded'
@@ -47,12 +48,13 @@ OPTIONVARS = {
     MEDIAPLAYER_PATH_OPTIONVAR: '',
     MAYAPY_PATH_OPTIONVAR: '',
     PLAYBLAST_VIEWPORT_OPTIONVAR: '0 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0',
+    CACHEVERSION_SORTING_TYPE_OPTIONVAR: 0,
+    WORKSPACES_RECENTLY_USED_OPTIONVAR: '',
     MULTICACHE_EXP_OPTIONVAR: 0,
     CACHEOPTIONS_EXP_OPTIONVAR: 0,
     COMPARISON_EXP_OPTIONVAR: 0,
     PLAYBLAST_EXP_OPTIONVAR: 0,
-    VERSION_EXP_OPTIONVAR: 0,
-    CACHEVERSION_SORTING_STYLE: 0}
+    VERSION_EXP_OPTIONVAR: 0}
 
 
 # set default values from config file

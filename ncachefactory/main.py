@@ -18,7 +18,7 @@ from ncachefactory.cachemanager import (
     record_in_existing_cacheversion, append_to_cacheversion)
 from ncachefactory.infos import WorkspaceCacheversionsExplorer
 from ncachefactory.versioning import (
-    ensure_workspace_exists, list_available_cacheversions,
+    ensure_workspace_folder_exists, list_available_cacheversions,
     filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachefactory.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
@@ -32,8 +32,9 @@ from ncachefactory.timecallbacks import (
     register_time_callback, add_to_time_callback, unregister_time_callback,
     time_verbose, clear_time_callback_functions)
 from ncachefactory.monitoring import MultiCacheMonitor
-
-
+from ncachefactory.workspace import (
+    get_default_workspace, set_last_used_workspace)
+from ncachefactory.workspacesetter import WorkspaceWidget
 
 HELPFOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'help')
 WINDOW_TITLE = "nCache Factory"
@@ -159,10 +160,11 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.apply_optionvars()
         self.nodetable.show()
 
-    def closeEvent(self, e):
-        super(NCacheManager, self).closeEvent(e)
-        self.nodetable.closeEvent(e)
-        self.comparison.closeEvent(e)
+    def closeEvent(self, event):
+        super(NCacheManager, self).closeEvent(event)
+        self.nodetable.closeEvent(event)
+        self.comparison.closeEvent(event)
+        self.workspace_widget.closeEvent(event)
         self.save_optionvars()
 
     def set_workspace(self, workspace):
@@ -234,6 +236,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         workspace = self.workspace_widget.directory
         if workspace is None:
             return cmds.warning("no workspace set")
+        set_last_used_workspace(workspace)
+        self.workspace_widget.populate()
+
         if selection is True:
             nodes = self.nodetable.selected_nodes or []
         else:
@@ -266,6 +271,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         workspace = self.workspace_widget.directory
         if workspace is None:
             return cmds.warning("no workspace set")
+        set_last_used_workspace(workspace)
+        self.workspace_widget.populate()
+
         if selection is True:
             nodes = self.nodetable.selected_nodes or []
         else:
@@ -304,6 +312,9 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         workspace = self.workspace_widget.directory
         if workspace is None:
             return cmds.warning("no workspace set")
+        set_last_used_workspace(workspace)
+        self.workspace_widget.populate()
+
         if selection is True:
             nodes = self.nodetable.selected_nodes or []
         else:
@@ -340,6 +351,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def send_multi_cache(self, selection=False):
         if self.workspace is None:
             return cmds.warning("invalid workspace set")
+        set_last_used_workspace(self.workspace)
+
         mayapy = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
         if os.path.exists(mayapy) is False:
             return cmds.warning("invalid mayapy path set")
@@ -375,6 +388,8 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
     def send_wedging_cache(self, selection=False):
         if self.workspace is None:
             return cmds.warning("invalid workspace set")
+        set_last_used_workspace(self.workspace)
+
         mayapy = cmds.optionVar(query=MAYAPY_PATH_OPTIONVAR)
         if os.path.exists(mayapy) is False:
             return cmds.warning("invalid mayapy path set")
@@ -431,55 +446,6 @@ class Expander(QtWidgets.QPushButton):
         self.state = state
         self.child.setVisible(self.state)
         self.setIcon(self.icons[int(self.state)])
-
-
-class WorkspaceWidget(QtWidgets.QWidget):
-    workspaceSet = QtCore.Signal(str)
-
-    def __init__(self, parent=None):
-        super(WorkspaceWidget, self).__init__(parent)
-        self.workspace = None
-        self.label = QtWidgets.QLabel("Workspace")
-        self.browse = BrowserLine()
-        self.browse.button.released.connect(self.get_directory)
-        self.browse.text.returnPressed.connect(self._call_set_workspace)
-
-        self.layout = QtWidgets.QHBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
-        self.layout.addWidget(self.label)
-        self.layout.addSpacing(8)
-        self.layout.addWidget(self.browse)
-
-    def get_directory(self):
-        directory = self.directory
-        workspace = QtWidgets.QFileDialog.getExistingDirectory(dir=directory)
-        if not workspace:
-            return
-        self.set_workspace(workspace)
-
-    @property
-    def directory(self):
-        return self.workspace
-
-    def set_wrong(self):
-        self.browse.text.setStyleSheet('background-color: #DD5555')
-
-    def set_workspace(self, workspace):
-        certified = ensure_workspace_exists(workspace)
-        self.workspace = certified
-        self.browse.text.setText(workspace)
-        if certified != workspace:
-            self.workspaceSet.emit(certified)
-
-    def _call_set_workspace(self):
-        workspace = self.browse.text.text()
-        if not os.path.exists(workspace):
-            return self.set_wrong()
-        self.browse.text.setStyleSheet('')
-        self.workspace = ensure_workspace_exists(workspace)
-        self.browse.text.setText(workspace)
-        self.workspaceSet.emit(self.workspace)
 
 
 class CacheSendersWidget(QtWidgets.QWidget):
@@ -567,13 +533,6 @@ class PathOptions(QtWidgets.QWidget):
         cmds.optionVar(stringValue=[MAYAPY_PATH_OPTIONVAR, self.mayapy.text.text()])
         text = self.mediaplayer.text.text()
         cmds.optionVar(stringValue=[MEDIAPLAYER_PATH_OPTIONVAR, text])
-
-
-def get_default_workspace():
-    filename = cmds.file(expandName=True, query=True)
-    if os.path.basename(filename) == 'untitled':
-        return cmds.workspace(query=True, directory=True)
-    return os.path.dirname(filename)
 
 
 class BrowserLine(QtWidgets.QWidget):

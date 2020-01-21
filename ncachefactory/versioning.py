@@ -16,6 +16,7 @@ DEFAULT_INFOS = {
     'modification_time': 65252,
     'comment': 'comme ci comme ca',
     'playblasts': [],
+    'scene': 'path to maya scene' or None,
     'nodes': {
         'nodename_1': {
             'range': (100, 150)}},
@@ -60,20 +61,20 @@ class CacheVersion(object):
 
     def set_range(self, nodes=None, start_frame=None, end_frame=None):
         assert start_frame or end_frame
-        nodes = nodes or self.infos['nodes']
+        nodes = nodes or self.infos.get('nodes')
         if not nodes:
             self.save_infos()
             return
         for node in nodes:
             # if only one value is modified, the other one is kept
-            start = start_frame or self.infos['nodes'][node]['range'][0]
-            end = end_frame or self.infos['nodes'][node]['range'][1]
+            start = start_frame or self.infos.get('nodes')[node]['range'][0]
+            end = end_frame or self.infos.get('nodes')[node]['range'][1]
             _, node = split_namespace_nodename(node)
-            self.infos['nodes'][node]['range'] = start, end
+            self.infos.get('nodes')[node]['range'] = start, end
         self.save_infos()
 
     def set_timespent(self, nodes=None, seconds=0):
-        nodes = nodes or self.infos['nodes']
+        nodes = nodes or self.infos.get('nodes')
         if nodes:
             for node in nodes:
                 _, node = split_namespace_nodename(node)
@@ -81,7 +82,7 @@ class CacheVersion(object):
         self.save_infos()
 
     def add_playblast(self, playblast_filename):
-        self.infos['playblasts'].append(playblast_filename)
+        self.infos.get('playblasts').append(playblast_filename)
         self.save_infos()
 
     def set_comment(self, comment):
@@ -92,9 +93,13 @@ class CacheVersion(object):
         self.infos['name'] = name
         self.save_infos()
 
+    def set_scene(self, path):
+        self.infos['scene'] = path
+        self.save_infos()
+
     @property
     def name(self):
-        return self.infos['name']
+        return self.infos.get('name')
 
     @property
     def workspace(self):
@@ -160,7 +165,7 @@ def get_new_cacheversion_directory(workspace):
 
 def create_cacheversion(
         workspace=None, name=None, comment=None, nodes=None,
-        start_frame=0, end_frame=0, timespent=None):
+        start_frame=0, end_frame=0, timespent=None, scene=None):
 
     directory = get_new_cacheversion_directory(workspace)
     os.makedirs(directory)
@@ -183,7 +188,8 @@ def create_cacheversion(
         'nodes': nodes_infos,
         'start_frame': start_frame,
         'end_frame': end_frame,
-        'playblasts': []}
+        'playblasts': [],
+        'scene': scene}
 
     infos_filepath = os.path.join(directory, INFOS_FILENAME)
     with open(infos_filepath, 'w') as infos_file:
@@ -193,16 +199,16 @@ def create_cacheversion(
 
 
 def list_nodes_in_cacheversions(cachversions):
-    return list(set([v.infos['nodes'].keys() for v in cachversions]))
+    return list(set([v.infos.get('nodes').keys() for v in cachversions]))
 
 
 def cacheversion_contains_node(node, cacheversion, same_namespace=False):
     namespace, nodename = split_namespace_nodename(node)
     if same_namespace is False:
-        return nodename in cacheversion.infos['nodes']
-    if nodename not in cacheversion.infos['nodes']:
+        return nodename in cacheversion.infos.get('nodes')
+    if nodename not in cacheversion.infos.get('nodes'):
         return False
-    return cacheversion.infos['nodes'][nodename]['namespace'] == namespace
+    return cacheversion.infos.infos["nodes"][nodename]['namespace'] == namespace
 
 
 def split_namespace_nodename(node):
@@ -235,7 +241,7 @@ def filter_cacheversions_containing_nodes(nodes, cacheversions):
     return sorted(list(filtered), key=lambda x: x.name)
 
 
-def ensure_workspace_exists(workspace):
+def ensure_workspace_folder_exists(workspace):
     if is_workspace_folder(workspace):
         return workspace
     return create_workspace_folder(workspace)

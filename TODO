@@ -70,6 +70,7 @@ MAIN FEATURES
   - create contact sheet
 
   __ done __
+  - create a proper workspace management
   - play custom range in batch timeslider
   - blend attribute value button is still not implemented yet
   - Manage locked visibility attribute in nodetableview
@@ -84,8 +85,8 @@ MAIN FEATURES
 
 
 ACCESIBILITY
-  - Remove pymel usage to optimise nCacheFactory loading
-  - create HTML documentation
+  - Get rid of pymel usage to optimise nCacheFactory loading
+  - improve HTML documentation
 
   __done__
   - Set tooltip on every qpushbutton

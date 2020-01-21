@@ -13,7 +13,7 @@ from ncachefactory.cachemanager import (
     plug_cacheversion_to_inputmesh, plug_cacheversion_to_restshape,
     recover_original_inputmesh)
 from ncachefactory.optionvars import (
-    MEDIAPLAYER_PATH_OPTIONVAR, CACHEVERSION_SORTING_STYLE)
+    MEDIAPLAYER_PATH_OPTIONVAR, CACHEVERSION_SORTING_TYPE_OPTIONVAR)
 from ncachefactory.qtutils import get_icon
 from ncachefactory.attributessetters import (
     DynamicMapTransferWindow, AttributesTransferWindow)
@@ -28,7 +28,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
 
     def __init__(self, parent=None):
         super(WorkspaceCacheversionsExplorer, self).__init__(parent)
-        self.setFixedHeight(435)
+        self.setFixedHeight(500)
         self.cacheversion = None
         self.nodes = None
         self.map_setter = None
@@ -117,7 +117,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         self.recover_input.setEnabled(contains_clothnodes)
         self.transfer_maps.setEnabled(contains_clothnodes)
         if self.cacheversion is not None:
-            playblasts_available = bool(self.cacheversion.infos['playblasts'])
+            playblasts_available = bool(self.cacheversion.infos.get('playblasts'))
             self.show_playblasts.setEnabled(playblasts_available)
         else:
             self.show_playblasts.setEnabled(False)
@@ -170,7 +170,7 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         for node in self.nodes:
             if not cacheversion_contains_node(node, self.cacheversion):
                 msg = '{} is not cached in version: {}. Skip connection'
-                cmds.warning(msg.format(node, self.cacheversion.infos['name']))
+                cmds.warning(msg.format(node, self.cacheversion.name))
                 continue
             nodes.append(node)
         return nodes
@@ -214,10 +214,10 @@ class WorkspaceCacheversionsExplorer(QtWidgets.QWidget):
         mediaplayer = cmds.optionVar(query=MEDIAPLAYER_PATH_OPTIONVAR)
         if not mediaplayer:
             return
-        playblasts = self.cacheversion.infos['playblasts']
+        playblasts = self.cacheversion.infos.get('playblasts')
         if not playblasts:
             return
-        arguments = [mediaplayer] + self.cacheversion.infos['playblasts']
+        arguments = [mediaplayer] + self.cacheversion.infos.get('playblasts')
         subprocess.Popen(arguments)
 
 
@@ -239,7 +239,7 @@ class CacheversionsListModel(QtCore.QAbstractListModel):
         if not index.isValid():
             return
         if role == QtCore.Qt.DisplayRole:
-            return self.cacheversions[index.row()].infos['name']
+            return self.cacheversions[index.row()].name
 
 
 class CacheversionInfosWidget(QtWidgets.QWidget):
@@ -258,6 +258,8 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         self.comment.setFixedHeight(65)
         self.comment.setEnabled(False)
         self.comment.textChanged.connect(self._call_comment_changed)
+        self.scene = QtWidgets.QLineEdit('')
+        self.scene.setReadOnly(True)
         self.nodes_table_model = NodeInfosTableModel()
         self.nodes_table_view = NodeInfosTableView()
         self.nodes_table_view.setModel(self.nodes_table_model)
@@ -268,6 +270,7 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         self.form_layout.addRow("Modified:", self.modification_date)
         self.form_layout.addRow("Name:", self.name)
         self.form_layout.addRow("Comment:", self.comment)
+        self.form_layout.addRow("Scene:", self.scene)
 
         self.layout = QtWidgets.QVBoxLayout(self)
         self.layout.addLayout(self.form_layout)
@@ -285,14 +288,17 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
             self.comment.setText("")
             self.creation_date.setText("---")
             self.modification_date.setText("---")
+            self.scene.setText('')
             return
-        creation = cacheversion.infos["creation_time"]
+        scene = cacheversion.infos.get("scene") or 'No scene saved'
+        creation = cacheversion.infos.get("creation_time")
         creation = datetime.datetime.fromtimestamp(creation)
-        modification = cacheversion.infos["modification_time"]
+        modification = cacheversion.infos.get("modification_time")
         modification = datetime.datetime.fromtimestamp(modification)
+        self.scene.setText(scene)
         self.creation_date.setText(creation.strftime(TIMEFORMAT))
         self.modification_date.setText(modification.strftime(TIMEFORMAT))
-        self.comment.setText(cacheversion.infos["comment"])
+        self.comment.setText(cacheversion.infos.get("comment"))
         self.nodes_table_view.update_header()
         self.blockSignals(False)
 
@@ -358,7 +364,7 @@ class NodeInfosTableModel(QtCore.QAbstractTableModel):
             self.layoutChanged.emit()
             return
         self.infos = cacheversion.infos
-        self.nodes = sorted([n for n in self.infos['nodes']])
+        self.nodes = sorted([n for n in self.infos.get('nodes')])
         self.layoutChanged.emit()
 
     def sort(self, column, order):
@@ -384,12 +390,12 @@ class NodeInfosTableModel(QtCore.QAbstractTableModel):
             if col == 0:
                 return node
             if col == 1:
-                frames = self.infos['nodes'][node]['range']
+                frames = self.infos.get('nodes')[node]['range']
                 return ", ".join([str(f) for f in frames])
             if col == 2:
-                return self.infos['nodes'][node]['namespace'] or 'None'
+                return self.infos.get('nodes')[node]['namespace'] or 'None'
             if col == 3:
-                seconds = self.infos['nodes'][node]['timespent']
+                seconds = self.infos.get('nodes')[node]['timespent']
                 if not seconds:
                     return 'None'
                 delta = datetime.timedelta(seconds=seconds)
@@ -434,7 +440,7 @@ class CacheversionToolbar(QtWidgets.QToolBar):
         # self.addAction(self.filter)
         self.addAction(self.sort)
         # update chevecked action menu
-        index = cmds.optionVar(query=CACHEVERSION_SORTING_STYLE)
+        index = cmds.optionVar(query=CACHEVERSION_SORTING_TYPE_OPTIONVAR)
         self.set_sort_type(index, emit=False)
 
     def set_sort_type(self, index, emit=True):
@@ -442,7 +448,7 @@ class CacheversionToolbar(QtWidgets.QToolBar):
         self.name.setChecked(index == 0)
         self.last_modification.setChecked(index == 1)
         self.creation.setChecked(index == 2)
-        cmds.optionVar(intValue=[CACHEVERSION_SORTING_STYLE, index])
+        cmds.optionVar(intValue=[CACHEVERSION_SORTING_TYPE_OPTIONVAR, index])
         if emit is False:
             return
         self.sortingOrderModified.emit()

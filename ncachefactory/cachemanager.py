@@ -15,7 +15,7 @@ from maya import cmds
 import maya.api.OpenMaya as om2
 
 from ncachefactory.versioning import (
-    create_cacheversion, ensure_workspace_exists, find_file_match,
+    create_cacheversion, ensure_workspace_folder_exists, find_file_match,
     clear_cacheversion_content, cacheversion_contains_node,
     move_playblast_to_cacheversion, extract_xml_attributes)
 from ncachefactory.mesh import (
@@ -52,7 +52,7 @@ def create_and_record_cacheversion(
 
     nodes = nodes or cmds.ls(type=DYNAMIC_NODES)
     nodes = filter_invisible_nodes_for_manager(nodes)
-    workspace = ensure_workspace_exists(workspace)
+    workspace = ensure_workspace_folder_exists(workspace)
     cacheversion = create_cacheversion(
         workspace=workspace,
         name=name,
@@ -142,16 +142,16 @@ def append_to_cacheversion(
     # Add up the second spent for the append cache to the cache time spent
     # already recorded.
     timespent = (end_time - start_time).total_seconds()
-    for node in cacheversion.infos['nodes']:
+    for node in cacheversion.infos.get('nodes'):
         if node not in nodes:
             continue
-        seconds = cacheversion.infos['nodes'][node]["timespent"] + timespent
+        seconds = cacheversion.infos.get('nodes')[node]["timespent"] + timespent
         cacheversion.set_timespent(nodes=[node], seconds=seconds)
     cacheversion.update_modification_time()
     # Update the cached range in the cache info if the append cache
     # finished further the original cache
     time = cmds.currentTime(query=True)
-    end_frame = cacheversion.infos['nodes'][node]['range'][1]
+    end_frame = cacheversion.infos.get('nodes')[node]['range'][1]
     if time > end_frame:
         cacheversion.set_range(nodes=nodes, end_frame=time)
 

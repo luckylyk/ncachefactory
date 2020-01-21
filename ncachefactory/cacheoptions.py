@@ -19,9 +19,9 @@ BLENDMODE_LABELS = (
 class CacheOptions(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super(CacheOptions, self).__init__(parent)
-        self._verbose = QtWidgets.QCheckBox('verbose')
-        self._rangetype_timeline = QtWidgets.QRadioButton('timeline')
-        self._rangetype_custom = QtWidgets.QRadioButton('custom range')
+        self._verbose = QtWidgets.QCheckBox('Verbose')
+        self._rangetype_timeline = QtWidgets.QRadioButton('Timeline')
+        self._rangetype_custom = QtWidgets.QRadioButton('Custom range')
         self._rangetype = QtWidgets.QButtonGroup()
         self._rangetype.addButton(self._rangetype_timeline, 0)
         self._rangetype.addButton(self._rangetype_custom, 1)

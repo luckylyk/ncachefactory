@@ -92,6 +92,7 @@ def send_batch_ncache_jobs(
         cacheversions.append(cacheversion)
         scene = os.path.join(cacheversion.directory, NCACHESCENE_FILENAME)
         os.rename(job['scene'], scene)
+        cacheversion.set_scene(scene)
         # replace the two arguments which are different for each jobs
         arguments[2] = cacheversion.directory
         arguments[3] = scene
@@ -125,7 +126,8 @@ def send_wedging_ncaches_jobs(
             comment=comment,
             nodes=nodes,
             start_frame=start_frame,
-            end_frame=end_frame)
+            end_frame=end_frame,
+            scene=scene)
         cacheversions.append(cacheversion)
         arguments = build_batch_script_arguments(
             start_frame, end_frame, nodes, evaluate_every_frame,
