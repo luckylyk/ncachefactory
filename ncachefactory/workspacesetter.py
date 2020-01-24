@@ -23,7 +23,7 @@ class WorkspaceWidget(QtWidgets.QWidget):
         self.label = QtWidgets.QLabel("Workspace")
         self.label.setFixedWidth(60)
         self.workspace_combo = QtWidgets.QComboBox()
-        self.workspace_combo.setMaximumWidth(300)
+        self.workspace_combo.setFixedWidth(300)
         self.workspace_combo.setEditable(True)
         self.workspace_combo.activated.connect(self._call_set_workspace)
         self.button = QtWidgets.QPushButton(get_icon("folder.png"), "")
