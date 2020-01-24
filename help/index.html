@@ -242,23 +242,20 @@
                         options).</li>
                 </ul>
                 <p style="padding-left: 60px; text-align: justify;"><strong><a name="transfer1"></a>5.2 Attribute transfer window<br /></strong></p>
-                <p style="text-align: justify;">Natively, maya export a xml file recording all the plug value which
-                    influence a ncache record. This tool parse the settings used to create the current cache version to
-                    the selected node. This window contain multiple items, a list of influenced nodes, a table which
-                    display all the plugs and values.</p>
+                <p style="text-align: justify;">Natively, maya export a xml file recording all the plugs values which
+                    influence the recorded simulation. This tool parse those settings and provide a UI to gather them.</p>
                 <ul style="text-align: justify;">
                     <li style="text-align: justify;"><em>Apply all settings</em>: Transfer (or blend) all settings
-                        visible in the tool to the scene.</li>
+                        visibles from the tool to the scene.</li>
                     <li style="text-align: justify;"><em>Apply all settings on selected nodes</em>: Transfer (or blend)
                         all settings on all selected nodes in the left node list.</li>
                     <li style="text-align: justify;"><em>Apply selected settings</em>: Transfer (or blend) all the
-                        selected settings in the attributes table to the scene.</li>
+                        selected settings from the attributes table to the scene.</li>
                     <li style="text-align: justify;"><em>Blend with scene (slider)</em>: This slider allow to blend the
-                        cached settings with the current scene settings. If the value is full, the tool apply at 100%
-                        the cached values</li>
+                        cached settings with the current scene settings. If the slider value is at laxilul possible
+                        (which is by default), the tool apply at 100% the cached values.</li>
                 </ul>
-                <p style="padding-left: 60px; text-align: justify;"><strong><a name="transfer2"></a>5.3 Dynamic maps
-                        transfer window</strong></p>
+                <p style="padding-left: 60px; text-align: justify;"><strong><a name="transfer2"></a>5.3 Dynamic maps transfer window</strong></p>
                 <p style="text-align: justify;">For every cache version created, the dynamic maps are backed up. This
                     tool allow to transfer the backed up map to the current scene.</p>
                 <ul style="text-align: justify;">
