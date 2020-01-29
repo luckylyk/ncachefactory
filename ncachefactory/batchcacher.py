@@ -14,19 +14,11 @@ from ncachefactory.batch import (
 from ncachefactory.optionvars import (
     EXPLOSION_TOLERENCE_OPTIONVAR, EXPLOSION_DETECTION_OPTIONVAR,
     TIMELIMIT_ENABLED_OPTIONVAR, TIMELIMIT_OPTIONVAR, ensure_optionvars_exists)
+from ncachefactory.arrayutils import compute_wedging_values
 
 
 ATTRIBUTEPICKER_WINDOW_NAME = "Pick plug from selection"
 VALUES_BUIDLER_NAME = "Values builder"
-
-
-def compute_wedging_values(start_value, end_value, iterations):
-    if iterations < 3:
-        return start_value, end_value
-    iterations -= 2
-    difference = float(abs(end_value - start_value))
-    iteration_value = difference / (iterations + 1)
-    return [start_value + (i * iteration_value) for i in range(iterations + 2)]
 
 
 class BatchCacher(QtWidgets.QWidget):

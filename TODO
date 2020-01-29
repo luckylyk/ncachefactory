@@ -37,7 +37,6 @@ BASIC CONFORT
   - Add nameclash check before cache
   - Multi switcher in the nodetableview toolbar have to skip the locked items
   - button to select connected cache/blend node (done but icon)
-  - Add pipette button or callback to update automatically the workspace
 
   __ done __
   - Support the subframe caching

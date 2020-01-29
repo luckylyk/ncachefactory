@@ -1,7 +1,9 @@
-
+import os
 from math import ceil, sqrt
+import tempfile
 from PySide2 import QtCore, QtWidgets, QtGui
 from ncachefactory.slider import Slider
+from ncachefactory.playblast import compile_movie
 
 
 POINT_RADIUS = 8
@@ -20,6 +22,8 @@ STATUS_COLORS = {
     "killed": "red"}
 STACKED_IMAGE_TEXTCOLOR = "#ffffff"
 COMPARATOR_TITLE = "Compare versions"
+CONTACTSHEET_TITLE = "Contact sheet"
+CONTACTSHEET_TEMPFILENAME = 'ncachemanager_contactsheet.{}.jpg'
 
 
 class SequenceImageReader(QtWidgets.QWidget):
@@ -138,7 +142,7 @@ class SequenceStackedImagesReader(QtWidgets.QWidget):
         self.blender.setSliderPosition(100)
         self.blender.valueChanged.connect(self._call_blender_value_changed)
 
-        self.playstop = QtWidgets.QPushButton("play")
+        self.playstop = QtWidgets.QPushButton("Play")
         self.playstop.released.connect(self._call_playstop)
 
         self.layout = QtWidgets.QVBoxLayout(self)
@@ -166,11 +170,11 @@ class SequenceStackedImagesReader(QtWidgets.QWidget):
 
     def _call_playstop(self):
         if self.isplaying is False:
-            self.playstop.setText('stop')
+            self.playstop.setText('Stop')
             self.isplaying = True
             self.timer.start(47, self)
         else:
-            self.playstop.setText('play')
+            self.playstop.setText('Play')
             self.isplaying = False
             self.timer.stop()
 
@@ -281,6 +285,97 @@ class StackedImagesViewer(QtWidgets.QWidget):
             print(traceback.format_exc())
         finally:
             painter.end()
+
+
+class ContactSheetImagesReader(QtWidgets.QWidget):
+    def __init__(self, names=None, pixmap_lists=None, parent=None):
+        super(ContactSheetImagesReader, self).__init__(parent, QtCore.Qt.Tool)
+        self.setWindowTitle(CONTACTSHEET_TITLE)
+        self.isplaying = False
+        self.names = names
+        self.pixmap_lists = pixmap_lists
+        self.imageviewers = [ImageViewer(name=name) for name in self.names]
+
+        self.timer = QtCore.QBasicTimer()
+
+        self.slider = Slider()
+        self.slider.minimum = 0
+        self.slider.maximum = len(self.pixmap_lists[0])
+        self.slider.maximum_settable_value = self.slider.maximum
+        self.slider.value = self.slider.minimum
+        self.slider.valueChanged.connect(self._call_slider_value_changed)
+        self.playstop = QtWidgets.QPushButton("Play")
+        self.playstop.released.connect(self._call_playstop)
+        self.export = QtWidgets.QPushButton("Export")
+        self.export.released.connect(self._call_export)
+
+        self.buttons_layout = QtWidgets.QHBoxLayout()
+        self.buttons_layout.setContentsMargins(0, 0, 0, 0)
+        self.buttons_layout.setSpacing(0)
+        self.buttons_layout.addWidget(self.playstop)
+        self.buttons_layout.addWidget(self.export)
+        # set the grid dlayout under a dummy widget to allow widget.grabWindow
+        # to export a video
+        self.grid_widget = QtWidgets.QWidget()
+        self.grid_layout = QtWidgets.QGridLayout(self.grid_widget)
+        row = 0
+        column = 0
+        column_lenght = ceil(sqrt(len(self.imageviewers)))
+        for imageviewer in self.imageviewers:
+            self.grid_layout.addWidget(imageviewer, row, column)
+            column += 1
+            if column >= column_lenght:
+                column = 0
+                row += 1
+
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        self.layout.addWidget(self.grid_widget)
+        self.layout.addSpacing(4)
+        self.layout.addWidget(self.slider)
+        self.layout.addLayout(self.buttons_layout)
+
+    def timerEvent(self, event):
+        if not (self.slider.start <= self.slider.value < self.slider.end):
+            self.slider.value = self.slider.start
+        else:
+            self.slider.value += 1
+
+    def _call_slider_value_changed(self, value):
+        for i, imageviewer in enumerate(self.imageviewers):
+            imageviewer.set_image(self.pixmap_lists[i][value])
+
+    def _call_playstop(self):
+        if self.isplaying is False:
+            self.playstop.setText('Stop')
+            self.isplaying = True
+            self.timer.start(47, self)
+        else:
+            self.playstop.setText('Play')
+            self.isplaying = False
+            self.timer.stop()
+
+    def _call_export(self):
+        destination = QtWidgets.QFileDialog.getSaveFileName(
+            self, 'export contact sheet', '', "Mp4 (*.mp4);;All Files (*)")
+        if not destination[0]:
+            return
+
+        images = []
+        folder = tempfile.gettempdir()
+        for i in range(self.slider.start, self.slider.end + 1):
+            self.slider.value = i
+            jpg = CONTACTSHEET_TEMPFILENAME.format(str(i).zfill(6))
+            output = os.path.join(folder, jpg)
+            pixmap = QtGui.QPixmap.grabWindow(self.grid_widget.winId())
+            pixmap.save(output, 'jpg', quality=100)
+            images.append(output)
+        source = compile_movie(images)
+        os.rename(source, destination[0])
+
+        for image in images:
+            os.remove(image)
 
 
 def draw_stacked_imagesview(painter, stacked_imagesview, alpha=1):

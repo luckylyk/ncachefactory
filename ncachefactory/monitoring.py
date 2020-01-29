@@ -6,9 +6,10 @@ from maya import cmds
 from ncachefactory.playblast import compile_movie
 from ncachefactory.cachemanager import connect_cacheversion
 from ncachefactory.ncache import list_connected_cachefiles
-from ncachefactory.arrayutils import overlap_lists_from_ranges, range_ranges
+from ncachefactory.arrayutils import overlap_arrays_from_ranges, range_ranges
 from ncachefactory.sequencereader import (
-    SequenceImageReader, ImageViewer, SequenceStackedImagesReader)
+    SequenceImageReader, ImageViewer, SequenceStackedImagesReader,
+    ContactSheetImagesReader)
 from ncachefactory.versioning import (
     get_log_filename, list_tmp_jpeg_under_cacheversion)
 
@@ -22,6 +23,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
         super(MultiCacheMonitor, self).__init__(parent, QtCore.Qt.Window)
         self.setWindowTitle(WINDOW_TITLE)
         self.comparators = []
+        self.contact_sheet = []
         self.tab_widget = QtWidgets.QTabWidget()
         self.tab_widget.setTabsClosable(True)
         self.tab_widget.tabCloseRequested.connect(self.tab_closed)
@@ -42,6 +44,7 @@ class MultiCacheMonitor(QtWidgets.QWidget):
     def add_job(self, cacheversion, process):
         job_panel = JobPanel(cacheversion, process)
         job_panel.comparisonRequested.connect(self._call_comparison)
+        job_panel.contactSheetRequested.connect(self._call_contact_sheet)
         self.job_panels.append(job_panel)
         self.tab_widget.addTab(job_panel, cacheversion.name)
         self.tab_widget.setCurrentIndex(len(self.job_panels) - 1)
@@ -84,43 +87,46 @@ class MultiCacheMonitor(QtWidgets.QWidget):
         range1 = slider.minimum, slider.maximum_settable_value
         slider = job_panel2.images.slider
         range2 = slider.minimum, slider.maximum_settable_value
-        pixmaps1, pixmaps2 = overlap_lists_from_ranges(
-            elements1=job_panel.images._pixmaps,
-            elements2=job_panel2.images._pixmaps,
-            range1=range1,
-            range2=range2)
-        frames = range_ranges(range1, range2)
+        pixmaps1, pixmaps2 = overlap_arrays_from_ranges(
+            arrays=[job_panel.images._pixmaps, job_panel2.images._pixmaps],
+            ranges=[range1, range2])
+        frames = range_ranges([range1, range2])
         comparator = SequenceStackedImagesReader(
             pixmaps1=pixmaps1,
             pixmaps2=pixmaps2,
             frames=frames,
-            names=names)
+            names=names,
+            parent=self)
         comparator.show()
         self.comparators.append(comparator)
 
-
-class Monitor(QtWidgets.QWidget):
-    def __init__(self, names, imageviewers, parent=None):
-        super(Monitor, self).__init__(parent)
-        self.imageviewers = []
-        for name, imageviewer_master in zip(names, imageviewers):
-            imageviewer = ImageViewer(name=name)
-            imageviewer_master.imageChanged.connect(imageviewer.set_image)
-            self.imageviewers.append(imageviewer)
-        self.layout = QtWidgets.QGridLayout(self)
-        row = 0
-        column = 0
-        column_lenght = ceil(sqrt(len(self.imageviewers)))
-        for imageviewer in self.imageviewers:
-            self.layout.addWidget(imageviewer, row, column)
-            column += 1
-            if column >= column_lenght:
-                column = 0
-                row += 1
+    def _call_contact_sheet(self, job_panel):
+        cacheversions = [jp.cacheversion for jp in self.job_panels]
+        names = [cv.name for cv in cacheversions]
+        dialog = CacheVersionSelection(names=names, multiselection=True)
+        result = dialog.exec_()
+        if result == QtWidgets.QDialog.Rejected or dialog.indexes is None:
+            return
+        job_panels = [self.job_panels[i] for i in dialog.indexes]
+        names = [job_panel.cacheversion.name for job_panel in job_panels]
+        ranges = []
+        for job_panel in job_panels:
+            slider = job_panel.images.slider
+            ranges.append([slider.minimum, slider.maximum_settable_value])
+        pixmap_lists = overlap_arrays_from_ranges(
+            arrays=[job_panel.images._pixmaps for job_panel in job_panels],
+            ranges=ranges)
+        contact_sheet = ContactSheetImagesReader(
+            names=names,
+            pixmap_lists=pixmap_lists,
+            parent=self)
+        contact_sheet.show()
+        self.contact_sheet.append(contact_sheet)
 
 
 class JobPanel(QtWidgets.QWidget):
     comparisonRequested = QtCore.Signal(object)
+    contactSheetRequested = QtCore.Signal(object)
 
     def __init__(self, cacheversion, process, parent=None):
         super(JobPanel, self).__init__(parent)
@@ -143,6 +149,9 @@ class JobPanel(QtWidgets.QWidget):
         self.compare = QtWidgets.QPushButton('Compare with')
         self.compare.setEnabled(False)
         self.compare.released.connect(self._call_compare)
+        self.contactsheet = QtWidgets.QPushButton('Contact sheet')
+        self.contactsheet.setEnabled(False)
+        self.contactsheet.released.connect(self._call_contact_sheet)
         self.playstop = QtWidgets.QPushButton("Play")
         self.playstop.setEnabled(False)
         self.playstop.released.connect(self._call_playstop)
@@ -154,6 +163,7 @@ class JobPanel(QtWidgets.QWidget):
         self.log_layout.addWidget(self.connect_cache)
         self.log_layout.addWidget(self.kill_button)
         self.log_layout.addWidget(self.compare)
+        self.log_layout.addWidget(self.contactsheet)
         self.log_layout.addWidget(self.playstop)
 
         self.splitter = QtWidgets.QSplitter()
@@ -189,6 +199,8 @@ class JobPanel(QtWidgets.QWidget):
                 self.playstop.setEnabled(True)
             if self.compare.isEnabled() is False:
                 self.compare.setEnabled(True)
+            if self.contactsheet.isEnabled() is False:
+                self.contactsheet.setEnabled(True)
 
         if self.images.isfull() is True:
             self.finished = True
@@ -220,6 +232,9 @@ class JobPanel(QtWidgets.QWidget):
 
     def _call_compare(self):
         self.comparisonRequested.emit(self)
+
+    def _call_contact_sheet(self):
+        self.contactSheetRequested.emit(self)
 
     def kill(self):
         if self.finished is True:
@@ -280,11 +295,14 @@ class InteractiveLog(QtWidgets.QWidget):
 
 
 class CacheVersionSelection(QtWidgets.QDialog):
-    def __init__(self, names, parent=None):
+    def __init__(self, names, multiselection=False, parent=None):
         super(CacheVersionSelection, self).__init__(parent, QtCore.Qt.Tool)
         self.setWindowTitle(CACHEVERSION_SELECTION_TITLE)
         self.list = QtWidgets.QListWidget()
         self.list.addItems(names)
+        if multiselection is True:
+            mode = QtWidgets.QAbstractItemView.ExtendedSelection
+            self.list.setSelectionMode(mode)
         self.ok = QtWidgets.QPushButton("ok")
         self.ok.released.connect(self.accept)
 
@@ -298,6 +316,13 @@ class CacheVersionSelection(QtWidgets.QDialog):
         if not indexes:
             return
         return indexes[0]
+
+    @property
+    def indexes(self):
+        indexes = [i.row() for i in self.list.selectedIndexes()]
+        if not indexes:
+            return
+        return indexes
 
 
 def kill_them_all_confirmation_dialog():
