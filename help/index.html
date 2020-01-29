@@ -269,23 +269,20 @@
                 <h3 style="text-align: justify; padding-left: 30px;">&nbsp;</h3>
                 <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="batchcacher"></a>6. Batch cacher
                         (panel)</strong></h3>
-                <p style="text-align: justify;">This panel provide toolkit to create ncache version in background, using
-                    a external mayapy. This allow to launch multiple concurrency caches. There's two systems to launch
+                <p style="text-align: justify;">This panel provide a toolkit to create ncache version in background using
+                    an external mayapy. This allow to launch multiple caches in concurrency. There's two systems to launch
                     batch cache, <a href="#multiscenes">the multi scenes</a> and the <a href="wedging">attribute
-                        wedging.</a> All the caches are sent through the Batch cacher moniter.</p>
-                <p style="text-align: justify;">N.B. Every cache sent in the <a href="#btachmonitor">Batch cacher
-                        monitor</a> will provide a real-time feedback. The feedback options will use the settings set in
-                    the Playblast options panel !</p>
-                <p style="text-align: justify;"><strong>Important: </strong>Theoritically, the numbers of ncache
-                    processed in concurency is unlitited but depending of your memory available, your scene size and you
-                    available CPU, pay attention to not exagerate.</p>
+                        wedging.</a> All the caches are sent through the <a href="#btachmonitor">Batch cacher moniter</a>.</p>
+                <p style="text-align: justify;">N.B. Every cache sent through the <a href="#btachmonitor">Batch cacher
+                        monitor</a> will render a real-time feedback. The render done will the settings from
+                    the Playblast options panel.</p>
+                <p style="text-align: justify;"><strong>Important: </strong>the numbers of ncache
+                    processed in concurency is unlitited. Depending of your available memory, your scene size and you
+                    number of available core, do not exagerate :).</p>
                 <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="multiscenes"></a>6.1 Multi
                         scenes<br /></strong></h4>
-                <p style="text-align: justify;">The multi scenes give the possibilty to save you save in multiples
-                    states and send multiple cache together. This tab contains a table. This table contains the scenes
-                    which will send in batch cache. The first and the second table's column are editable. N.B. when
-                    those must be validated (pressing return or moving the focus) before launching the cache. If it's
-                    not, the field value is not changed.</p>
+                <p style="text-align: justify;">The multi scenes give the possibilty to store your current scene to cache it later.
+                    You can cook multiple scene and send them together.</p>
                 <table style="width: 770px;">
                     <tbody>
                         <tr style="height: 31.8167px;">
