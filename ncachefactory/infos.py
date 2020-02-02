@@ -281,7 +281,6 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         self.cacheversion = cacheversion
         self.nodes_table_model.set_cacheversion(cacheversion)
         self.name.setEnabled(bool(cacheversion))
-        self.name.setText(cacheversion.infos["name"])
         self.comment.setEnabled(bool(cacheversion))
         if cacheversion is None:
             self.name.setText("")
@@ -295,6 +294,7 @@ class CacheversionInfosWidget(QtWidgets.QWidget):
         creation = datetime.datetime.fromtimestamp(creation)
         modification = cacheversion.infos.get("modification_time")
         modification = datetime.datetime.fromtimestamp(modification)
+        self.name.setText(cacheversion.infos["name"])
         self.scene.setText(scene)
         self.creation_date.setText(creation.strftime(TIMEFORMAT))
         self.modification_date.setText(modification.strftime(TIMEFORMAT))

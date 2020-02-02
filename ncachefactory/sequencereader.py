@@ -168,6 +168,9 @@ class SequenceStackedImagesReader(QtWidgets.QWidget):
     def _call_blender_value_changed(self, value):
         self.stacked_imagesview.alpha = value / 100.0
 
+    def closeEvent(self, event):
+        self.timer.stop()
+
     def _call_playstop(self):
         if self.isplaying is False:
             self.playstop.setText('Stop')
@@ -355,6 +358,9 @@ class ContactSheetImagesReader(QtWidgets.QWidget):
             self.playstop.setText('Play')
             self.isplaying = False
             self.timer.stop()
+
+    def closeEvent(self, event):
+        self.timer.stop()
 
     def _call_export(self):
         destination = QtWidgets.QFileDialog.getSaveFileName(
