@@ -278,8 +278,7 @@
                         monitor</a> will render a real-time feedback. The render done will the settings from
                     the Playblast options panel.</p>
                 <p style="text-align: justify;"><strong>Important: </strong>the numbers of ncache
-                    processed in concurency is unlitited. Depending of your available memory, your scene size and you
-                    number of available core, do not exagerate :).</p>
+                    processed in concurency is unlimited, but your computer memory is limited :).</p>
                 <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="multiscenes"></a>6.1 Multi
                         scenes<br /></strong></h4>
                 <p style="text-align: justify;">The multi scenes give the possibilty to store your current scene to cache it later.
@@ -291,7 +290,7 @@
                                 <center><img style="background-color: #888888; padding: 5px;" src="../icons/flash.png"
                                         width="25" height="25" /></center>
                             </td>
-                            <td style="width: 678.5px; height: 31.8167px;">This button create a save of your scene in
+                            <td style="width: 678.5px; height: 31.8167px;">This button create a copy of your scene in
                                 the current state. All the edits you will do after won't be used for when you will send
                                 the caches.</td>
                         </tr>
@@ -301,19 +300,20 @@
                                         width="25" height="25" /></center>
                             </td>
                             <td style="width: 678.5px; height: 38px;">This button will remove all the selected scenes
-                                backed up for batch cache.</td>
+                                backedup for batch cache.</td>
                         </tr>
                     </tbody>
                 </table>
                 <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="wedging"></a>6.2 Attribute
                         wedging<br /></strong></h4>
-                <p style="text-align: justify;">&nbsp;The attribute wedging concept allow to send multiple caches an
-                    unique scene with one overrided attribute value.</p>
+                <p style="text-align: justify;">&nbsp;
+                    The attribute wedging is use to test multiple values on an attribute. That will send multiple caches
+                from the current scene orrividing the attribute value given.</p>
                 <ul style="text-align: justify;">
-                    <li><em>Name</em>: This field is the name of the cached version. The comment is automatically
-                        generated with the attribute override value.</li>
+                    <li><em>Name</em>: This field define the version name. A comment is automatically
+                        generated from the attribute override value.</li>
                     <li><em>Attribute</em>: This field has to contains the full plug name which will be overrided. e.i.
-                        nClothShape1.thickness</li>
+                        shaggy1:nClothShape1.thickness</li>
                 </ul>
                 <table style="width: 770px;">
                     <tbody>
@@ -323,7 +323,7 @@
                                         width="25" height="25" /></center>
                             </td>
                             <td style="width: 678.5px; height: 31.8167px;">
-                                This button gather the attribute higlighted in the channel box.</td>
+                                This button gather the higlighted attribute in the channel box.</td>
                         </tr>
                         <tr style="height: 38px;">
                             <td style="width: 75.5px; height: 38px;">
@@ -331,15 +331,14 @@
                                         src="../icons/magnifyingglass.png" width="25" height="25" /></center>
                             </td>
                             <td style="width: 678.5px; height: 38px;">
-                                <p>This button open a dialog which help to find an attribute in the current maya
-                                selection.</p>
+                                <p>Open a dialog which list all attributes of selected nodes.</p>
                             </td>
                         </tr>
                     </tbody>
                 </table>
                 <ul style="text-align: justify;">
-                    <li><em>Values</em>: that's a value list. The format must be floats separated by comas: <em>0.5, 1,
-                            2, 3.0. </em> The number of values is unlimited.</li>
+                    <li><em>Values</em>: This is the list of values that you want to test.
+                        The format must be floats separated by comas: <em>0.5, 1, 2, 3.0. </em></li>
                 </ul>
                 <table style="width: 770px;">
                     <tbody>
@@ -354,7 +353,7 @@
                     </tbody>
                 </table>
                 <h4 style="text-align: justify; padding-left: 60px;"><strong><a name="killoptions"></a>6.3 Auto-kill
-                        simulation options<br /></strong></h4>
+                        simulation options.<br /></strong></h4>
                 <p style="text-align: justify;">This part provide options to kill automatically your cache if that's
                     detect an issue. Two options are available to auto kill a simulation.</p>
                 <ul style="text-align: justify;">
@@ -468,7 +467,9 @@
                             height="75%/" /></strong></p>
                 <p style="text-align: justify;">This window is a media player which read concurrency two jpeg sequences.
                     The two versions can be compared with wipes and transparency comparison.</p>
+                <p style="text-align: justify;">&nbsp;</p>
                 <h3 style="padding-left: 30px; text-align: justify;"><strong><a name="contactsheet"></a>12. Contact Sheet</strong></h3>
+                <img style="background-color: #888888; padding: 5px;" src="contactsheet.png" width="600" height="400" />
             </td>
         </tr>
     </tbody>
