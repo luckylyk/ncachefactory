@@ -189,14 +189,14 @@ def list_channelbox_highlited_plugs():
     the channelbox.'''
     plugs = set()
     channelbox = "mainChannelBox"
-    kwargs = (
+    keys = (
         ('selectedMainAttributes', 'mainObjectList'),
         ('selectedShapeAttributes', 'shapeObjectList'),
         ('selectedHistoryAttributes', 'historyObjectList'),
         ('selectedOutputAttributes', 'outputObjectList'))
-    for kwattr, kwnode in kwargs:
-        attributes = cmds.channelBox(channelbox, query=True, **{kwattr: True})
-        nodes = cmds.channelBox(channelbox, query=True, **{kwnode: True})
+    for keyattr, keynode in keys:
+        attributes = cmds.channelBox(channelbox, query=True, **{keyattr: True})
+        nodes = cmds.channelBox(channelbox, query=True, **{keynode: True})
         if attributes is None:
             continue
         for node in nodes:
