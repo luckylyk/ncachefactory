@@ -59,7 +59,7 @@ class DynamicNode(object):
 
     @property
     def enable(self):
-        return cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE)
+        return bool(cmds.getAttr(self.name + '.' + self.ENABLE_ATTRIBUTE))
 
     def switch(self):
         if self.locked:
@@ -90,6 +90,18 @@ class HairNode(DynamicNode):
 
     def set_color(self, red, green, blue):
         cmds.setAttr(self.name + '.displayColor', red, green, blue)
+
+    def switch(self):
+        if self.locked:
+            return
+        # set the simulation method
+        # 2 = all follicles
+        # 0 = off
+        if self.enable == 0:
+            value = 2
+        else:
+            value = 0
+        cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
 
     @property
     def visible(self):
