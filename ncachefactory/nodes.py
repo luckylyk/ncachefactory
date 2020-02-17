@@ -95,10 +95,10 @@ class HairNode(DynamicNode):
         if self.locked:
             return
         # set the simulation method
-        # 2 = all follicles
+        # 3 = all follicles
         # 0 = off
         if self.enable == 0:
-            value = 2
+            value = 3
         else:
             value = 0
         cmds.setAttr(self.name + '.' + self.ENABLE_ATTRIBUTE, value)
