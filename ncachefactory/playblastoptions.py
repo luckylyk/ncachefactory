@@ -4,10 +4,14 @@ from PySide2 import QtCore, QtWidgets, QtGui
 from maya import cmds
 
 from ncachefactory.qtutils import get_icon
+from ncachefactory.camera import (
+    DEFAULT_CAMERA, find_existing_production_cameras, find_current_camera)
 from ncachefactory.playblast import list_render_filter_options
 from ncachefactory.optionvars import (
     RECORD_PLAYBLAST_OPTIONVAR, PLAYBLAST_RESOLUTION_OPTIONVAR,
-    PLAYBLAST_VIEWPORT_OPTIONVAR, CONFIGFILE_PATH)
+    PLAYBLAST_VIEWPORT_OPTIONVAR, CONFIGFILE_PATH,
+    PLAYBLAST_CAMERA_SELECTION_TYPE)
+
 
 RESOLUTION_PRESETS = {
     "VGA 4:3": (640,480),
@@ -35,8 +39,8 @@ RESOLUTION_PRESETS = {
     "UltraWide FHD 21:9": (2560, 1080),
     "Ultra-Wide 4K 2.35": (3840, 1600),
     "2160p 4K Ultra HD 16:9": (3840, 2160),
-    "DCI 4K 256:135": (4096, 2160)
-}
+    "DCI 4K 256:135": (4096, 2160)}
+
 
 # add custom resolutions from config file
 cfg = ConfigParser.ConfigParser()
@@ -51,17 +55,17 @@ class PlayblastOptions(QtWidgets.QWidget):
         super(PlayblastOptions, self).__init__(parent=parent)
         self.setFixedHeight(250)
         self._record_playblast = QtWidgets.QCheckBox('Record playblast')
-        self._camera = CamerasCombo()
+        self._camera_selector = CameraSelector()
         self._resolution = ResolutionSelecter()
         self._viewport_options = DisplayOptions()
-        self._viewport_options.optionModified.connect(self.save_states)
         self._viewport_optios_scroll_area = QtWidgets.QScrollArea()
         self._viewport_optios_scroll_area.setWidget(self._viewport_options)
         self.layout = QtWidgets.QFormLayout(self)
         self.layout.setSpacing(0)
         self.layout.addRow('', self._record_playblast)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
-        self.layout.addRow('Camera: ', self._camera)
+        self.layout.addRow('Camera:', self._camera_selector)
+        self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
         self.layout.addRow('Resolution: ', self._resolution)
         self.layout.addItem(QtWidgets.QSpacerItem(10, 10))
         text = 'Viewport options: '
@@ -71,6 +75,8 @@ class PlayblastOptions(QtWidgets.QWidget):
         self._record_playblast.stateChanged.connect(self.save_states)
         self._resolution.width.textEdited.connect(self.save_states)
         self._resolution.height.textEdited.connect(self.save_states)
+        self._camera_selector.buttonReleased.connect(self.save_states)
+        self._viewport_options.optionModified.connect(self.save_states)
 
     def set_states(self):
         state = cmds.optionVar(query=RECORD_PLAYBLAST_OPTIONVAR)
@@ -79,6 +85,9 @@ class PlayblastOptions(QtWidgets.QWidget):
         resolution = cmds.optionVar(query=PLAYBLAST_RESOLUTION_OPTIONVAR)
         width, height = map(int, resolution.split('x'))
         self._resolution.set_resolution(width, height)
+
+        value = cmds.optionVar(query=PLAYBLAST_CAMERA_SELECTION_TYPE)
+        self._camera_selector.set_checked_id(value)
 
     def save_states(self):
         state = self._record_playblast.isChecked()
@@ -91,12 +100,15 @@ class PlayblastOptions(QtWidgets.QWidget):
         opt = " ".join(opt)
         cmds.optionVar(stringValue=[PLAYBLAST_VIEWPORT_OPTIONVAR, opt])
 
+        value = self._camera_selector.checked_id
+        cmds.optionVar(intValue=[PLAYBLAST_CAMERA_SELECTION_TYPE, value])
+
     def select_ffmpeg_path(self):
         ffmpeg = QtWidgets.QFileDialog.getOpenFileName()
         if not ffmpeg:
             return
         self._ffmpeg_path.setText(ffmpeg[0])
-        self.save_states
+        self.save_states()
 
     @property
     def viewport_options(self):
@@ -104,7 +116,7 @@ class PlayblastOptions(QtWidgets.QWidget):
             'viewport_display_values': self._viewport_options.values,
             'width': self._resolution.resolution[0],
             'height': self._resolution.resolution[1],
-            'camera': self._camera.currentText()}
+            'camera': self._camera_selector.camera}
 
     @property
     def record_playblast(self):
@@ -200,6 +212,56 @@ class DisplayOptions(QtWidgets.QWidget):
     @property
     def values(self):
         return [cb.isChecked() for cb in self.checkboxes]
+
+
+class CameraSelector(QtWidgets.QWidget):
+    buttonReleased = QtCore.Signal()
+
+    def __init__(self, parent=None):
+        super(CameraSelector, self).__init__(parent)
+        self.layout = QtWidgets.QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+        self.button_group = QtWidgets.QButtonGroup()
+        self.button_group.buttonReleased.connect(self._call_clicked)
+
+        buttons = "Current viewport", "Production camera", "Custom camera"
+        for i, button in enumerate(buttons):
+            button = QtWidgets.QRadioButton(button)
+            self.button_group.addButton(button, i)
+            self.layout.addWidget(button)
+
+        self.custom = CamerasCombo()
+        self.layout.addWidget(self.custom)
+
+    def _call_clicked(self, id_):
+        self.buttonReleased.emit()
+        self.update_states()
+
+    @property
+    def checked_id(self):
+        return self.button_group.checkedId()
+
+    def set_checked_id(self, id_):
+        self.button_group.button(id_).setChecked(True)
+        self.update_states()
+
+    def update_states(self):
+        self.custom.setEnabled(self.checked_id == 2)
+
+    @property
+    def camera(self):
+        if self.checked_id == 0:
+            return find_current_camera() or DEFAULT_CAMERA
+        elif self.checked_id == 1:
+            productions_cameras = find_existing_production_cameras()
+            if not productions_cameras:
+                msg = 'No production camera found in scene, get default persp'
+                cmds.warning(msg)
+                return DEFAULT_CAMERA
+            return productions_cameras[0]
+        elif self.checked_id == 2:
+            self.custom.currentText()
 
 
 class ResolutionPresetsMenu(QtWidgets.QMenu):
