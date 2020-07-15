@@ -27,7 +27,6 @@ class FilterDialog(QtWidgets.QWidget):
         self.list.clear()
         flags = QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled
         nodes = cmds.ls(type=DYNAMIC_NODES)
-        nodes = filter_invisible_nodes_for_manager(nodes)
         for node in sorted(nodes):
             name = cmds.listRelatives(node, parent=True)[0]
             state = not cmds.getAttr(node + '.' + FILTERED_FOR_NCACHEMANAGER)
