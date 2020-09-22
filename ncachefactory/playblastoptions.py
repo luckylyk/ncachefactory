@@ -261,7 +261,7 @@ class CameraSelector(QtWidgets.QWidget):
                 return DEFAULT_CAMERA
             return productions_cameras[0]
         elif self.checked_id == 2:
-            self.custom.currentText()
+            return self.custom.currentText()
 
 
 class ResolutionPresetsMenu(QtWidgets.QMenu):
