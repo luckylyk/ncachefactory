@@ -2,8 +2,13 @@
 This module contains all preferences saved available for the ncachefactory app
 """
 import os
-import ConfigParser
 from maya import cmds
+
+# Ensure compatibility Py2 and Py3
+try:
+    import ConfigParser
+except BaseException:
+    import configparser as ConfigParser
 
 _current_dir = os.path.dirname(os.path.realpath(__file__))
 CONFIGFILE_PATH = os.path.join(_current_dir, '..', 'config.cfg')
@@ -19,6 +24,7 @@ PLAYBLAST_VIEWPORT_OPTIONVAR = 'ncachefactory_playblast_viewport'
 PLAYBLAST_CAMERA_SELECTION_TYPE = 'ncachefactory_camera_selection_type'
 EXPLOSION_DETECTION_OPTIONVAR = 'ncachefactory_explosion_detection'
 EXPLOSION_TOLERENCE_OPTIONVAR = 'ncachefactory_explosion_tolerence'
+CUSTOM_ENV_PATH_OPTIONVAR = 'ncachefactory_environment_path'
 TIMELIMIT_ENABLED_OPTIONVAR = 'ncachefactory_timelimit_enabled'
 TIMELIMIT_OPTIONVAR = 'ncachefactory_timelimit'
 FFMPEG_PATH_OPTIONVAR = 'ncachefactory_ffmpeg_path'
@@ -36,6 +42,7 @@ VERSION_EXP_OPTIONVAR = 'ncachefactory_version_expanded'
 OPTIONVARS = {
     RANGETYPE_OPTIONVAR: 0,
     CACHE_BEHAVIOR_OPTIONVAR: 0,
+    CUSTOM_ENV_PATH_OPTIONVAR: '',
     VERBOSE_OPTIONVAR: 0,
     RECORD_PLAYBLAST_OPTIONVAR: 1,
     SAMPLES_EVALUATED_OPTIONVAR: 1.0,

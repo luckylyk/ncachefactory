@@ -1,9 +1,14 @@
 
 import os
-from shiboken2 import wrapInstance
-from PySide2 import QtWidgets, QtGui, QtWidgets, QtCore
+import sys
+from PySide2 import QtGui
 import maya.OpenMayaUI as omui
 from maya import cmds
+
+
+# compatibility python 2 and 3
+if int(sys.version[0]) > 2:
+    long = int
 
 
 ICONPATH = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'icons')

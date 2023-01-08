@@ -1,7 +1,6 @@
 import os
 import re
-import shutil
-import logging
+import sys
 import subprocess
 from functools import partial
 
@@ -13,6 +12,10 @@ from ncachefactory.timecallbacks import (
 from ncachefactory.optionvars import (
     FFMPEG_PATH_OPTIONVAR, PLAYBLAST_VIEWPORT_OPTIONVAR,
     ensure_optionvars_exists)
+
+
+if int(sys.version[0]) > 2:
+    long = int
 
 
 OUTPUT_RENDER_FILENAME = 'ncache_playblast'

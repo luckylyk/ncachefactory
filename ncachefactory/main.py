@@ -18,16 +18,17 @@ from ncachefactory.cachemanager import (
     record_in_existing_cacheversion, append_to_cacheversion)
 from ncachefactory.infos import WorkspaceCacheversionsExplorer
 from ncachefactory.versioning import (
-    ensure_workspace_folder_exists, list_available_cacheversions,
-    filter_cacheversions_containing_nodes, cacheversion_contains_node)
+    list_available_cacheversions, filter_cacheversions_containing_nodes,
+    cacheversion_contains_node)
 from ncachefactory.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
-    VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, FFMPEG_PATH_OPTIONVAR,
-    MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
+    VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR,
+    FFMPEG_PATH_OPTIONVAR, MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
     MULTICACHE_EXP_OPTIONVAR, ensure_optionvars_exists)
 from ncachefactory.batchcacher import BatchCacher
 from ncachefactory.attributes import filter_invisible_nodes_for_manager
-from ncachefactory.batch import send_batch_ncache_jobs, send_wedging_ncaches_jobs
+from ncachefactory.batch import (
+    send_batch_ncache_jobs, send_wedging_ncaches_jobs)
 from ncachefactory.timecallbacks import (
     register_time_callback, add_to_time_callback, unregister_time_callback,
     time_verbose, clear_time_callback_functions)
@@ -497,6 +498,7 @@ class PathOptions(QtWidgets.QWidget):
         self.mediaplayer.text.textEdited.connect(self.save_options)
         function = partial(self.get_executable_path, self.mediaplayer)
         self.mediaplayer.button.released.connect(function)
+
         self.ok = QtWidgets.QPushButton("ok")
         self.ok.setFixedWidth(85)
         self.ok.released.connect(self.hide)
@@ -529,8 +531,10 @@ class PathOptions(QtWidgets.QWidget):
         self.mediaplayer.text.setText(text)
 
     def save_options(self, *useless_signal_args):
-        cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, self.ffmpeg.text.text()])
-        cmds.optionVar(stringValue=[MAYAPY_PATH_OPTIONVAR, self.mayapy.text.text()])
+        text = self.ffmpeg.text.text()
+        cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, text])
+        text = self.mayapy.text.text()
+        cmds.optionVar(stringValue=[MAYAPY_PATH_OPTIONVAR, text])
         text = self.mediaplayer.text.text()
         cmds.optionVar(stringValue=[MEDIAPLAYER_PATH_OPTIONVAR, text])
 
