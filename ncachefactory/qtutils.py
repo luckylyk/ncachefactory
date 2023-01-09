@@ -1,7 +1,7 @@
 
 import os
 import sys
-from PySide2 import QtGui
+from PySide2 import QtGui, QtWidgets
 import maya.OpenMayaUI as omui
 from maya import cmds
 
@@ -35,3 +35,18 @@ def dock_window_to_tab(window, tabname):
     mixinPtr = omui.MQtUtil.findControl(window.objectName())
     if mixinPtr is not None:
         omui.MQtUtil.addWidgetToMayaLayout(long(mixinPtr), long(currParent))
+
+
+class BrowserLine(QtWidgets.QWidget):
+
+    def __init__(self):
+        super(BrowserLine, self).__init__()
+        self.text = QtWidgets.QLineEdit()
+        self.button = QtWidgets.QPushButton(get_icon("folder.png"), "")
+        self.button.setFixedSize(22, 22)
+
+        self.layout = QtWidgets.QHBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+        self.layout.setSpacing(0)
+        self.layout.addWidget(self.text)
+        self.layout.addWidget(self.button)

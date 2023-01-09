@@ -4,6 +4,7 @@ import shutil
 import sys
 
 from maya import cmds
+from ncachefactory.environment import get_environment
 from ncachefactory.optionvars import MAYAPY_PATH_OPTIONVAR
 from ncachefactory.versioning import create_cacheversion
 
@@ -32,19 +33,6 @@ def build_unique_scene_name(workspace, scenename_template, foldername):
         i += 1
         name = scenename_template.format(str(i).zfill(2))
     return name
-
-
-def copy_current_environment():
-    pythonpaths = os.environ["PYTHONPATH"].split(os.pathsep)
-    pythonpaths = [p.replace("\\", "/") for p in pythonpaths]
-    for path in sys.path:
-        path = path.replace("\\", "/")
-        if path in pythonpaths:
-            continue
-        pythonpaths.append(path)
-    environment = os.environ.copy()
-    environment["PYTHONPATH"] = str(os.pathsep.join(pythonpaths))
-    return environment
 
 
 def save_scene_for_batch(workspace, scenename, folder):
@@ -80,7 +68,7 @@ def send_batch_ncache_jobs(
         start_frame, end_frame, nodes, evaluate_every_frame,
         save_every_evaluation, playblast_viewport_options, timelimit,
         stretchmax)
-    environment = copy_current_environment()
+    environment = get_environment()
     for job in jobs:
         cacheversion = create_cacheversion(
             workspace=workspace,
@@ -116,7 +104,7 @@ def send_wedging_ncaches_jobs(
     '''
     processes = []
     cacheversions = []
-    environment = copy_current_environment()
+    environment = get_environment()
     scene = save_scene_for_batch(workspace, WEDGINGSCENE_NAME, WEDGINGFOLDER_NAME)
     for value in values:
         comment = WEDGING_COMMENT_TEMPLATE.format(attribute, value)
@@ -194,17 +182,12 @@ def clean_batch_temp_folder(workspace):
 
 def is_temp_folder_empty(workspace):
     tempfolder = os.path.join(workspace, TEMPFOLDER_NAME)
-    if os.path.exists(tempfolder) is False:
-        return True
-    if not os.listdir(tempfolder):
-        return True
-    return False
+    return os.path.exists(tempfolder) is False or not os.listdir(tempfolder)
 
 
 def list_temp_multi_scenes(workspace):
     tempfolder = os.path.join(workspace, TEMPFOLDER_NAME)
-    scenes = []
-    for scene in os.listdir(tempfolder):
-        if scene.endswith('.ma'):
-            scenes.append(os.path.join(tempfolder, scene))
-    return scenes
+    return [
+        os.path.join(tempfolder, scene)
+        for scene in os.listdir(tempfolder)
+        if scene.endswith('.ma')]
