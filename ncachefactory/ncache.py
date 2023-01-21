@@ -95,9 +95,9 @@ def import_ncache(node, filename, behavior=0):
         2: blend all existing cachenodes with new cache
     """
     connected_cachenode = get_connected_cachenode([node])
-    if behavior is 0:
+    if behavior == 0:
         cmds.delete(connected_cachenode)
-    if behavior is 1:
+    if behavior == 1:
         if cmds.nodeType(connected_cachenode) == "cacheFile":
             cmds.delete(connected_cachenode)
     connections = disconnect_cachenodes(node)
