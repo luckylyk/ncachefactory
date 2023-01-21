@@ -76,7 +76,7 @@ def stop_playblast_record(directory):
 
 def backup_current_render_settings():
     # clean existing backup
-    for key in _backuped_render_settings.keys():
+    for key in list(_backuped_render_settings):
         del _backuped_render_settings[key]
 
     settings = {}
