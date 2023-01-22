@@ -18,8 +18,14 @@ The module respect a nomenclature:
     cachenodes = represent maya 'cacheFile' and 'cacheBlend' nodes
 
 """
+import sys
 from maya import cmds, mel
 from ncachefactory.attributes import filter_invisible_nodes_for_manager
+
+
+if sys.version_info[0] == 3:
+    unicode = str
+
 
 DYNAMIC_NODES = 'nCloth', 'hairSystem'
 CACHE_COMMAND_TEMPLATE = """
