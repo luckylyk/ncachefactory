@@ -17,6 +17,6 @@ cacheversions = list_available_cacheversions(workspace_to_clean)
 for cacheversion in cacheversions:
     for k, v in DEFAULT_VALUES.items():
         if cacheversion.infos.get(k) is None:
-            print cacheversion.name, "is out of date and doesn't have", k, "registered, default value set"
+            print(cacheversion.name, "is out of date and doesn't have", k, "registered, default value set")
             cacheversion.infos[k] = v
             cacheversion.save_infos()

@@ -7,34 +7,38 @@ from PySide2 import QtCore, QtWidgets
 from maya import cmds
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 
-from ncachefactory.nodetable import DynamicNodesTableWidget
-from ncachefactory.comparator import ComparisonWidget
-from ncachefactory.ncache import DYNAMIC_NODES
+
+from ncachefactory.attributes import filter_invisible_nodes_for_manager
+from ncachefactory.batch import (
+    send_batch_ncache_jobs, send_wedging_ncaches_jobs)
+from ncachefactory.batchcacher import BatchCacher
 from ncachefactory.cacheoptions import CacheOptions
-from ncachefactory.qtutils import get_icon
-from ncachefactory.playblastoptions import PlayblastOptions
 from ncachefactory.cachemanager import (
     filter_connected_cacheversions, create_and_record_cacheversion,
     record_in_existing_cacheversion, append_to_cacheversion)
+from ncachefactory.comparator import ComparisonWidget
+from ncachefactory.environment import EnvironmentOptions
 from ncachefactory.infos import WorkspaceCacheversionsExplorer
-from ncachefactory.versioning import (
-    ensure_workspace_folder_exists, list_available_cacheversions,
-    filter_cacheversions_containing_nodes, cacheversion_contains_node)
 from ncachefactory.optionvars import (
     CACHEOPTIONS_EXP_OPTIONVAR, COMPARISON_EXP_OPTIONVAR,
-    VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR, FFMPEG_PATH_OPTIONVAR,
-    MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
+    VERSION_EXP_OPTIONVAR, PLAYBLAST_EXP_OPTIONVAR,
+    FFMPEG_PATH_OPTIONVAR, MAYAPY_PATH_OPTIONVAR, MEDIAPLAYER_PATH_OPTIONVAR,
     MULTICACHE_EXP_OPTIONVAR, ensure_optionvars_exists)
-from ncachefactory.batchcacher import BatchCacher
-from ncachefactory.attributes import filter_invisible_nodes_for_manager
-from ncachefactory.batch import send_batch_ncache_jobs, send_wedging_ncaches_jobs
+from ncachefactory.qtutils import get_icon, BrowserLine
+from ncachefactory.monitoring import MultiCacheMonitor
+from ncachefactory.ncache import DYNAMIC_NODES
+from ncachefactory.nodetable import DynamicNodesTableWidget
+from ncachefactory.playblastoptions import PlayblastOptions
 from ncachefactory.timecallbacks import (
     register_time_callback, add_to_time_callback, unregister_time_callback,
     time_verbose, clear_time_callback_functions)
-from ncachefactory.monitoring import MultiCacheMonitor
+from ncachefactory.versioning import (
+    list_available_cacheversions, filter_cacheversions_containing_nodes,
+    cacheversion_contains_node)
 from ncachefactory.workspace import (
     get_default_workspace, set_last_used_workspace)
 from ncachefactory.workspacesetter import WorkspaceWidget
+
 
 HELPFOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), '..', 'help')
 WINDOW_TITLE = "nCache Factory"
@@ -49,6 +53,7 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.processes = []
 
         self.pathoptions = PathOptions(self)
+        self.environmentoptions = EnvironmentOptions(self)
         self.workspace_widget = WorkspaceWidget()
         self.nodetable = DynamicNodesTableWidget()
         self.batch_monitor = MultiCacheMonitor(parent=self)
@@ -129,9 +134,14 @@ class NCacheManager(MayaQWidgetDockableMixin, QtWidgets.QWidget):
         self.editpath = QtWidgets.QAction('Dependencies path', self.menufile)
         self.editpath.triggered.connect(self.pathoptions.show)
         self.menufile.addAction(self.editpath)
-        self.show_monitor = QtWidgets.QAction('Batch cache monitor', self.menufile)
+        text = 'Batch cache monitor'
+        self.show_monitor = QtWidgets.QAction(text, self.menufile)
         self.menufile.addAction(self.show_monitor)
         self.show_monitor.triggered.connect(self.batch_monitor.show)
+        text = 'Batch Environment'
+        self.environment = QtWidgets.QAction(text, self.menufile)
+        self.environment.triggered.connect(self.environmentoptions.show)
+        self.menufile.addAction(self.environment)
         self.help = QtWidgets.QAction('Help', self.menufile)
         self.menufile.addAction(self.help)
         self.help.triggered.connect(self._call_help)
@@ -497,6 +507,7 @@ class PathOptions(QtWidgets.QWidget):
         self.mediaplayer.text.textEdited.connect(self.save_options)
         function = partial(self.get_executable_path, self.mediaplayer)
         self.mediaplayer.button.released.connect(function)
+
         self.ok = QtWidgets.QPushButton("ok")
         self.ok.setFixedWidth(85)
         self.ok.released.connect(self.hide)
@@ -529,22 +540,9 @@ class PathOptions(QtWidgets.QWidget):
         self.mediaplayer.text.setText(text)
 
     def save_options(self, *useless_signal_args):
-        cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, self.ffmpeg.text.text()])
-        cmds.optionVar(stringValue=[MAYAPY_PATH_OPTIONVAR, self.mayapy.text.text()])
+        text = self.ffmpeg.text.text()
+        cmds.optionVar(stringValue=[FFMPEG_PATH_OPTIONVAR, text])
+        text = self.mayapy.text.text()
+        cmds.optionVar(stringValue=[MAYAPY_PATH_OPTIONVAR, text])
         text = self.mediaplayer.text.text()
         cmds.optionVar(stringValue=[MEDIAPLAYER_PATH_OPTIONVAR, text])
-
-
-class BrowserLine(QtWidgets.QWidget):
-
-    def __init__(self):
-        super(BrowserLine, self).__init__()
-        self.text = QtWidgets.QLineEdit()
-        self.button = QtWidgets.QPushButton(get_icon("folder.png"), "")
-        self.button.setFixedSize(22, 22)
-
-        self.layout = QtWidgets.QHBoxLayout(self)
-        self.layout.setContentsMargins(0, 0, 0, 0)
-        self.layout.setSpacing(0)
-        self.layout.addWidget(self.text)
-        self.layout.addWidget(self.button)

@@ -18,7 +18,6 @@ The script create a ncache in background, this is the arguments orders
 import os
 import logging
 import argparse
-from datetime import datetime
 from functools import partial
 
 
@@ -88,7 +87,7 @@ try:
     force_log_info(INFOS.format(arguments=arguments))
 
     force_log_info("initializing maya ...")
-    from maya import cmds, mel
+    from maya import cmds
     from ncachefactory.versioning import CacheVersion
     from ncachefactory.cachemanager import record_in_existing_cacheversion
     from ncachefactory.ncloth import is_output_too_streched

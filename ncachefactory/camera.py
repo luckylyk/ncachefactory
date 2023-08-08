@@ -1,9 +1,13 @@
 
-import ConfigParser
-
+# Ensure compatibility Py2 and Py3
+try:
+    import ConfigParser
+except BaseException:
+    import configparser as ConfigParser
 import maya.OpenMaya as om
 import maya.OpenMayaUI as omui
 from maya import cmds
+
 
 from ncachefactory.optionvars import CONFIGFILE_PATH
 

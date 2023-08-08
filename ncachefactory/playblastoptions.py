@@ -1,7 +1,12 @@
 from functools import partial
-import ConfigParser
 from PySide2 import QtCore, QtWidgets, QtGui
 from maya import cmds
+
+# Ensure compatibility Py2 and Py3
+try:
+    import ConfigParser
+except BaseException:
+    import configparser as ConfigParser
 
 from ncachefactory.qtutils import get_icon
 from ncachefactory.camera import (
@@ -14,7 +19,7 @@ from ncachefactory.optionvars import (
 
 
 RESOLUTION_PRESETS = {
-    "VGA 4:3": (640,480),
+    "VGA 4:3": (640, 480),
     "Amiga OCS PAL 5:3": (640, 512),
     "Wide VGA 8:5": (768, 480),
     "Wide VGA 5:3": (800, 480),
@@ -271,10 +276,7 @@ class ResolutionPresetsMenu(QtWidgets.QMenu):
         super(ResolutionPresetsMenu, self).__init__(parent=parent)
         self.width = None
         self.height = None
-
-        keys = sorted(RESOLUTION_PRESETS, key=lambda x: RESOLUTION_PRESETS[x][0])
-        for key in keys:
-            width, height = RESOLUTION_PRESETS[key]
+        for key, (width, height) in RESOLUTION_PRESETS.items():
             name = "{}x{} | {}".format(width, height, key)
             action = QtWidgets.QAction(name, self)
             func = partial(self.set_resolution, width, height)

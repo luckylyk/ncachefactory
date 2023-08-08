@@ -1,5 +1,4 @@
 from PySide2 import QtWidgets, QtCore
-from maya import cmds
 from ncachefactory.versioning import find_file_match, extract_xml_attributes
 from ncachefactory.attributes import (
     set_pervertex_maps, PERVERTEX_ATTRIBUTES, apply_attibutes_dict)

@@ -7,7 +7,7 @@ sys.path.append(r"D:\Works\Python\GitHub\ncachefactory")
 from maya import cmds, mel
 for key in sys.modules.keys():
     if 'ncachefactory' in key:
-        print key
+        print(key)
         del sys.modules[key]
 
 

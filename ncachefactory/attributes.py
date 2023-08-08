@@ -2,7 +2,6 @@
 import os
 import json
 from maya import cmds
-from ncachefactory.versioning import split_namespace_nodename
 
 
 DYNAMIC_NODES = 'nCloth', 'hairSystem'

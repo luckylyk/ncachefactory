@@ -233,12 +233,13 @@ def find_file_match(node, cacheversion, extension='mcc'):
 
 def filter_cacheversions_containing_nodes(nodes, cacheversions):
     nodes = [split_namespace_nodename(node)[1] for node in nodes]
-    filtered = set()
+    filtered = []
     for node in nodes:
         for cacheversion in cacheversions:
             if cacheversion_contains_node(node, cacheversion):
-                filtered.add(cacheversion)
-    return sorted(list(filtered), key=lambda x: x.name)
+                if cacheversion not in filtered:
+                    filtered.append(cacheversion)
+    return sorted(filtered, key=lambda x: x.name)
 
 
 def ensure_workspace_folder_exists(workspace):
