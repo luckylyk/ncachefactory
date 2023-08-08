@@ -105,6 +105,7 @@ class DynamicNodesTableWidget(QtWidgets.QWidget):
 
         function = self._synchronise_selection_from_maya
         cb = om.MEventMessage.addEventCallback('SelectionChanged', function)
+        self._callbacks.append(cb)
 
         function = self.update_layout
         cb = om.MNodeMessage.addNameChangedCallback(om.MObject(), function)

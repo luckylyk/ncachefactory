@@ -113,13 +113,12 @@ try:
                     break
 
         timespent = get_timespent_since_last_frame_set()
-        if timespent is not None:
-            if 0 < timelimit < timespent.seconds:
-                message = "simulation time exceeds the limit allowed: {}"
-                logging.error(message.format(timespent))
-                result = True
+        if timespent is not None and 0 < timelimit < timespent.seconds:
+            message = "simulation time exceeds the limit allowed: {}"
+            logging.error(message.format(timespent))
+            result = True
 
-        if result is True:
+        if result:
             logging.error("User defined explosion limit reached.")
             cmds.quit(force=True)
             exit()
